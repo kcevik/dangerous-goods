@@ -87,6 +87,8 @@ app/
   app.vue
   pages/
     index.vue               # Landing page
+    un/
+      [nummer].vue          # UN detail page — wraps MultimodalTool with un-number prop
   components/
     landing/
       Navbar.vue
@@ -100,12 +102,13 @@ app/
       Cta.vue
       Footer.vue
     multimodal/
-      MultimodalTool.vue    # Full comparison UI (props: demo?)
+      MultimodalTool.vue    # Full comparison UI (props: demo?, unNumber?)
       MultimodalSvsAccordion.vue  # Collapsible special provisions
   composables/
-    useMultimodalTool.ts    # All state + logic for comparison tool
+    useMultimodalTool.ts    # All state + logic for comparison tool; loadCompare() hits Supabase
   utils/
     multimodal.ts           # Entry interface, LABELS i18n, DEMO_DATA, constants
+    multimodalMappers.ts    # Per-mode row→Entry mappers + fetchCompareForUn(client, un)
 csvbase/
   dgg-daten-adr-un/         # ADR 2025 — 3,374 entries
   dgg-daten-rid-un/         # RID 2025 — 3,350 entries
@@ -113,6 +116,12 @@ csvbase/
   dgg-daten-imdg-un/        # IMDG Amdt. 42-24 — 3,246 entries
   dgg-daten-un-un/          # UN Recommendations — 3,232 entries
   # No ADN data in BAM dataset
+scripts/
+  import-regulations.ts     # Reads BAM TSV, upserts into Supabase (see pnpm import:regulations)
+supabase/
+  config.toml
+  migrations/
+    20260524183401_initial_schema.sql   # All entry tables + supporting tables + RLS policies
 docs/
   database-schema-and-import-plan.md
   schema-diagram.html       # Visual ERD — open in browser
@@ -121,11 +130,11 @@ docs/
 ## Data / CSV Import
 
 - **Format:** Tab-separated `.txt` files (not comma-separated despite name), ISO-8859-1 encoding, CRLF line endings
-- **ADN:** Not available in BAM dataset — `adn_entries` table will exist but be empty until another source is found
-- **Multi-value columns:** Source CSVs use numbered siblings (`S_SV1`…`S_SV11`). These must be collapsed into `TEXT[]` arrays — the Supabase CSV importer cannot do this. A Node.js import script is needed.
+- **ADN:** Not available in BAM dataset — no `adn_entries` table in the current migration. ADN tab in the UI always renders empty.
+- **Multi-value columns:** Source CSVs use numbered siblings (`S_SV1`…`S_SV11`). These must be collapsed into `TEXT[]` arrays — the Supabase CSV importer cannot do this. The Node.js import script handles this.
 - **Special provisions:** ~2,600 individual `.TXT` plain-text files across all modes, loaded into `special_provisions` table
-- **Yearly update:** Download new CSVs from BAM, run import script with upsert — `UNIQUE (un_number, sequence_number)` ensures safe re-runs
-- **Script location (planned):** `scripts/import-regulations.ts`
+- **Yearly update:** Download new CSVs from BAM, run `pnpm import:regulations` — `UNIQUE (un_number, sequence_number)` ensures safe re-runs
+- **Script:** `scripts/import-regulations.ts` — requires `NUXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env`
 
 ## Database Schema (Supabase / PostgreSQL)
 
@@ -141,7 +150,9 @@ Five entry tables, one per transport mode. All created in Phase 1:
 
 Supporting tables: `special_provisions`, `segregation_matrix`, `segregation_codes`
 
-View: `un_comparison` — UNION ALL of all entry tables, powers the multimodal comparison feature.
+**RLS:** All entry tables have `public read` policies — `anon` can SELECT without auth.
+
+**View `un_comparison`:** UNION ALL of all entry tables, but exposes only a thin slice (`hazard_class`, `packing_group`, `cat`, `kemler`, `ems`, `stowage_category`) — **not enough to populate the full `Entry` interface**. The multimodal tool bypasses the view and fans out parallel queries to the entry tables directly (`fetchCompareForUn`). Supabase flags this view as `SECURITY DEFINER`; either drop it or recreate with `security_invoker = true` before launch.
 
 Full schema in `docs/database-schema-and-import-plan.md`.
 
@@ -157,6 +168,8 @@ Full schema in `docs/database-schema-and-import-plan.md`.
 
 - Nuxt 4 app structure: source files live in `app/` directory
 - i18n: UI supports de / en / fr / tr via `LABELS` constant in `utils/multimodal.ts` — no i18n module used for regulation data
-- Supabase runtime config keys are set via environment variables
-- Landing page is built; multimodal comparison demo is live on the landing page using hardcoded UN 1203 demo data
-- No API endpoints exist yet — the multimodal tool runs on static demo data until the DB import is done
+- Supabase runtime config keys are set via environment variables (`NUXT_PUBLIC_SUPABASE_URL`, `NUXT_PUBLIC_SUPABASE_KEY`)
+- **Current state:** schema migrated + data seeded in hosted Supabase. Landing page lives with a hardcoded UN 1203 demo. `/un/:nummer` is a working public route that queries Supabase live.
+- **Data flow:** `MultimodalTool.vue` takes either `demo` (hardcoded) or `unNumber` (calls `loadCompare` → `fetchCompareForUn` → 4 parallel queries against entry tables) — no Nitro API routes; client queries Supabase directly via `@nuxtjs/supabase`.
+- **Auth gating:** `@nuxtjs/supabase` redirects to `/login` by default. Public routes are listed in `nuxt.config.ts` → `supabase.redirectOptions.exclude` (currently `/`, `/un/**`). Add new public routes there.
+- **SSR caveat:** `/un/:nummer` loads data client-side via `onMounted`. Fine for dev; switch to `useAsyncData` before launch for SEO.

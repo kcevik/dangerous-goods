@@ -9,6 +9,7 @@ import {
   DEMO_DATA,
   BK_CLASSES,
 } from '~/utils/multimodal'
+import { fetchCompareForUn } from '~/utils/multimodalMappers'
 
 interface UseMultimodalToolOptions {
   /** Pre-load UN 1203 demo data instead of calling the API */
@@ -83,22 +84,21 @@ export function useMultimodalTool(options: UseMultimodalToolOptions = {}) {
     if (compareData.value[modal]) currentModal.value = modal
   }
 
-  /**
-   * Load comparison data for a UN number.
-   * Currently a no-op — wire up your API call here when the backend is ready.
-   * Expected response shape: `{ compare: Record<Modal, Entry[]> }`
-   */
-  async function loadCompare(_unNumber: string): Promise<void> {
-    // TODO: replace with real API call
-    // isLoading.value = true
-    // try {
-    //   const data = await $fetch(`/api/compare?unnr=${_unNumber}`)
-    //   compareData.value = data.compare
-    //   currentUnNumber.value = _unNumber
-    //   currentModal.value = MODALS.find(m => data.compare[m]) ?? 'ADR'
-    // } finally {
-    //   isLoading.value = false
-    // }
+  async function loadCompare(unNumber: string): Promise<void> {
+    const cleaned = unNumber.trim()
+    if (!cleaned) return
+
+    isLoading.value = true
+    try {
+      const supabase = useSupabaseClient()
+      const data = await fetchCompareForUn(supabase, cleaned)
+      compareData.value = data
+      currentUnNumber.value = cleaned
+      const firstAvailable = MODALS.find(m => data[m]?.length)
+      if (firstAvailable) currentModal.value = firstAvailable
+    } finally {
+      isLoading.value = false
+    }
   }
 
   return {

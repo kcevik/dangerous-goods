@@ -282,25 +282,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { LANGS } from '~/utils/multimodal'
 import { useMultimodalTool } from '~/composables/useMultimodalTool'
 
 const props = defineProps<{
   /** Use hardcoded UN 1203 demo data (no API needed) */
   demo?: boolean
+  /** UN number to load on mount and whenever it changes */
+  unNumber?: string
 }>()
 
 const {
   currentLang, currentModal, currentUnNumber, compareData,
   currentEntry, searchDisplay,
   L, modalDesc, getEntry, getName, getNameSub, getSpez, bkClass,
-  setLang, switchModal,
+  setLang, switchModal, loadCompare,
   MODALS,
 } = useMultimodalTool({ demo: props.demo })
 
 const showDemoNotice = ref(false)
-const hasData = computed(() => Object.keys(compareData.value).length > 0)
+const hasData = computed(() =>
+  Object.values(compareData.value).some(arr => arr && arr.length > 0),
+)
+
+onMounted(() => {
+  if (props.unNumber && !props.demo) loadCompare(props.unNumber)
+})
+watch(() => props.unNumber, n => {
+  if (n && !props.demo) loadCompare(n)
+})
 </script>
 
 <style scoped>
