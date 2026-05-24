@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Database Schema – Dangerous Goods Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+  }
+
+  header {
+    max-width: 1100px;
+    margin: 0 auto 40px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f97316;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── diagram area ── */
+  .diagram-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── section label ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 12px;
+  }
+
+  /* ── grid ── */
+  .grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+  /* ── table card ── */
+  .table-card {
+    background: #1e2535;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table-card.entry   { border-top: 3px solid #f97316; }
+  .table-card.lookup  { border-top: 3px solid #3b82f6; }
+  .table-card.matrix  { border-top: 3px solid #a855f7; }
+  .table-card.view    { border-top: 3px solid #22c55e; border-style: dashed; border-width: 1px; border-top: 3px dashed #22c55e; }
+
+  .table-header {
+    padding: 10px 14px;
+    background: #16202f;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .table-name {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    color: #f1f5f9;
+  }
+
+  .table-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: auto;
+  }
+
+  .badge-entry  { background: rgba(249,115,22,0.15); color: #f97316; }
+  .badge-lookup { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .badge-matrix { background: rgba(168,85,247,0.15); color: #c084fc; }
+  .badge-view   { background: rgba(34,197,94,0.15);  color: #4ade80; }
+  .badge-rows   { background: rgba(100,116,139,0.12); color: #94a3b8; font-size: 9px; }
+
+  .table-body {
+    padding: 10px 0;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 14px;
+    font-size: 11.5px;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    line-height: 1.4;
+  }
+
+  .field:hover { background: rgba(255,255,255,0.03); }
+
+  .field-pk   { color: #fbbf24; }
+  .field-fk   { color: #60a5fa; }
+  .field-arr  { color: #c084fc; }
+  .field-norm { color: #94a3b8; }
+  .field-key  { color: #f1f5f9; }
+
+  .field-type {
+    margin-left: auto;
+    font-size: 10px;
+    color: #475569;
+    white-space: nowrap;
+  }
+
+  .field-icon {
+    font-size: 10px;
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    opacity: 0.8;
+  }
+
+  .divider {
+    height: 1px;
+    background: #2d3748;
+    margin: 6px 14px;
+  }
+
+  .more {
+    padding: 4px 14px;
+    font-size: 10px;
+    color: #475569;
+    font-style: italic;
+  }
+
+  /* ── connector arrows (SVG overlay) ── */
+  .connectors {
+    position: relative;
+    overflow: visible;
+  }
+
+  /* ── relationship row ── */
+  .rel-row {
+    background: #1a2030;
+    border: 1px solid #2d3748;
+    border-radius: 6px;
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .rel-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+  }
+
+  .rel-table {
+    font-family: monospace;
+    font-weight: 700;
+    color: #f1f5f9;
+    background: #0f1117;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .rel-arrow {
+    color: #475569;
+    font-size: 13px;
+  }
+
+  .rel-label {
+    font-size: 10px;
+    color: #64748b;
+    font-style: italic;
+  }
+
+  .rel-sep {
+    color: #2d3748;
+  }
+
+  /* ── flow section ── */
+  .flow {
+    background: #1a2030;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+
+  .flow-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 16px;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .flow-step {
+    background: #0f1117;
+    border: 1px solid #2d3748;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .flow-step-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: #f97316;
+    background: rgba(249,115,22,0.1);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .flow-step-text { color: #cbd5e1; }
+
+  .flow-arrow {
+    color: #475569;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ── phase ribbon ── */
+  .phases {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .phase {
+    flex: 1;
+    min-width: 200px;
+    background: #1a2030;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+
+  .phase-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .phase-1 .phase-label { color: #f97316; }
+  .phase-2 .phase-label { color: #3b82f6; }
+  .phase-3 .phase-label { color: #22c55e; }
+
+  .phase ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .phase li {
+    font-size: 11.5px;
+    color: #94a3b8;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .phase li::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .phase-1 li::before { background: #f97316; }
+  .phase-2 li::before { background: #3b82f6; }
+  .phase-3 li::before { background: #22c55e; }
+
+  @media (max-width: 900px) {
+    .grid-5, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Database Schema — Dangerous Goods Platform</h1>
+  <p>Recommended PostgreSQL / Supabase schema · BAM GEFAHRGUT source data · dl-de/by-2-0</p>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> Entry tables (one per transport mode)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Lookup / reference tables</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Matrix tables</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22c55e; opacity:.7"></div> Views (no storage)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c084fc"></div> TEXT[] array column</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Primary key</div>
+  </div>
+</header>
+
+<div class="diagram-wrap">
+
+  <!-- ── SECTION: ENTRY TABLES ── -->
+  <div>
+    <div class="section-label">Entry tables — one per transport mode (~3,200–3,500 rows each)</div>
+    <div class="grid grid-5">
+
+      <!-- ADR -->
+      <div class="table-card entry">
+        <div class="table-header">
+          <span class="table-name">adr_entries</span>
+          <span class="table-badge badge-entry">ADR 2025</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>un_number<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>sequence_number<span class="field-type">INT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name_en<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name_fr<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>specification<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>hazard_class<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>classification_code<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_group<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>hazard_labels<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>special_provision_codes<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>packing_instructions<span class="field-type">TEXT[]</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>limited_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>excepted_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>transport_category<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>multiplier<span class="field-type">INT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>kemler_number<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>tunnel_code<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>remark<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>prohibited<span class="field-type">BOOL</span></div>
+          <div class="more">+ tank codes, SVs, bulk, handling…</div>
+        </div>
+      </div>
+
+      <!-- RID -->
+      <div class="table-card entry">
+        <div class="table-header">
+          <span class="table-name">rid_entries</span>
+          <span class="table-badge badge-entry">RID 2025</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>un_number<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>sequence_number<span class="field-type">INT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name_en<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>hazard_class<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>classification_code<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_group<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>hazard_labels<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>special_provision_codes<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>packing_instructions<span class="field-type">TEXT[]</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>limited_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>excepted_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>transport_category<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>multiplier<span class="field-type">INT</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>express_freight<span class="field-type">TEXT[]</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>remark<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>prohibited<span class="field-type">BOOL</span></div>
+          <div class="more">No Kemler / tunnel code</div>
+        </div>
+      </div>
+
+      <!-- IMDG -->
+      <div class="table-card entry">
+        <div class="table-header">
+          <span class="table-name">imdg_entries</span>
+          <span class="table-badge badge-entry">IMDG 42-24</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>un_number<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>sequence_number<span class="field-type">INT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name_en<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>hazard_class<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_group<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>marpol<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>hazard_labels<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>special_provision_codes<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>packing_instructions<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>stowage_codes<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>segregation_codes<span class="field-type">TEXT[]</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>ems_fire<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>ems_spill<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>stowage_category<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>limited_qty / excepted_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>prohibited<span class="field-type">BOOL</span></div>
+        </div>
+      </div>
+
+      <!-- ICAO -->
+      <div class="table-card entry">
+        <div class="table-header">
+          <span class="table-name">icao_entries</span>
+          <span class="table-badge badge-entry">ICAO 2025</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>un_number<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>sequence_number<span class="field-type">INT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>specification<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>hazard_class<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_group<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>hazard_labels<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>special_provision_codes<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>subsidiary_risks<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>state_variations<span class="field-type">TEXT[]</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_instr_passenger<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_instr_cargo<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>max_net_passenger<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>max_net_cargo<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>excepted_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>prohibited<span class="field-type">BOOL</span></div>
+          <div class="more">No German / French names</div>
+        </div>
+      </div>
+
+      <!-- UN -->
+      <div class="table-card entry">
+        <div class="table-header">
+          <span class="table-name">un_entries</span>
+          <span class="table-badge badge-entry">UN Rec.</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>un_number<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>sequence_number<span class="field-type">INT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>name<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>specification<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>hazard_class<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_group<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>hazard_labels<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>special_provision_codes<span class="field-type">TEXT[]</span></div>
+          <div class="field field-arr"><span class="field-icon">[]</span>packing_instructions<span class="field-type">TEXT[]</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>limited_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>excepted_qty<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>transport_category<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>remark<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>prohibited<span class="field-type">BOOL</span></div>
+          <div class="more">Reference base for all modes</div>
+        </div>
+      </div>
+
+    </div><!-- /grid-5 -->
+  </div>
+
+  <!-- ── SECTION: LOOKUP + MATRIX ── -->
+  <div>
+    <div class="section-label">Lookup &amp; matrix tables</div>
+    <div class="grid grid-3">
+
+      <!-- special_provisions -->
+      <div class="table-card lookup">
+        <div class="table-header">
+          <span class="table-name">special_provisions</span>
+          <span class="table-badge badge-lookup">~2,600 rows</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>mode<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>code<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>text_de<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>text_en<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="more">UNIQUE (mode, code)</div>
+          <div class="more">Lookup: mode='ADR', code='163'</div>
+        </div>
+      </div>
+
+      <!-- segregation_matrix -->
+      <div class="table-card matrix">
+        <div class="table-header">
+          <span class="table-name">segregation_matrix</span>
+          <span class="table-badge badge-matrix">per mode</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>mode<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>class_from<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>class_to<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>code<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="more">UNIQUE (mode, class_from, class_to)</div>
+          <div class="more">Source: Zusammenladung_csv.txt</div>
+        </div>
+      </div>
+
+      <!-- segregation_codes -->
+      <div class="table-card matrix">
+        <div class="table-header">
+          <span class="table-name">segregation_codes</span>
+          <span class="table-badge badge-matrix">per mode</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-pk"><span class="field-icon">🔑</span>id<span class="field-type">SERIAL PK</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>mode<span class="field-type">TEXT</span></div>
+          <div class="field field-key"><span class="field-icon"> </span>code<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="field field-norm"><span class="field-icon"> </span>description<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="more">UNIQUE (mode, code)</div>
+          <div class="more">Source: Zusammenladung Codes_csv.txt</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION: VIEW ── -->
+  <div>
+    <div class="section-label">View — no storage, derived at query time</div>
+    <div class="grid grid-2">
+
+      <div class="table-card view">
+        <div class="table-header">
+          <span class="table-name">un_comparison</span>
+          <span class="table-badge badge-view">VIEW</span>
+        </div>
+        <div class="table-body">
+          <div class="field field-norm"><span class="field-icon"> </span>un_number<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>mode<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>hazard_class<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>packing_group<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>transport_category<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>kemler_number<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>ems_fire<span class="field-type">TEXT</span></div>
+          <div class="field field-norm"><span class="field-icon"> </span>stowage_category<span class="field-type">TEXT</span></div>
+          <div class="divider"></div>
+          <div class="more">UNION ALL of all 5 entry tables</div>
+          <div class="more">Powers the multimodal comparison feature</div>
+        </div>
+      </div>
+
+      <div style="background:#1a2030;border:1px solid #2d3748;border-radius:8px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Query pattern — UN number lookup</div>
+
+        <div style="background:#0f1117;border-radius:6px;padding:14px 16px;font-family:monospace;font-size:12px;line-height:1.8;color:#94a3b8;">
+          <span style="color:#60a5fa;">SELECT</span> mode, hazard_class, packing_group,<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kemler_number, ems_fire, stowage_category<br>
+          <span style="color:#60a5fa;">FROM</span> <span style="color:#4ade80;">un_comparison</span><br>
+          <span style="color:#60a5fa;">WHERE</span> un_number = <span style="color:#fbbf24;">'1203'</span>;<br><br>
+          <span style="color:#475569;">-- Returns 1 row per available mode</span><br>
+          <span style="color:#475569;">-- ADR · RID · IMDG · ICAO · UN</span>
+        </div>
+
+        <div style="background:#0f1117;border-radius:6px;padding:14px 16px;font-family:monospace;font-size:12px;line-height:1.8;color:#94a3b8;">
+          <span style="color:#60a5fa;">SELECT</span> code, text_de<br>
+          <span style="color:#60a5fa;">FROM</span> <span style="color:#c084fc;">special_provisions</span><br>
+          <span style="color:#60a5fa;">WHERE</span> mode = <span style="color:#fbbf24;">'ADR'</span><br>
+          &nbsp;&nbsp;<span style="color:#60a5fa;">AND</span> code = <span style="color:#60a5fa;">ANY</span>(<span style="color:#fbbf24;">'{"163","274","601"}'</span>);<br><br>
+          <span style="color:#475569;">-- Array containment — no JOIN needed</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION: RELATIONSHIPS ── -->
+  <div>
+    <div class="section-label">Relationships — logical (no FK constraints on regulation data)</div>
+    <div class="rel-row">
+
+      <div class="rel-item">
+        <span class="rel-table">adr_entries</span>
+        <span class="rel-arrow">·special_provision_codes[]·</span>
+        <span class="rel-table">special_provisions</span>
+        <span class="rel-label">ANY() lookup, mode='ADR'</span>
+      </div>
+
+      <span class="rel-sep">|</span>
+
+      <div class="rel-item">
+        <span class="rel-table">imdg_entries</span>
+        <span class="rel-arrow">·segregation_codes[]·</span>
+        <span class="rel-table">segregation_codes</span>
+        <span class="rel-label">mode='IMDG'</span>
+      </div>
+
+      <span class="rel-sep">|</span>
+
+      <div class="rel-item">
+        <span class="rel-table">*_entries</span>
+        <span class="rel-arrow">·un_number·</span>
+        <span class="rel-table">un_comparison VIEW</span>
+        <span class="rel-label">UNION ALL across modes</span>
+      </div>
+
+      <span class="rel-sep">|</span>
+
+      <div class="rel-item">
+        <span class="rel-label" style="font-style:normal;color:#f97316;">No FK constraints</span>
+        <span class="rel-label">Regulation data is append-only reference data. Constraints would slow upserts on yearly updates.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION: IMPORT FLOW ── -->
+  <div>
+    <div class="section-label">Import workflow — yearly update cycle</div>
+    <div class="flow">
+      <div class="flow-title">Script-based (recommended over manual CSV rename)</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <span class="flow-step-text">Download CSVs<br><span style="font-size:10px;color:#475569;">BAM GEFAHRGUT portal</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <span class="flow-step-text">Drop into csvbase/<br><span style="font-size:10px;color:#475569;">Replace old files</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <span class="flow-step-text">Run import script<br><span style="font-size:10px;color:#f97316;font-family:monospace;">pnpm run import</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <span class="flow-step-text">Read TSV<br><span style="font-size:10px;color:#475569;">ISO-8859-1 decode</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">5</div>
+          <span class="flow-step-text">Collapse columns<br><span style="font-size:10px;color:#c084fc;">SV1–11 → TEXT[]</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">6</div>
+          <span class="flow-step-text">Map column names<br><span style="font-size:10px;color:#475569;">German → English</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">7</div>
+          <span class="flow-step-text">Upsert to Supabase<br><span style="font-size:10px;color:#475569;">ON CONFLICT → UPDATE</span></span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-step-num">8</div>
+          <span class="flow-step-text">Load SP text files<br><span style="font-size:10px;color:#475569;">~2,600 .TXT files</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION: PHASES ── -->
+  <div>
+    <div class="section-label">Build phases — multi-modal from day 1</div>
+    <div class="phases">
+
+      <div class="phase phase-1">
+        <div class="phase-label">Phase 1 — MVP (all modes from day 1)</div>
+        <ul>
+          <li>All 5 entry tables (ADR, RID, IMDG, ICAO, UN)</li>
+          <li>Import all CSVs + ~2,600 special provisions</li>
+          <li>All segregation matrices</li>
+          <li>un_comparison VIEW live immediately</li>
+          <li>UN number search across all modes (F-01)</li>
+          <li>Multimodal comparison (F-10) from day 1</li>
+          <li>1000-point calculator via multiplier field (F-02)</li>
+          <li>ADN table created, populated when source available</li>
+        </ul>
+      </div>
+
+      <div class="phase phase-2">
+        <div class="phase-label">Phase 2 — Tools &amp; Documents</div>
+        <ul>
+          <li>No new tables needed</li>
+          <li>Document generator (F-03)</li>
+          <li>LQ/EQ calculator (F-12)</li>
+          <li>Transport mode assistant (F-11)</li>
+          <li>Duty checker (F-06)</li>
+          <li>Packaging instructions browser (F-08)</li>
+          <li>Full-text GIN indexes for Meilisearch sync</li>
+        </ul>
+      </div>
+
+      <div class="phase phase-3">
+        <div class="phase-label">Phase 3 — AI / API</div>
+        <ul>
+          <li>Full-text search via Meilisearch (synced from PG)</li>
+          <li>Read-only API endpoints per table</li>
+          <li>AI assistant reads from same tables</li>
+          <li>No schema changes needed</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /diagram-wrap -->
+
+</body>
+</html>

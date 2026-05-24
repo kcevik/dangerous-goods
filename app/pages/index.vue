@@ -4,6 +4,7 @@
     <LandingHero />
     <LandingStats />
     <LandingFeatures />
+    <LandingMultimodalDemo />
     <LandingComparison />
     <LandingPricing />
     <LandingDataSource />

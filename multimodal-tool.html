@@ -1,0 +1,859 @@
+<!--
+  gefahrgut.org – ADR Gefahrgut-Plattform
+  © 2025 gefahrgut.org · Alle Rechte vorbehalten
+  Datenbasis: BAM – Datenbank GEFAHRGUT · dl-de/by-2-0 · Daten wurden verändert
+  Unbefugte Vervielfältigung oder Weitergabe ist untersagt.
+-->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #e8eef5;
+  --surface:  #f4f7fa;
+  --surf2:    #dce8f2;
+  --surf3:    #d4e2ef;
+  --border:   #c8d6e5;
+  --border2:  #b0c4d8;
+  --accent:   #f97316;
+  --accent2:  #ea6a0a;
+  --text:     #0f2744;
+  --muted:    #5a7a99;
+  --faint:    #2d5070;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+
+.wrap{max-width:1100px;margin:0 auto;padding:24px;}
+
+/* INFO BANNER */
+.info-banner{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:4px solid var(--accent);
+  padding:14px 18px;margin-bottom:20px;
+  font-size:.83rem;color:var(--faint);line-height:1.6;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.info-banner .ib-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+
+/* SUCHZEILE */
+.search-bar{
+  background:var(--surface);border:1px solid var(--border);
+  border-top:3px solid var(--accent);
+  padding:18px 20px;margin-bottom:20px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+}
+.suggest-wrap{position:relative;flex:1;min-width:200px;}
+.search-bar input{
+  width:100%;padding:10px 14px;
+  font-family:var(--mono);font-size:14px;
+  border:1.5px solid var(--border2);background:var(--surf2);
+  color:var(--text);outline:none;transition:border-color .15s;
+}
+.search-bar input:focus{border-color:var(--accent);}
+.search-bar input::placeholder{color:var(--muted);font-family:var(--sans);}
+
+.suggest-list{
+  position:absolute;top:100%;left:0;right:0;z-index:200;
+  background:var(--surface);border:1.5px solid var(--accent);
+  max-height:300px;overflow-y:auto;
+  box-shadow:0 4px 20px rgba(15,39,68,.15);
+}
+.suggest-item{
+  padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);
+  font-size:.83rem;transition:background .1s;
+}
+.suggest-item:hover,.suggest-item.active{background:var(--surf2);}
+.si-un{font-family:var(--mono);font-weight:700;color:var(--accent);margin-right:8px;}
+.si-name{color:var(--faint);}
+.si-spez{color:var(--muted);font-size:.75rem;display:block;margin-top:2px;}
+.si-lfd{float:right;font-family:var(--mono);font-size:10px;color:var(--muted);}
+
+/* SPRACH-TOGGLE */
+.lang-toggle{display:flex;gap:0;border:1.5px solid var(--border2);overflow:hidden;}
+.lang-btn{
+  padding:9px 16px;background:var(--surf2);border:none;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;
+  color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.lang-btn.active{background:var(--accent);color:#000;}
+.lang-btn:hover:not(.active){background:var(--surf3);}
+
+/* MODAL-TABS */
+.modal-tabs{
+  display:flex;gap:0;border-bottom:2px solid var(--border2);
+  margin-bottom:0;overflow-x:auto;
+}
+.modal-tab{
+  padding:10px 18px;background:var(--surf2);border:1px solid var(--border2);
+  border-bottom:none;font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.5px;color:var(--muted);cursor:pointer;
+  transition:all .15s;white-space:nowrap;margin-right:2px;
+  position:relative;top:1px;
+}
+.modal-tab:hover:not(.active){background:var(--surf3);color:var(--faint);}
+.modal-tab.active{background:var(--surface);color:var(--text);border-bottom:2px solid var(--surface);}
+.modal-tab.has-data{color:var(--text);}
+.modal-tab.no-data{opacity:.4;cursor:default;}
+.modal-tab .tab-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  margin-right:6px;background:var(--border2);
+}
+.modal-tab.has-data .tab-dot{background:var(--accent);}
+
+/* ERGEBNISBEREICH */
+.result-area{
+  background:var(--surface);border:1px solid var(--border2);
+  border-top:none;padding:24px;
+}
+
+/* LEER / PLACEHOLDER */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty .e-icon{font-size:3rem;margin-bottom:12px;opacity:.35;}
+.empty p{font-size:.88rem;line-height:1.7;}
+
+/* UN-HEADER */
+.un-header{
+  display:flex;gap:16px;align-items:flex-start;
+  padding-bottom:16px;border-bottom:1px solid var(--border);
+  margin-bottom:20px;flex-wrap:wrap;
+}
+.un-badge{
+  font-family:var(--mono);font-size:2rem;font-weight:700;
+  color:var(--accent);line-height:1;flex-shrink:0;
+}
+.un-info{}
+.un-name{font-size:1.1rem;font-weight:600;color:var(--text);line-height:1.3;}
+.un-name-sub{font-size:.85rem;color:var(--muted);margin-top:3px;}
+.un-spez{font-size:.83rem;color:var(--faint);margin-top:4px;font-style:italic;}
+
+/* LFDNR-AUSWAHL */
+.lfdnr-row{
+  display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;
+  align-items:center;
+}
+.lfdnr-label{font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-right:4px;}
+.lfdnr-btn{
+  padding:5px 12px;background:var(--surf2);border:1.5px solid var(--border2);
+  font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);
+  cursor:pointer;transition:all .15s;
+}
+.lfdnr-btn.active{background:var(--text);color:#fff;border-color:var(--text);}
+.lfdnr-btn:hover:not(.active){background:var(--surf3);}
+
+/* FELDER-TABELLE */
+.fields-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.fields-table tr:nth-child(even) td{background:var(--surf2);}
+.fields-table td{
+  padding:9px 12px;border-bottom:1px solid var(--border);
+  vertical-align:top;
+}
+.fields-table td:first-child{
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;
+  color:var(--muted);text-transform:uppercase;white-space:nowrap;
+  width:160px;
+}
+.fields-table td:last-child{color:var(--faint);}
+.field-val{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--text);}
+.field-empty{color:var(--border2);font-style:italic;font-size:.78rem;}
+
+/* BADGES */
+.badge{
+  display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;
+  padding:2px 8px;margin:1px 2px;letter-spacing:.3px;
+}
+.badge-klasse{background:var(--text);color:#fff;}
+.badge-vp{background:#1e3a5f;color:#bfdbfe;}
+.badge-bk2{background:#1e3a5f;color:#bfdbfe;}
+.badge-bk1{background:#7c2d12;color:#fed7aa;}
+.badge-bk0{background:#7f1d1d;color:#fca5a5;}
+.badge-bk3{background:#14532d;color:#bbf7d0;}
+.badge-bk4{background:#374151;color:#e5e7eb;}
+.badge-forbidden{background:#7f1d1d;color:#fca5a5;}
+.badge-ok{background:#14532d;color:#bbf7d0;}
+.badge-muted{background:var(--surf3);color:var(--muted);}
+
+/* SVS SECTION */
+.svs-section{margin-top:20px;}
+.svs-title{
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:10px;
+  padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.svs-list{display:flex;flex-direction:column;gap:6px;}
+.svs-item{border:1px solid var(--border);background:var(--surface);}
+.svs-header{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  cursor:pointer;transition:background .1s;user-select:none;
+}
+.svs-header:hover{background:var(--surf2);}
+.svs-nr{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  color:var(--accent);min-width:40px;
+}
+.svs-preview{font-size:.78rem;color:var(--muted);flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.svs-toggle{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  flex-shrink:0;transition:transform .2s;
+}
+.svs-toggle.open{transform:rotate(180deg);}
+.svs-body{
+  padding:14px 16px;border-top:1px solid var(--border);
+  font-size:.82rem;line-height:1.7;color:var(--faint);
+  white-space:pre-wrap;display:none;
+}
+.svs-body.open{display:block;}
+.svs-not-found{
+  font-size:.78rem;color:var(--border2);font-style:italic;padding:8px 14px;
+}
+
+/* VERGLEICHS-ÜBERSICHT (alle Modi auf einen Blick) */
+.compare-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;margin-bottom:20px;
+}
+@media(max-width:640px){
+  .compare-grid{grid-template-columns:repeat(3,1fr);}
+}
+.compare-card{
+  background:var(--surface);border:1px solid var(--border);
+  padding:12px 14px;
+}
+.compare-card.active-modal{border-color:var(--accent);border-top:3px solid var(--accent);}
+.compare-card.missing{opacity:.4;}
+.cc-modal{
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;
+  color:var(--muted);text-transform:uppercase;margin-bottom:6px;
+}
+.cc-klasse{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);}
+.cc-vp{font-family:var(--mono);font-size:.75rem;color:var(--muted);margin-top:2px;}
+.cc-kemler{font-family:var(--mono);font-size:.75rem;color:var(--accent);margin-top:2px;}
+.cc-special{font-size:.72rem;color:var(--faint);margin-top:4px;}
+.cc-missing{font-size:.75rem;color:var(--border2);font-style:italic;}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .wrap{padding:12px;}
+  .fields-table td:first-child{width:120px;}
+  .un-badge{font-size:1.5rem;}
+  .compare-grid{grid-template-columns:repeat(3,1fr);}
+  .modal-tab{padding:8px 12px;font-size:10px;}
+}
+</style>
+
+<div class="wrap">
+
+  <!-- INFO -->
+  <div class="info-banner" id="infoBanner">
+    <span class="ib-icon">🌐</span>
+    <span id="infoBannerText">
+      <strong>Multimodaler Gefahrgut-Vergleich.</strong>
+      UN-Nummer eingeben und alle Transportmodi (ADR, RID, IMDG, ICAO, ADN) auf einen Blick vergleichen.
+      Klasse, Verpackungsgruppe, Sondervorschriften und modale Besonderheiten direkt nebeneinander.
+    </span>
+  </div>
+
+  <!-- SUCHE -->
+  <div class="search-bar">
+    <div class="suggest-wrap">
+      <input type="text" id="searchInput"
+             placeholder="UN-Nummer oder Stoffname eingeben…"
+             oninput="onSearchInput(this.value)"
+             onkeydown="onSearchKey(event)"
+             autocomplete="off" spellcheck="false">
+      <div class="suggest-list" id="suggestList" style="display:none;"></div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('de')" id="btn-de">DE</button>
+      <button class="lang-btn" onclick="setLang('en')" id="btn-en">EN</button>
+      <button class="lang-btn" onclick="setLang('fr')" id="btn-fr">FR</button>
+      <button class="lang-btn" onclick="setLang('tr')" id="btn-tr">TR</button>
+    </div>
+  </div>
+
+  <!-- ERGEBNIS -->
+  <div id="mainArea">
+    <div class="result-area">
+      <div class="empty">
+        <div class="e-icon">🌍</div>
+        <p id="emptyText"><strong>UN-Nummer oder Stoffname eingeben.</strong><br>
+        Alle verfügbaren Transportmodi werden automatisch verglichen.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// KONFIGURATION
+// ============================================================
+const API = '/wp-content/adr-tools/hazmat-api.php';
+const MODALS = ['ADR','RID','IMDG','ICAO','ADN'];
+const MODAL_LABELS = {
+  ADR:  '🚛 ADR',
+  RID:  '🚂 RID',
+  IMDG: '🚢 IMDG',
+  ICAO: '✈️ ICAO',
+  ADN:  '⛵ ADN',
+};
+const MODAL_DESC_I18N = {
+  de: { ADR:'Straßenverkehr 2025', RID:'Eisenbahn 2025', IMDG:'Seeverkehr Amdt. 42-24', ICAO:'Luftverkehr 2025', ADN:'Binnenschifffahrt 2025' },
+  en: { ADR:'Road transport 2025', RID:'Rail transport 2025', IMDG:'Sea transport Amdt. 42-24', ICAO:'Air transport 2025', ADN:'Inland waterway 2025' },
+  fr: { ADR:'Transport routier 2025', RID:'Transport ferroviaire 2025', IMDG:'Transport maritime Amdt. 42-24', ICAO:'Transport aérien 2025', ADN:'Navigation intérieure 2025' },
+  tr: { ADR:'Karayolu taşımacılığı 2025', RID:'Demiryolu taşımacılığı 2025', IMDG:'Deniz taşımacılığı Amdt. 42-24', ICAO:'Hava taşımacılığı 2025', ADN:'İç su yolu 2025' },
+};
+function MODAL_DESC(m) { return MODAL_DESC_I18N[currentLang]?.[m] || MODAL_DESC_I18N.de[m] || m; }
+
+// Sprachabhängige Labels
+const LABELS = {
+  de: {
+    klasse: 'Klasse', kc: 'Klassifizierungscode', vp: 'Verpackungsgruppe',
+    gz: 'Gefahrzettel', fg: 'Freigeste. Mengen', bm: 'Begrenzte Mengen',
+    bk: 'Bef.-Kategorie', kemler: 'Kemler-Zahl', tunnel: 'Tunnelcode',
+    ems: 'EmS', stau: 'Staukategorie', stauung: 'Stauung', trennung: 'Trennung',
+    trenngruppen: 'Trenngruppen', marpol: 'MARPOL',
+    vp_anw: 'Verpackungsanweisungen', ibc: 'IBC-Anweisung', un_tank: 'UN-Tank',
+    pi_pas: 'PI Passagier', pi_fra: 'PI Fracht',
+    kegel: 'Kegel/Lichter', status: 'Status', ausr: 'Ausrüstung',
+    state_vars: 'State Variations', bem: 'Bemerkung',
+    svs_title: 'Sondervorschriften', avail: 'Verfügbarkeit in allen Modi',
+    loading: 'Lade Vergleichsdaten…', click_load: 'Klicken zum Laden…',
+    no_text: 'Kein Text verfügbar', not_found: 'nicht vorhanden',
+    search_ph: 'UN-Nummer oder Stoffname eingeben…',
+    entry: 'Eintrag',
+    banner: '<strong>Multimodaler Gefahrgut-Vergleich.</strong> UN-Nummer eingeben und alle Transportmodi (ADR, RID, IMDG, ICAO, ADN) auf einen Blick vergleichen. Klasse, Verpackungsgruppe, Sondervorschriften und modale Besonderheiten direkt nebeneinander.',
+    empty_title: 'UN-Nummer oder Stoffname eingeben.',
+    empty_sub: 'Alle verfügbaren Transportmodi werden automatisch verglichen.',
+  },
+  en: {
+    klasse: 'Class', kc: 'Classification code', vp: 'Packing group',
+    gz: 'Labels', fg: 'Excepted qty.', bm: 'Limited qty.',
+    bk: 'Transport cat.', kemler: 'Kemler number', tunnel: 'Tunnel code',
+    ems: 'EmS', stau: 'Stowage cat.', stauung: 'Stowage', trennung: 'Segregation',
+    trenngruppen: 'Segregation groups', marpol: 'MARPOL',
+    vp_anw: 'Packing instructions', ibc: 'IBC instruction', un_tank: 'UN tank',
+    pi_pas: 'PI Passenger', pi_fra: 'PI Cargo',
+    kegel: 'Cones/lights', status: 'Status', ausr: 'Equipment',
+    state_vars: 'State Variations', bem: 'Remark',
+    svs_title: 'Special provisions', avail: 'Availability in all modes',
+    loading: 'Loading data…', click_load: 'Click to load…',
+    no_text: 'No text available', not_found: 'not available',
+    search_ph: 'UN number or substance name…',
+    entry: 'Entry',
+    banner: '<strong>Multimodal Dangerous Goods Comparison.</strong> Enter a UN number and compare all transport modes (ADR, RID, IMDG, ICAO, ADN) at a glance. Class, packing group, special provisions and modal specifics side by side.',
+    empty_title: 'Enter a UN number or substance name.',
+    empty_sub: 'All available transport modes will be compared automatically.',
+  },
+  fr: {
+    klasse: 'Classe', kc: 'Code de classification', vp: 'Groupe d\'emballage',
+    gz: 'Étiquettes', fg: 'Qté exemptée', bm: 'Qté limitée',
+    bk: 'Catégorie transp.', kemler: 'Numéro Kemler', tunnel: 'Code tunnel',
+    ems: 'EmS', stau: 'Catégorie arrimage', stauung: 'Arrimage', trennung: 'Séparation',
+    trenngruppen: 'Groupes de séparation', marpol: 'MARPOL',
+    vp_anw: 'Instructions d\'emballage', ibc: 'Instruction GRV', un_tank: 'Citerne ONU',
+    pi_pas: 'PI Passagers', pi_fra: 'PI Cargo',
+    kegel: 'Cônes/feux', status: 'Statut', ausr: 'Équipement',
+    state_vars: 'Variations d\'État', bem: 'Remarque',
+    svs_title: 'Dispositions spéciales', avail: 'Disponibilité dans tous les modes',
+    loading: 'Chargement…', click_load: 'Cliquer pour charger…',
+    no_text: 'Texte non disponible', not_found: 'non disponible',
+    search_ph: 'Numéro ONU ou nom de matière…',
+    entry: 'Entrée',
+    banner: '<strong>Comparaison multimodale des matières dangereuses.</strong> Saisissez un numéro ONU et comparez tous les modes de transport (ADR, RID, IMDG, ICAO, ADN) en un coup d\'œil. Classe, groupe d\'emballage, dispositions spéciales et particularités modales côte à côte.',
+    empty_title: 'Saisissez un numéro ONU ou un nom de matière.',
+    empty_sub: 'Tous les modes de transport disponibles seront comparés automatiquement.',
+  },
+  tr: {
+    klasse: 'Sınıf', kc: 'Sınıflandırma kodu', vp: 'Ambalaj grubu',
+    gz: 'Tehlike etiketleri', fg: 'Muaf miktar', bm: 'Sınırlı miktar',
+    bk: 'Taşıma kategorisi', kemler: 'Kemler numarası', tunnel: 'Tünel kodu',
+    ems: 'EmS', stau: 'İstif kategorisi', stauung: 'İstif', trennung: 'Ayrıştırma',
+    trenngruppen: 'Ayrıştırma grupları', marpol: 'MARPOL',
+    vp_anw: 'Ambalaj talimatları', ibc: 'IBC talimatı', un_tank: 'BM tankı',
+    pi_pas: 'Yolcu talimatı', pi_fra: 'Kargo talimatı',
+    kegel: 'Koni/ışıklar', status: 'Durum', ausr: 'Ekipman',
+    state_vars: 'Devlet varyasyonları', bem: 'Not',
+    svs_title: 'Özel hükümler', avail: 'Tüm taşıma modlarındaki durum',
+    loading: 'Veriler yükleniyor…', click_load: 'Yüklemek için tıklayın…',
+    no_text: 'Metin mevcut değil', not_found: 'mevcut değil',
+    search_ph: 'BM numarası veya madde adı girin…',
+    entry: 'Giriş',
+    banner: '<strong>Çok modlu tehlikeli madde karşılaştırması.</strong> Bir BM numarası girin ve tüm taşıma modlarını (ADR, RID, IMDG, ICAO, ADN) tek bakışta karşılaştırın. Sınıf, ambalaj grubu, özel hükümler ve modal özellikler yan yana.',
+    empty_title: 'BM numarası veya madde adı girin.',
+    empty_sub: 'Mevcut tüm taşıma modları otomatik olarak karşılaştırılacaktır.',
+  },
+};
+
+function L(key) { return LABELS[currentLang]?.[key] || LABELS.de[key] || key; }
+
+let currentLang  = 'de';
+let currentUnnr  = null;
+let currentLfdnr = 1;
+let currentModal = 'ADR';
+let compareData  = {};
+let allLfdnr     = [];
+let suggestIdx   = -1;
+let searchTimer  = null;
+
+// ============================================================
+// SPRACHE
+// ============================================================
+function setLang(lang) {
+  currentLang = lang;
+  ['de','en','fr','tr'].forEach(l => {
+    document.getElementById('btn-'+l).classList.toggle('active', l === lang);
+  });
+  // Banner aktualisieren
+  const bannerEl = document.getElementById('infoBannerText');
+  if (bannerEl) bannerEl.innerHTML = L('banner');
+  // Leer-Zustand aktualisieren
+  const emptyEl = document.getElementById('emptyText');
+  if (emptyEl) emptyEl.innerHTML = `<strong>${L('empty_title')}</strong><br>${L('empty_sub')}`;
+  // Suchfeld-Placeholder aktualisieren
+  const inp = document.getElementById('searchInput');
+  if (inp && !currentUnnr) inp.placeholder = L('search_ph');
+  if (currentUnnr) {
+    // Suchfeld-Name in neuer Sprache aktualisieren
+    const firstModal = MODALS.find(m => compareData[m]);
+    if (firstModal && inp) {
+      const entries = compareData[firstModal];
+      const entry = Array.isArray(entries) ? entries[0] : entries;
+      if (entry) inp.value = `UN ${currentUnnr} – ${getName(entry)}`;
+    }
+    renderAll();
+  }
+}
+
+// ============================================================
+// SUCHE
+// ============================================================
+function onSearchInput(q) {
+  clearTimeout(searchTimer);
+  suggestIdx = -1;
+  q = q.trim();
+  if (q.length < 2) { hideSuggest(); return; }
+  searchTimer = setTimeout(() => doSearch(q), 250);
+}
+
+async function doSearch(q) {
+  try {
+    const res = await fetch(`${API}?action=search&q=${encodeURIComponent(q)}&modal=ADR&limit=30`);
+    const data = await res.json();
+    if (!data.results?.length) { hideSuggest(); return; }
+    showSuggest(data.results, q);
+  } catch(e) { hideSuggest(); }
+}
+
+function getSuggestName(r) {
+  if (currentLang === 'en' || currentLang === 'tr') return r.name_en || r.name || '';
+  if (currentLang === 'fr') return r.name_fr || r.name_en || r.name || '';
+  return r.name || r.name_en || '';
+}
+
+function getSuggestSpez(r) {
+  if (currentLang === 'en' || currentLang === 'tr') return r.spezifikation_en || r.spezifikation || '';
+  if (currentLang === 'fr') return r.spezifikation_fr || r.spezifikation_en || r.spezifikation || '';
+  return r.spezifikation || '';
+}
+
+function showSuggest(results, q) {
+  const list = document.getElementById('suggestList');
+  list.innerHTML = results.map(r => {
+    const name = getSuggestName(r);
+    const spez = getSuggestSpez(r);
+    return `
+    <div class="suggest-item" onclick="selectEntry('${r.unnr}',${r.lfdnr})">
+      <span class="si-lfd">${r.lfdnr > 1 ? 'lfd.'+r.lfdnr : ''}</span>
+      <span class="si-un">UN ${r.unnr}</span>
+      <span class="si-name">${hl(name, q)}</span>
+      ${spez ? `<span class="si-spez">${hl(spez, q)}</span>` : ''}
+    </div>`;
+  }).join('');
+  list.style.display = 'block';
+}
+
+function hideSuggest() {
+  document.getElementById('suggestList').style.display = 'none';
+}
+
+function onSearchKey(ev) {
+  const items = document.querySelectorAll('#suggestList .suggest-item');
+  if (!items.length) return;
+  if (ev.key === 'ArrowDown') {
+    ev.preventDefault();
+    suggestIdx = Math.min(suggestIdx+1, items.length-1);
+    items.forEach((el,i) => el.classList.toggle('active', i===suggestIdx));
+    items[suggestIdx]?.scrollIntoView({block:'nearest'});
+  } else if (ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    suggestIdx = Math.max(suggestIdx-1, 0);
+    items.forEach((el,i) => el.classList.toggle('active', i===suggestIdx));
+    items[suggestIdx]?.scrollIntoView({block:'nearest'});
+  } else if (ev.key === 'Enter') {
+    ev.preventDefault();
+    if (suggestIdx >= 0) items[suggestIdx]?.click();
+    else if (items.length === 1) items[0]?.click();
+  } else if (ev.key === 'Escape') {
+    hideSuggest();
+  }
+}
+
+async function selectEntry(unnr, lfdnr) {
+  hideSuggest();
+  currentUnnr  = unnr;
+  currentLfdnr = parseInt(lfdnr) || 1;
+  currentModal = 'ADR';
+  document.getElementById('searchInput').value = 'UN ' + unnr + ' …';
+  await loadCompare(unnr);
+}
+
+async function loadAllLfdnr(unnr) {
+  // lfdnr werden jetzt direkt aus compareData gewonnen – kein extra API-Call nötig
+  allLfdnr = [];
+}
+
+async function loadCompare(unnr, lfdnr) {
+  document.getElementById('mainArea').innerHTML = `
+    <div class="result-area">
+      <div class="empty"><div class="e-icon">⏳</div>
+      <p>${L('loading')}</p></div>
+    </div>`;
+
+  try {
+    const res = await fetch(`${API}?action=compare&unnr=${unnr}&_=${Date.now()}`);
+    compareData = (await res.json()).compare || {};
+
+    // lfdnr-Liste aus ADR (oder erstem verfügbaren Modal) bestimmen
+    const firstModal = MODALS.find(m => compareData[m]);
+    if (firstModal) {
+      const entries = compareData[firstModal];
+      allLfdnr = Array.isArray(entries) ? entries.map(e => parseInt(e.lfdnr)) : [1];
+    } else {
+      allLfdnr = [1];
+    }
+
+    // Suchfeld mit sprachabhängigem Namen befüllen
+    const firstEntries = firstModal ? compareData[firstModal] : null;
+    const firstEntry = Array.isArray(firstEntries) ? firstEntries[0] : firstEntries;
+    if (firstEntry) {
+      const name = getName(firstEntry);
+      document.getElementById('searchInput').value = `UN ${unnr} – ${name}`;
+    }
+
+    renderAll();
+  } catch(e) {
+    document.getElementById('mainArea').innerHTML = `
+      <div class="result-area">
+        <div class="empty"><div class="e-icon">⚠️</div>
+        <p>Fehler beim Laden der Daten.</p></div>
+      </div>`;
+  }
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  const unnr = currentUnnr;
+
+  // Ersten verfügbaren Modal als aktiv setzen
+  if (!compareData[currentModal]) {
+    currentModal = MODALS.find(m => compareData[m]) || 'ADR';
+  }
+
+  const html = `
+    <!-- VERGLEICHSÜBERSICHT -->
+    <div style="background:var(--surface);border:1px solid var(--border2);border-top:3px solid var(--accent);padding:16px 20px;margin-bottom:2px;">
+      <div style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">
+        UN ${unnr} · ${L('avail')}
+      </div>
+      <div class="compare-grid">
+        ${MODALS.map(m => renderCompareCard(m, unnr)).join('')}
+      </div>
+    </div>
+
+    <!-- LFDNR-AUSWAHL -->
+    ${allLfdnr.length > 1 ? `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-top:none;padding:12px 20px;margin-bottom:2px;">
+      <div class="lfdnr-row">
+        <span class="lfdnr-label">${L('entry')}</span>
+        ${allLfdnr.map(n => `
+          <button class="lfdnr-btn ${n===currentLfdnr?'active':''}" onclick="switchLfdnr(${n})">
+            lfd. ${n}
+          </button>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- MODAL-TABS -->
+    <div class="modal-tabs" id="modalTabs">
+      ${MODALS.map(m => `
+        <div class="modal-tab ${compareData[m]?'has-data':'no-data'} ${m===currentModal?'active':''}"
+             onclick="${compareData[m]?`switchModal('${m}')`:''}">
+          <span class="tab-dot"></span>${m}
+        </div>`).join('')}
+    </div>
+
+    <!-- DETAIL-PANEL -->
+    <div class="result-area" id="detailPanel">
+      ${renderDetail()}
+    </div>`;
+
+  document.getElementById('mainArea').innerHTML = html;
+}
+
+function renderCompareCard(modal, unnr) {
+  const entry = getEntry(modal);
+  if (!entry) return `
+    <div class="compare-card missing" onclick="">
+      <div class="cc-modal">${modal}</div>
+      <div class="cc-missing">–</div>
+      <div style="font-size:.7rem;color:var(--border2);margin-top:2px;">${MODAL_DESC(modal)}</div>
+    </div>`;
+  const klasse = entry.klasse || '–';
+  const vp = entry.vp_gruppe ? `VP-Gr. ${entry.vp_gruppe}` : '';
+  const kemler = entry.kemler ? `Kemler: ${entry.kemler}` : '';
+  const ems = entry.ems1 ? `EmS: ${entry.ems1}` : '';
+  const pi = entry.pi_fra ? `PI: ${entry.pi_fra}` : '';
+  const kegel = entry.kegel !== null && entry.kegel !== undefined ? `${L('kegel')}: ${entry.kegel}` : '';
+  const special = kemler || ems || pi || kegel;
+  // Name in aktueller Sprache für Compare-Card
+  const cardName = modal === 'ICAO' ? (entry.name||'')
+    : currentLang === 'en' ? (entry.name_en||entry.name||'')
+    : currentLang === 'fr' ? (entry.name_fr||entry.name_en||entry.name||'')
+    : currentLang === 'tr' ? (entry.name_en||entry.name||'')
+    : (entry.name||entry.name_en||'');
+
+  return `
+    <div class="compare-card ${modal===currentModal?'active-modal':''}" 
+         style="cursor:pointer;" onclick="switchModal('${modal}')">
+      <div class="cc-modal">${modal}</div>
+      <div class="cc-klasse">${klasse}</div>
+      ${vp ? `<div class="cc-vp">${vp}</div>` : ''}
+      ${special ? `<div class="cc-kemler">${special}</div>` : ''}
+      <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">${MODAL_DESC(modal)}</div>
+    </div>`;
+}
+
+function renderDetail() {
+  const entry = getEntry(currentModal);
+  if (!entry) return `
+    <div class="empty">
+      <div class="e-icon">📭</div>
+      <p>UN ${currentUnnr} – ${currentModal} ${L('not_found')}.</p>
+    </div>`;
+
+  const name    = getName(entry);
+  const nameSub = getNameSub(entry);
+  // Spezifikation sprachabhängig
+  const spez = currentLang === 'en' ? (entry.spezifikation_en || entry.spezifikation || '')
+             : currentLang === 'fr' ? (entry.spezifikation_fr || entry.spezifikation_en || entry.spezifikation || '')
+             : currentLang === 'tr' ? (entry.spezifikation_en || entry.spezifikation || '')
+             : (entry.spezifikation || '');
+
+  return `
+    <!-- UN-HEADER -->
+    <div class="un-header">
+      <div class="un-badge">UN ${entry.unnr}</div>
+      <div class="un-info">
+        <div class="un-name">${name}</div>
+        ${nameSub ? `<div class="un-name-sub">${nameSub}</div>` : ''}
+        ${spez ? `<div class="un-spez">${spez}</div>` : ''}
+      </div>
+    </div>
+
+    <!-- FELDER -->
+    <table class="fields-table">
+      ${renderField(L('klasse'), entry.klasse ? `<span class="badge badge-klasse">${entry.klasse}</span>` : null)}
+      ${renderField(L('kc'), entry.klassifizierungscode || null)}
+      ${renderField(L('vp'), entry.vp_gruppe ? `<span class="badge badge-vp">VP-Gr. ${entry.vp_gruppe}</span>` : (entry.vp_gruppe === '' ? null : null))}
+      ${renderField(L('gz'), entry.gefahrzettel || null)}
+      ${renderField(L('fg'), entry.fg || null)}
+      ${renderField(L('bm'), entry.bm || null)}
+      ${entry.verpackungsanweisungen ? renderField(L('vp_anw'), renderVPBadges(entry.verpackungsanweisungen)) : ''}
+      ${entry.bk != null && entry.bk !== '' ? renderField(L('bk'), renderBK(entry.bk, entry.multiplikator)) : ''}
+      ${entry.kemler ? renderField(L('kemler'), `<span class="field-val">${entry.kemler}</span>`) : ''}
+      ${entry.tunnel_code ? renderField(L('tunnel'), `<span class="field-val">${entry.tunnel_code}</span>`) : ''}
+      ${entry.ems1 ? renderField(L('ems'), `<span class="field-val">${entry.ems1}${entry.ems2?' / '+entry.ems2:''}</span>`) : ''}
+      ${entry.staukategorie ? renderField(L('stau'), entry.staukategorie) : ''}
+      ${entry.stauung ? renderField(L('stauung')||'Stauung', entry.stauung) : ''}
+      ${entry.trennung ? renderField(L('trennung'), entry.trennung) : ''}
+      ${entry.trenngruppen ? renderField(L('trenngruppen')||'Trenngruppen', entry.trenngruppen) : ''}
+      ${entry.marpol ? renderField(L('marpol'), entry.marpol) : ''}
+      ${entry.vp_anweisungen ? renderField(L('vp_anw')||'VP-Anweisungen', entry.vp_anweisungen) : ''}
+      ${entry.ibc_anweisung ? renderField(L('ibc')||'IBC-Anweisung', entry.ibc_anweisung) : ''}
+      ${entry.un_tank ? renderField(L('un_tank')||'UN-Tank', entry.un_tank) : ''}
+      ${entry.pi_pas ? renderField(L('pi_pas'), `<span class="field-val">${entry.pi_pas}</span>${entry.max_net_pas?' · max '+entry.max_net_pas:''}`) : ''}
+      ${entry.pi_pas_y ? renderField(L('pi_pas')+' (Y)', `<span class="field-val">${entry.pi_pas_y}</span>${entry.max_net_pas_y?' · max '+entry.max_net_pas_y:''}`) : ''}
+      ${entry.pi_fra ? renderField(L('pi_fra'), `<span class="field-val">${entry.pi_fra}</span>${entry.max_net_fra?' · max '+entry.max_net_fra:''}`) : ''}
+      ${entry.erg_code ? renderField('ERG Code', `<span class="field-val">${entry.erg_code}</span>`) : ''}
+      ${entry.kegel != null && entry.kegel !== '' ? renderField(L('kegel'), entry.kegel) : ''}
+      ${entry.status ? renderField(L('status'), entry.status) : ''}
+      ${entry.ausruestung ? renderField(L('ausr'), entry.ausruestung) : ''}
+      ${entry.state_vars ? renderField(L('state_vars'), entry.state_vars) : ''}
+      ${entry.bemerkung ? renderField(L('bem'), `<span style="font-size:.8rem;line-height:1.5;">${entry.bemerkung}</span>`) : ''}
+    </table>
+
+    <!-- SONDERVORSCHRIFTEN -->
+    ${entry.svs ? renderSVS(entry.svs, currentModal) : ''}`;
+}
+
+function renderField(label, value) {
+  if (value === null || value === undefined || value === '') return '';
+  const display = (typeof value === 'string' && !value.includes('<'))
+    ? `<span class="field-val">${value}</span>`
+    : value;
+  return `<tr><td>${label}</td><td>${display}</td></tr>`;
+}
+
+function renderVPBadges(vp) {
+  if (!vp) return '';
+  return vp.split(',').map(p => p.trim()).filter(Boolean).map(p => {
+    const langHint = currentLang !== 'de' ? ' <span style="font-size:8px;opacity:.5;">DE</span>' : '';
+    const titleAttr = currentLang !== 'de' ? 'Only available in German' : '';
+    return `<a href="/verpackung/?vp=${encodeURIComponent(p)}" target="_blank"
+        style="display:inline-flex;align-items:center;gap:4px;
+               background:#f0fdf4;border:1px solid #86efac;color:#15803d;
+               font-family:var(--mono);font-size:10px;font-weight:700;
+               padding:2px 8px;margin:1px 2px;text-decoration:none;
+               transition:background .12s;"
+        onmouseover="this.style.background='#dcfce7'"
+        onmouseout="this.style.background='#f0fdf4'"
+        title="${titleAttr}"
+      >${p}${langHint} <span style="font-size:9px;opacity:.6;">↗</span></a>`;
+  }).join('');
+}
+
+function renderBK(bk, mult) {
+  const map = {
+    '0': 'badge-bk0', '1': 'badge-bk1',
+    '2': 'badge-bk2', '3': 'badge-bk3', '4': 'badge-bk4'
+  };
+  const cls = map[bk] || 'badge-muted';
+  return `<span class="badge ${cls}">BK ${bk}</span>${mult ? ` <span style="font-family:var(--mono);font-size:.8rem;color:var(--muted);">× ${mult}</span>` : ''}`;
+}
+
+function renderSVS(svsStr, modal) {
+  const nrs = svsStr.split(',').map(s => s.trim()).filter(Boolean);
+  if (!nrs.length) return '';
+  return `
+    <div class="svs-section">
+      <div class="svs-title">${L('svs_title')} (${nrs.join(', ')})</div>
+      <div class="svs-list" id="svsList">
+        ${nrs.map(nr => `
+          <div class="svs-item" id="svs-${nr}">
+            <div class="svs-header" onclick="toggleSVS('${nr}','${modal}')">
+              <span class="svs-nr">SV ${nr}</span>
+              <span class="svs-preview" id="svs-prev-${nr}">${L('click_load')}</span>
+              <span class="svs-toggle" id="svs-tog-${nr}">▼</span>
+            </div>
+            <div class="svs-body" id="svs-body-${nr}"></div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// SVS LADEN & AUFKLAPPEN
+// ============================================================
+const svsCache = {};
+
+async function toggleSVS(nr, modal) {
+  const body = document.getElementById(`svs-body-${nr}`);
+  const tog  = document.getElementById(`svs-tog-${nr}`);
+  const prev = document.getElementById(`svs-prev-${nr}`);
+  if (!body) return;
+
+  const isOpen = body.classList.contains('open');
+  if (isOpen) {
+    body.classList.remove('open');
+    tog.classList.remove('open');
+    return;
+  }
+
+  // Cache-Key enthält Sprache – bei Sprachwechsel neu laden
+  const svs_lang = currentLang === 'tr' ? 'en' : currentLang;
+  const cacheKey = `${modal}_${nr}_${svs_lang}`;
+  if (!svsCache[cacheKey]) {
+    prev.textContent = L('loading');
+    try {
+      const svs_lang = currentLang === 'tr' ? 'en' : currentLang;
+      const res = await fetch(`${API}?action=svs&modal=${modal}&sv_nr=${encodeURIComponent(nr)}&lang=${svs_lang.toUpperCase()}&_=${Date.now()}`);
+      const data = await res.json();
+      svsCache[cacheKey] = data.text || null;
+    } catch(e) {
+      svsCache[cacheKey] = null;
+    }
+  }
+
+  const text = svsCache[cacheKey];
+  if (text) {
+    prev.textContent = text.substring(0, 80) + (text.length > 80 ? '…' : '');
+    body.textContent = text;
+    body.classList.add('open');
+    tog.classList.add('open');
+  } else {
+    prev.textContent = L('no_text');
+  }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function switchModal(modal) {
+  if (!compareData[modal]) return;
+  currentModal = modal;
+  renderAll();
+}
+
+function switchLfdnr(lfdnr) {
+  currentLfdnr = lfdnr;
+  renderAll();
+}
+
+// ============================================================
+// HILFSFUNKTIONEN
+// ============================================================
+function getEntry(modal) {
+  const d = compareData[modal];
+  if (!d) return null;
+  const entries = Array.isArray(d) ? d : [d];
+  return entries.find(e => parseInt(e.lfdnr) === currentLfdnr) || entries[0] || null;
+}
+
+function getName(entry) {
+  if (currentModal === 'ICAO') return entry.name || '';
+  if (currentLang === 'en') return entry.name_en || entry.name || '';
+  if (currentLang === 'fr') return entry.name_fr || entry.name_en || entry.name || '';
+  if (currentLang === 'tr') return entry.name_en || entry.name || ''; // Türkisch → EN-Fallback
+  return entry.name || entry.name_en || '';
+}
+
+function getNameSub(entry) {
+  if (currentModal === 'ICAO') return '';
+  if (currentLang === 'tr') {
+    // TR zeigt EN als Hauptname – Sub zeigt DE und FR
+    const others = [entry.name, entry.name_fr].filter(Boolean);
+    return others.join(' · ');
+  }
+  const all = { de: entry.name, en: entry.name_en, fr: entry.name_fr };
+  const others = Object.entries(all)
+    .filter(([l, v]) => l !== currentLang && v)
+    .map(([, v]) => v);
+  return others.join(' · ');
+}
+
+function hl(text, q) {
+  if (!text || !q || q.length < 2) return text;
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return text.replace(re, '<mark style="background:rgba(249,115,22,.25);color:inherit;">$1</mark>');
+}
+
+// Klick außerhalb schließt Dropdown
+document.addEventListener('click', e => {
+  if (!e.target.closest('.suggest-wrap')) hideSuggest();
+});
+</script>

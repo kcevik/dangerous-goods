@@ -17,8 +17,12 @@ logs
 .DS_Store
 .fleet
 .idea
+.csvbase
 
 # Local env files
 .env
 .env.*
 !.env.example
+
+csvbase
+
