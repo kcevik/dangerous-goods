@@ -9,7 +9,8 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: "/login",
       callback: "/confirm",
-      exclude: ["/", "/un/**"],
+      // TODO: remove /search when auth is implemented
+      exclude: ["/", "/un/**", "/search"],
     },
   },
   vite: {

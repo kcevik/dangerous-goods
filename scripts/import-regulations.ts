@@ -43,7 +43,7 @@ const SP_PATHS = {
   ADR:  join(CSVBASE, 'dgg-daten-adr-un',  'Straßenverkehr (ADR)',    'Sondervorschriften'),
   RID:  join(CSVBASE, 'dgg-daten-rid-un',  'Eisenbahnverkehr (RID)',  'Sondervorschriften'),
   ICAO: join(CSVBASE, 'dgg-daten-icao-un', 'Luftverkehr (ICAO)',      'Sondervorschriften'),
-  IMDG: join(CSVBASE, 'dgg-daten-imdg-un', 'Seeverkehr (IMDG)',       'Sondervorschriften'),
+  IMDG: join(CSVBASE, 'dgg-daten-imdg-un', 'Seeverkehr (IMDG)',       'Amdt. 42-24', 'Sondervorschriften'),
   UN:   join(CSVBASE, 'dgg-daten-un-un',   'UN Recommendations',      'Sondervorschriften'),
 }
 
@@ -307,31 +307,47 @@ async function importUn() {
 async function importSpecialProvisions() {
   console.log('Importing special provisions...')
 
-  // File names: D_ADR_103.TXT → mode=ADR, code=103
-  const modePattern = /^D_([A-Z]+)_(\w+)\.TXT$/i
+  // File names: D_ADR_103.TXT → lang=D (de), mode=ADR, code=103
+  // Language prefixes: D = German, E = English, F = French
+  const modePattern = /^([DEF])_([A-Z]+)_(\w+)\.TXT$/i
+  const LANG_COLUMN: Record<string, 'text_de' | 'text_en' | 'text_fr'> = {
+    D: 'text_de',
+    E: 'text_en',
+    F: 'text_fr',
+  }
 
-  const allRows: { mode: string; code: string; text_de: string }[] = []
+  type SpRow = { mode: string; code: string; text_de: string | null; text_en: string | null; text_fr: string | null }
+  const rowsByKey = new Map<string, SpRow>()
 
   for (const [mode, dir] of Object.entries(SP_PATHS)) {
     let files: string[]
     try {
       files = readdirSync(dir).filter(f => f.endsWith('.TXT'))
     } catch {
-      console.warn(`  Skipping ${mode}: directory not found`)
+      console.warn(`  Skipping ${mode}: directory not found: ${dir}`)
       continue
     }
 
     for (const file of files) {
       const match = basename(file).match(modePattern)
       if (!match) continue
-      const code = match[2]
+      const column = LANG_COLUMN[match[1].toUpperCase()]
+      const code = match[3]
       const raw = readFileSync(join(dir, file))
       const text = new TextDecoder('iso-8859-1').decode(raw).trim()
-      allRows.push({ mode, code, text_de: text })
+
+      const key = `${mode}:${code}`
+      let row = rowsByKey.get(key)
+      if (!row) {
+        row = { mode, code, text_de: null, text_en: null, text_fr: null }
+        rowsByKey.set(key, row)
+      }
+      row[column] = text
     }
   }
 
-  console.log(`  Found ${allRows.length} special provision files`)
+  const allRows = [...rowsByKey.values()]
+  console.log(`  Found ${allRows.length} special provisions (from ${Object.keys(SP_PATHS).length} modes)`)
   await upsert('special_provisions', allRows, 'mode,code')
 }
 

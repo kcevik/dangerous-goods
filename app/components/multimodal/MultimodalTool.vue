@@ -257,6 +257,8 @@
               :no-text="L('noText')"
               :click-load="L('clickLoad')"
               :demo="demo"
+              :mode="currentModal"
+              :lang="currentLang"
             />
           </template>
 

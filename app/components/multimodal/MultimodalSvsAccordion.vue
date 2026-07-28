@@ -30,8 +30,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
-import { DEMO_SVS } from '~/utils/multimodal'
+import { reactive, computed, watch } from 'vue'
+import { DEMO_SVS, type Lang, type Modal } from '~/utils/multimodal'
 
 const props = defineProps<{
   svs: string
@@ -40,7 +40,12 @@ const props = defineProps<{
   clickLoad: string
   /** When true, uses hardcoded DEMO_SVS instead of API */
   demo?: boolean
+  /** Transport mode the SV codes belong to — required for live lookup */
+  mode?: Modal
+  lang?: Lang
 }>()
+
+const { get, load } = useSpecialProvisions()
 
 const open = reactive<Record<string, boolean>>({})
 
@@ -50,18 +55,33 @@ const nrs = computed(() =>
 
 function text(nr: string): string {
   if (props.demo) return DEMO_SVS[nr] ?? props.noText
-  // TODO: return fetched SVS text from API
-  return props.noText
+  const sv = get(props.mode ?? 'ADR', nr)
+  if (sv === undefined) return '…'
+  if (sv === null) return props.noText
+  // language preference mirrors getName(): tr users read English before German
+  if (props.lang === 'en' || props.lang === 'tr') return sv.textEn ?? sv.textDe ?? sv.textFr ?? props.noText
+  if (props.lang === 'fr') return sv.textFr ?? sv.textEn ?? sv.textDe ?? props.noText
+  return sv.textDe ?? sv.textEn ?? sv.textFr ?? props.noText
 }
 
 function preview(nr: string): string {
   if (open[nr]) return ''
   const t = text(nr)
-  if (!t || t === props.noText) return props.clickLoad
+  if (!t || t === props.noText || t === '…') return props.clickLoad
   return t.length > 80 ? t.substring(0, 80) + '…' : t
 }
 
 function toggle(nr: string) {
   open[nr] = !open[nr]
+  if (open[nr] && !props.demo) load(props.mode ?? 'ADR', nr)
 }
+
+// rows stay open across mode/UN switches — fetch their texts for the new context,
+// otherwise they would be stuck on the "…" loading placeholder
+watch(() => [props.mode, props.svs], () => {
+  if (props.demo) return
+  for (const nr of nrs.value) {
+    if (open[nr]) load(props.mode ?? 'ADR', nr)
+  }
+})
 </script>
