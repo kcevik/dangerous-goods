@@ -12,7 +12,7 @@
                 <path d="M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <span class="font-bold text-base" style="color: #0f2744;">Gefahrgut<span style="color: #f97316;">Profi</span></span>
+            <span class="font-bold text-base" style="color: #0f2744;">gefahrgut<span style="color: #f97316;">.org</span></span>
           </div>
           <p class="text-sm text-slate-400 leading-relaxed">Die Plattform für Gefahrgutbeauftragte in Deutschland und Europa.</p>
         </div>
@@ -29,7 +29,7 @@
       </div>
 
       <div class="border-t border-slate-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p class="text-xs text-slate-400">© 2026 GefahrgutProfi. Datenbasis: BAM GEFAHRGUT, Lizenz dl-de/by-2-0.</p>
+        <p class="text-xs text-slate-400">© 2026 gefahrgut.org. Datenbasis: BAM GEFAHRGUT, Lizenz dl-de/by-2-0.</p>
         <p class="text-xs text-slate-400">Kein Ersatz für rechtliche Beratung. Alle Angaben ohne Gewähr.</p>
       </div>
     </div>
@@ -42,7 +42,7 @@ const linkColumns = [
     heading: 'Produkt',
     links: [
       { label: 'Funktionen', href: '#features' },
-      { label: 'Preise', href: '#pricing' },
+      { label: 'Warteliste', href: '#waitlist' },
       { label: 'Regelwerksvergleich', href: '#comparison' },
       { label: 'Änderungsmonitor', href: '#' },
     ],
@@ -52,15 +52,15 @@ const linkColumns = [
     links: [
       { label: 'Dokumentation', href: '#' },
       { label: 'ADR-Leitfaden', href: '#' },
-      { label: 'Blog', href: '#' },
+      { label: 'Blog', href: 'https://gefahrgut.org/blog' },
       { label: 'BAM-Datenbasis', href: '#' },
     ],
   },
   {
     heading: 'Rechtliches',
     links: [
-      { label: 'Impressum', href: '#' },
-      { label: 'Datenschutz', href: '#' },
+      { label: 'Impressum', href: 'https://gefahrgut.org/impressum' },
+      { label: 'Datenschutz', href: 'https://gefahrgut.org/datenschutz' },
       { label: 'AGB', href: '#' },
     ],
   },

@@ -11,28 +11,28 @@
               <path d="M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <span class="font-bold text-lg" style="color: #0f2744;">Gefahrgut<span style="color: #f97316;">Profi</span></span>
+          <span class="font-bold text-lg" style="color: #0f2744;">gefahrgut<span style="color: #f97316;">.org</span></span>
         </div>
 
         <!-- Desktop Nav -->
         <nav class="hidden md:flex items-center gap-8" role="navigation" aria-label="Hauptnavigation">
           <a href="#features" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Funktionen</a>
           <a href="#comparison" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Regelwerke</a>
-          <a href="#pricing" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Preise</a>
-          <a href="#" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Dokumentation</a>
+          <a href="#waitlist" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Warteliste</a>
+          <a href="https://gefahrgut.org/blog" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Blog</a>
         </nav>
 
         <!-- CTA -->
         <div class="flex items-center gap-3">
-          <a href="#" class="hidden sm:block text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Anmelden</a>
+          <a href="#waitlist" class="hidden sm:block text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Anmelden</a>
           <a
-            href="#"
+            href="#waitlist"
             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-150 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
             style="background: #f97316;"
             onmouseenter="this.style.background='#ea580c'"
             onmouseleave="this.style.background='#f97316'"
           >
-            Kostenlos starten
+            Warteliste
           </a>
         </div>
       </div>
