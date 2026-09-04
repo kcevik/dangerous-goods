@@ -1,7 +1,7 @@
 # Auth and Entitlement Gate — Design
 
 **Date:** 2026-09-04
-**Status:** approved design, awaiting implementation plan
+**Status:** implemented 2026-09-04 (code + migrations applied live). Open: §6 dashboard configuration by the owner.
 **Feature:** F-04 (user management & login) plus the paid-access gate; minimal F-05 dashboard shell
 
 ## Goal

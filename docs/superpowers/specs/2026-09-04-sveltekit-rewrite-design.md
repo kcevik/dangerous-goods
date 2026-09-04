@@ -1,7 +1,7 @@
 # SvelteKit Rewrite — Design
 
 **Date:** 2026-09-04
-**Status:** approved design, awaiting implementation plan
+**Status:** implemented 2026-09-04. Superseded in parts by the auth spec (waitlist retired, product routes moved to `(app)`, `/search` → `/suche`).
 
 ## Goal
 

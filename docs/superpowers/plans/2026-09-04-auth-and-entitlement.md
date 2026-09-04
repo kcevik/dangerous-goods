@@ -1,5 +1,7 @@
 # Auth and Entitlement Gate Implementation Plan
 
+> **Status 2026-09-04:** Tasks 1–9 done. Deviations: `/logout` GET redirects to `/` (not 405); search back link → `/dashboard`; extra migration `20260904123000_harden_grants.sql` (anon grant revokes, from advisor lint); migrations applied via MCP `execute_sql` + manual history rows because `supabase db push` needs the DB password. Remaining: owner dashboard steps (spec §6).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Email/password auth with open registration, a manual `profiles.activated_at` entitlement enforced by RLS and server loads, a locked preview mode that works on demo data, and the waitlist retired.

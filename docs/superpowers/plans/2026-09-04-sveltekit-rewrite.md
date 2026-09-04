@@ -1,5 +1,7 @@
 # SvelteKit Rewrite Implementation Plan
 
+> **Status 2026-09-04:** all tasks done; see the auth plan for what changed afterwards.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the Nuxt 4 app with a SvelteKit 2 / Svelte 5 app at feature parity (landing + waitlist, `/search`, `/un/:nummer`), keeping Supabase, in the same repository.

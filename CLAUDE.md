@@ -199,6 +199,26 @@ Template: `.env.example`. **Vite gotcha:** `.env.local` overrides `.env` — nev
 - **Locked mode rule:** every code path checks `isActive` before touching regulation data; RLS is the backstop, not the primary check. Locked users only ever mount `MultimodalTool` with `demo`.
 - **`state_referenced_locally`:** wrap once-per-component object creation from props in `untrack(() => …)`.
 
+## Where we left off (2026-09-04) — resume here
+
+Everything below is code-complete, tested (226 tests), type-checked, and the two DB migrations are applied live. Nothing was committed yet — the owner commits.
+
+**Open, owner only (Supabase dashboard, spec §6 of `docs/superpowers/specs/2026-09-04-auth-and-entitlement-design.md`):**
+1. Authentication → Providers → Email: enabled, "Confirm email" on, min password length 10.
+2. Authentication → URL Configuration: Site URL `https://gefahrgut.org`; redirect URLs `https://gefahrgut.org/auth/confirm`, `http://localhost:5173/auth/confirm`, `http://localhost:4173/auth/confirm`.
+3. Authentication → Emails → Templates: Confirm signup link → `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard`; Reset password → `…&type=recovery&next=/passwort-neu`; Change email → `…&type=email_change&next=/dashboard`. **Until this is done, confirmation mails land on `/auth/fehler`.**
+4. SMTP: configure a real sender before launch (built-in sender is dev-only, few mails/hour).
+5. End-to-end check with `pnpm dev`: register → confirm → locked dashboard → set `profiles.activated_at` in the table editor → `/un/1090` shows real data.
+
+**Open, code (next features, in suggested order):**
+- Visual pass on the landing page + auth pages in a browser (never done after the Nuxt→SvelteKit port).
+- F-05 dashboard proper (current one is a shell with two cards + "in Vorbereitung" placeholders).
+- F-02 1000-Punkte-Rechner (pure logic, `lib/tools/…`, tests first).
+- Stripe later: a webhook sets `profiles.activated_at`; no schema change needed.
+- Optional cleanups: delete `.env.local.bak`; `multimodal-tool.html` at repo root is an old static prototype.
+
+**Process that worked:** brainstorming → spec in `docs/superpowers/specs/` → plan in `docs/superpowers/plans/` → TDD with `pnpm test` per task → Svelte MCP autofixer on every `.svelte`/`.svelte.ts` → `pnpm check` → `pnpm build` + preview smoke test.
+
 ## Key Notes
 
 - **i18n:** UI supports de / en / fr / tr via `LABELS` in `lib/multimodal/types.ts` — no i18n module.
