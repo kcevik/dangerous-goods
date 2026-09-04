@@ -1,10 +1,8 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
+# SvelteKit dev/build outputs
+.svelte-kit
+build
 dist
+.cache
 
 # Node dependencies
 node_modules

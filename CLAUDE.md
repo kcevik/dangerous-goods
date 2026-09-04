@@ -12,15 +12,15 @@ A specialized web platform for **Gefahrgutbeauftragte** (dangerous goods officer
 
 ## Tech Stack
 
-- **Framework:** Nuxt 4 + TypeScript
-- **UI:** Nuxt UI v4 + Tailwind CSS v4
+- **Framework:** SvelteKit 2 + Svelte 5 (runes) + TypeScript — rewritten from Nuxt 4 on 2026-09-04 (spec: `docs/superpowers/specs/2026-09-04-sveltekit-rewrite-design.md`)
+- **UI:** hand-written Tailwind CSS v4 via `@tailwindcss/vite` — no component library
 - **Database:** PostgreSQL via Supabase
-- **Auth:** Supabase Auth
+- **Auth:** Supabase Auth, email + password via `@supabase/ssr` (hooks + layout clients); manual entitlement gate (`profiles.activated_at`)
 - **Storage:** Supabase Storage
-- **Package Manager:** pnpm
-- **Hosting:** Netcup (Node.js / Docker + PM2)
-- **SSL:** Let's Encrypt via Caddy
-- **PDF generation:** Puppeteer
+- **Package Manager:** pnpm (never npm/npx)
+- **Hosting:** Netcup (Node.js via `@sveltejs/adapter-node` + PM2) behind Caddy (Let's Encrypt)
+- **Testing:** Vitest 5 + jsdom + `@testing-library/svelte`
+- **PDF generation (planned):** Puppeteer
 - **Search (Phase 3):** Meilisearch
 
 ## Development Phases
@@ -69,142 +69,141 @@ A specialized web platform for **Gefahrgutbeauftragte** (dangerous goods officer
 
 ## Business Model
 
-**Pricing is undecided.** Known: a free tier with 5 search requests per month, plus one paid tier (price TBD — announced to the waitlist first). The landing page has **no pricing section** — it collects waitlist signups instead. Long-term direction: Freemium → individual → Team/Business (multi-user, API access).
+**No free tier.** Exactly one paid plan with full functionality (price TBD, announced to registered users first); more plans (teams) may come later. The landing page has **no pricing section**; its CTAs lead to `/registrieren`. Registration is open; an account starts **locked** (demo data only) until the owner activates it manually (`profiles.activated_at`). No payment provider yet — Stripe later sets the same column. The former waitlist is retired.
 
 ## Commands
 
 ```bash
-pnpm dev          # Start dev server
-pnpm build        # Build for production
-pnpm test         # Run vitest suite (102 tests)
-pnpm test:watch   # Vitest watch mode
-pnpm generate     # Static generation
-pnpm preview      # Preview production build
+pnpm dev                 # Vite dev server
+pnpm build               # Production build → build/ (adapter-node)
+pnpm preview             # Serve the production build
+pnpm check               # svelte-kit sync + svelte-check
+pnpm test                # vitest suite (215 tests)
+pnpm test:watch          # vitest watch mode
+pnpm import:regulations  # Import BAM CSVs + SV texts into Supabase
 ```
 
 ## Project Structure
 
 ```
-app/
-  app.vue
-  pages/
-    index.vue               # Landing page: SEO head (useSeoMeta + 4 JSON-LD graphs) + section list
-    search.vue              # Live search page (public) — useSearch + MultimodalTool
-    un/
-      [nummer].vue          # UN detail page — wraps MultimodalTool with un-number prop
-  components/
-    landing/
-      Navbar.vue            # Links: Funktionen/Regelwerke/Warteliste/Blog; brand gefahrgut.org
-      Hero.vue
-      Stats.vue
-      Features.vue
-      Comparison.vue
-      MultimodalDemo.vue    # Embeds MultimodalTool in demo mode (id="demo")
-      SeoContent.vue        # Long-form SEO copy section
-      Waitlist.vue          # Waitlist form (id="waitlist") — name/email/consent/honeypot
-      DataSource.vue
-      Faq.vue               # details/summary accordion over FAQ_ITEMS
-      Cta.vue
-      Footer.vue
+src/
+  app.html                # <html lang="de">, favicon, %sveltekit.head/body%
+  app.css                 # @import "tailwindcss" + global font/scroll rules
+  app.d.ts                # App.Locals { supabase }
+  hooks.server.ts         # per-request Supabase client, locals.safeGetSession(), (app)/(auth) route guard
+  routes/
+    +layout.server.ts     # cookies + session + slim user + isActive (from safeGetSession)
+    +layout.ts            # browser/server Supabase client → data.supabase (+ session/user/isActive)
+    +layout.svelte        # app.css, font <link>s, onAuthStateChange → invalidate('supabase:auth')
+    +page.svelte          # public landing: SEO head (meta + 4 JSON-LD graphs) + sections
+    (auth)/               # public, noindex, centered card layout
+      login/  registrieren/  passwort-vergessen/  passwort-neu/   # form actions + pages
+    auth/confirm/+server.ts   # token_hash exchange (verifyOtp) → safeNext(next) | /auth/fehler
+    auth/fehler/+page.svelte
+    logout/+page.server.ts    # POST signs out → /; GET redirects → /
+    (app)/                # login required (guard in hooks); layout = app shell + lock banner
+      +layout.server.ts   # { user, isActive } from parent
+      dashboard/+page.svelte
+      suche/+page.svelte  # live search; locked → LockNotice + demo tool, never queries
+      un/[nummer]/
+        +page.server.ts   # 404 unless 4 digits; locked → demo for 1203 / null; active → fetchCompareForUn
+        +page.svelte
+  lib/
     multimodal/
-      MultimodalTool.vue    # Full comparison UI (props: demo?, unNumber?)
-      MultimodalSvsAccordion.vue  # SV accordion — lazy-loads texts (props: mode, lang)
-  composables/
-    useMultimodalTool.ts    # All state + logic for comparison tool; loadCompare() hits Supabase
-    useSearch.ts            # /search state: debounce, MIN_QUERY_LENGTH=2, UN-prefix match, race guard
-    useSpecialProvisions.ts # Cached lazy loader for SV texts (module-level cache, de/en/fr)
-    useWaitlist.ts          # Waitlist form state; POSTs to /api/waitlist
-  utils/
-    multimodal.ts           # Entry interface, LABELS i18n, DEMO_DATA, constants
-    multimodalMappers.ts    # Per-mode row→Entry mappers + fetchCompareForUn(client, un)
-    landingFaq.ts           # FAQ_ITEMS (7 German Q&As) — shared by Faq.vue AND FAQPage JSON-LD
-    structuredData.ts       # SITE_URL + JSON-LD builders (Organization/WebSite/SoftwareApplication/FAQPage)
-server/
-  api/
-    waitlist.post.ts        # Only Nitro route: validate → rate-limit → service-role insert
-  utils/
-    waitlistValidation.ts   # Pure validateWaitlistInput()
-    rateLimit.ts            # Pure createRateLimiter() — in-memory sliding window
-tests/                      # vitest — see Testing section
-public/
-  llms.txt                  # AI-crawler summary of the site
-  og-image.png              # 1200×630 placeholder (solid navy) — replace with designed image
-csvbase/
-  dgg-daten-adr-un/         # ADR 2025 — 3,374 entries
-  dgg-daten-rid-un/         # RID 2025 — 3,350 entries
-  dgg-daten-icao-un/        # ICAO 2025 — 3,528 entries
-  dgg-daten-imdg-un/        # IMDG Amdt. 42-24 — 3,246 entries
-  dgg-daten-un-un/          # UN Recommendations — 3,232 entries
-  # No ADN data in BAM dataset. Total: 16,730 entries (the marketing claim "21.770" was wrong)
-scripts/
-  import-regulations.ts     # Reads BAM TSV + SV text files, upserts into Supabase
-supabase/
-  config.toml
-  migrations/
-    20260524183401_initial_schema.sql   # All entry tables + supporting tables + RLS policies
-    20260728120000_sv_text_languages.sql # special_provisions: + text_en, text_fr
-    20260728130000_waitlist.sql          # waitlist table — RLS on, ZERO policies (server-only)
-docs/
-  database-schema-and-import-plan.md
-  schema-diagram.html       # Visual ERD — open in browser
-  superpowers/              # specs + plans from feature work
+      types.ts                    # Entry, Modal, Lang, LABELS (i18n), DEMO_DATA, BK_CLASSES
+      mappers.ts                  # row → Entry per mode; fetchCompareForUn(client, un)
+      multimodalTool.svelte.ts    # MultimodalToolState class ($state/$derived)
+      specialProvisions.svelte.ts # module-level SV text cache + loader (de/en/fr)
+      MultimodalTool.svelte       # comparison UI (props: demo | unNumber+initialData, supabase)
+      MultimodalSvsAccordion.svelte
+    auth/
+      safeNext.ts                 # same-origin redirect target validator
+      messages.ts                 # AUTH_MESSAGES (German) per AuthErrorCode
+      authForm.svelte.ts          # AuthFormState (login|register|reset|newPassword)
+      LockNotice.svelte           # LOCK_MESSAGE + inline lock card
+    landing/                      # Navbar, Hero, Stats, Features, MultimodalDemo (#demo),
+                                  # Comparison, SeoContent, DataSource, Faq, Cta, Footer; faq.ts
+    search/search.svelte.ts       # SearchState: debounce, MIN_QUERY_LENGTH=2, UN shortcut, race guard, { locked }
+    seo/structuredData.ts         # SITE_URL + JSON-LD builders
+    server/
+      rateLimit.ts                # createRateLimiter() — in-memory sliding window (auth actions)
+      authValidation.ts           # validateEmail/validatePassword/validateRegistration, AuthErrorCode
+tests/                    # vitest — see Testing
+static/                   # favicon.ico, llms.txt, og-image.png (placeholder), robots.txt
+csvbase/                  # BAM TSV sources (ADR/RID/ICAO/IMDG/UN — no ADN); 16,730 entries
+scripts/import-regulations.ts
+supabase/migrations/      # schema, SV languages, waitlist (dropped again), auth_and_entitlement, harden_grants
+docs/                     # schema doc, ERD, superpowers specs + plans
 ```
 
 ## Data / CSV Import
 
 - **Format:** Tab-separated `.txt` files (not comma-separated despite name), ISO-8859-1 encoding, CRLF line endings
-- **ADN:** Not available in BAM dataset — no `adn_entries` table in the current migration. ADN tab in the UI always renders empty.
-- **Multi-value columns:** Source CSVs use numbered siblings (`S_SV1`…`S_SV11`). These must be collapsed into `TEXT[]` arrays — the Supabase CSV importer cannot do this. The Node.js import script handles this.
-- **Special provisions:** individual `.TXT` plain-text files, named `<LANG>_<MODE>_<code>.TXT` where LANG is `D` (German), `E` (English), `F` (French). The importer merges languages into one row per mode+code (`text_de`/`text_en`/`text_fr`). Language availability: ADR de+en+fr, RID/IMDG de+en, ICAO/UN en only. **No Turkish SV texts exist** — the UI falls back (tr prefers en). 1,354 provisions total. IMDG's SV dir sits one level deeper (`Amdt. 42-24/Sondervorschriften`).
+- **ADN:** Not available in BAM dataset — no `adn_entries` table. ADN tab in the UI always renders empty.
+- **Multi-value columns:** Source CSVs use numbered siblings (`S_SV1`…`S_SV11`) collapsed into `TEXT[]` arrays by the import script.
+- **Special provisions:** individual `.TXT` files named `<LANG>_<MODE>_<code>.TXT` (D/E/F). Language availability: ADR de+en+fr, RID/IMDG de+en, ICAO/UN en only. **No Turkish SV texts** — UI falls back (tr prefers en). 1,354 provisions total.
 - **Yearly update:** Download new CSVs from BAM, run `pnpm import:regulations` — `UNIQUE (un_number, sequence_number)` ensures safe re-runs
-- **Script:** `scripts/import-regulations.ts` — requires `NUXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env`
+- **Script env:** requires `PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env`
 
 ## Database Schema (Supabase / PostgreSQL)
 
-Five entry tables, one per transport mode. All created in Phase 1:
+| Table | Mode | Rows |
+|-------|------|------|
+| `adr_entries` | Road (ADR 2025) | ~3,374 |
+| `rid_entries` | Rail (RID 2025) | ~3,350 |
+| `imdg_entries` | Sea (IMDG Amdt. 42-24) | ~3,246 |
+| `icao_entries` | Air (ICAO 2025) | ~3,528 |
+| `un_entries` | UN Recommendations | ~3,232 |
 
-| Table | Mode | Source file | Rows |
-|-------|------|-------------|------|
-| `adr_entries` | Road (ADR 2025) | ADR25_csv.txt | ~3,374 |
-| `rid_entries` | Rail (RID 2025) | RID25_csv.txt | ~3,350 |
-| `imdg_entries` | Sea (IMDG Amdt. 42-24) | IMDG25_csv.txt | ~3,246 |
-| `icao_entries` | Air (ICAO 2025) | ICAO25_csv.txt | ~3,528 |
-| `un_entries` | UN Recommendations | UN23_csv.txt | ~3,232 |
+Supporting tables: `special_provisions` (mode, code, text_de/text_en/text_fr), `segregation_matrix`, `segregation_codes`, `profiles` (id → auth.users, email, `activated_at` NULL = locked).
 
-Supporting tables: `special_provisions` (mode, code, text_de/text_en/text_fr), `segregation_matrix`, `segregation_codes`, `waitlist`
-
-**RLS:** All entry tables have `public read` policies — `anon` can SELECT without auth. **Exception: `waitlist`** has RLS enabled with deliberately ZERO policies — only the server (service role via `/api/waitlist`) can read/write it.
-
-**View `un_comparison`:** UNION ALL of all entry tables, but exposes only a thin slice (`hazard_class`, `packing_group`, `cat`, `kemler`, `ems`, `stowage_category`) — **not enough to populate the full `Entry` interface**. The multimodal tool bypasses the view and fans out parallel queries to the entry tables directly (`fetchCompareForUn`). Supabase flags this view as `SECURITY DEFINER`; either drop it or recreate with `security_invoker = true` before launch.
+**RLS (since migrations `20260904120000_auth_and_entitlement` + `20260904123000_harden_grants`, both applied to the hosted project on 2026-09-04):** every regulation table has a single policy `activated read` — `to authenticated using (is_activated())`. **Anonymous and locked users read nothing** (anon additionally has no table-level SELECT grant at all). `is_activated()` is a security-invoker helper over `profiles`; `handle_new_user()` (the only security-definer function, `search_path = ''`) creates the profile on signup. `profiles`: users can select their own row only; activation = owner sets `activated_at` in the table editor. The `un_comparison` view and the `waitlist` table are gone.
 
 Full schema in `docs/database-schema-and-import-plan.md`.
 
+## Environment Variables
+
+| Name | Where | Purpose |
+|---|---|---|
+| `PUBLIC_SUPABASE_URL` | `$env/static/public` | project URL (baked at build) |
+| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `$env/static/public` | publishable/anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | `.env` only | import script; the app itself no longer uses the service role |
+| `ORIGIN` | adapter-node | `https://gefahrgut.org` — required or form actions reject POSTs |
+| `ADDRESS_HEADER` / `XFF_DEPTH` | adapter-node | `X-Forwarded-For` / `1` — `getClientAddress()` = right-most hop appended by Caddy |
+| `PORT` | adapter-node | default 3000 |
+
+Template: `.env.example`. **Vite gotcha:** `.env.local` overrides `.env` — never keep a placeholder template under that name (the old one is parked as `.env.local.bak`).
+
 ## Testing
 
-- **Runner:** vitest via `defineVitestConfig` from `@nuxt/test-utils/config` (`vitest.config.ts`); tests live in `tests/`, run with `pnpm test`
-- **Nuxt environment:** test files that touch auto-imports, composables, or components MUST start with `// @vitest-environment nuxt`. Pure-function tests (utils, server/utils) run in plain node — no comment needed.
-- **Mocking Supabase:** use `mockNuxtImport('useSupabaseClient', () => mockFn)` from `@nuxt/test-utils/runtime` with a `vi.hoisted` mock fn. `vi.stubGlobal` does NOT work for auto-imports (the transform resolves them via `#imports`). `$fetch` IS a real global — `vi.stubGlobal('$fetch', ...)` works for it.
-- **Pages:** mount with `mountSuspended` (supports `route:` option); stub heavy children via `global.stubs` (e.g. `MultimodalTool`)
-- **Every new feature ships with tests** — the user explicitly requires this
-- `tests/tailwind-classes.test.ts` scans templates for Tailwind utilities that silently compile to nothing (e.g. v2-era `placeholder-{color}`)
+- **Runner:** Vitest 5, `environment: 'jsdom'`, `tests/**/*.test.ts`, setup in `tests/setup.ts` (jest-dom matchers + testing-library auto-cleanup). `vite.config.ts` sets `resolve.conditions: ['browser', …]` under Vitest so Svelte's client runtime is used.
+- **Rune test files** (using `$state` etc. in the test itself) must be named `*.svelte.test.ts`. Tests that only *consume* rune classes don't need it.
+- **Pure-Node tests** (file scans etc.) add `// @vitest-environment node` at the top.
+- **Supabase mocking:** hand-built chainable objects (`from → select → eq/or → order → limit/maybeSingle`) passed through constructors or the `data` prop. No global mocking.
+- **State classes** (`MultimodalToolState`, `SearchState`, `WaitlistFormState`) are tested without mounting anything.
+- **Components/pages:** `render()` from `@testing-library/svelte`; pages take `data`/`form` as props. Heavy children are stubbed with `vi.mock('$lib/…/MultimodalTool.svelte', …)` → `tests/stubs/ToolStub.svelte`. `$app/forms` is mocked in the waitlist test.
+- **Server code:** form actions, `load`s, the confirm endpoint and `hooks.server.ts` are called directly with fabricated events (`tests/helpers/authEvent.ts` builds them with a mocked `locals.supabase.auth`). Rate limiters are module-level, so tests use distinct IPs per case.
+- `tests/migration-auth.test.ts` and `tests/migration-harden-grants.test.ts` are static guards over the two migration files (policy swap per table, security-definer trigger, dropped view/table, anon grant revokes).
+- **Applying migrations:** `supabase db push` needs the DB password interactively. Alternative used on 2026-09-04: run the SQL via the Supabase MCP `execute_sql` and insert the version row into `supabase_migrations.schema_migrations` yourself so the CLI history stays in sync.
+- `tests/tailwind-classes.test.ts` scans `src/**/*.svelte` for Tailwind utilities that silently compile to nothing.
+- **Every new feature ships with tests** — the user explicitly requires this.
 
 ## Coding Conventions
 
-- **Variable names:** English only — no German variable/field names in code
-- **Entry interface fields:** English camelCase (e.g. `hazardClass`, not `klasse`; `packingGroup`, not `vp_gruppe`)
-- **LABELS keys:** English camelCase (e.g. `specialProvisions`, not `svs_title`)
-- **Composable pattern:** Logic lives in composables (`useMultimodalTool`), components handle rendering only
-- **Tailwind v4 + `@apply`:** Requires `@reference "tailwindcss"` at the top of any `<style scoped>` block that uses `@apply`
+- **Svelte 5 runes only:** `$state`/`$derived`/`$props`, `onclick={}` not `on:click`, snippets not slots, `{@attach}` not `use:action`, clsx-style `class={[...]}` arrays. Run the Svelte MCP autofixer on every `.svelte` / `.svelte.ts` file before finishing.
+- **Logic lives in `.svelte.ts` classes**, components render. Capture constructor props with `untrack()` when the state object is created once per component.
+- **Never name a variable `state`** — it collides with the `$state` rune (Svelte treats `$state` as store access).
+- **Variable names:** English only — no German identifiers. Entry fields camelCase (`hazardClass`, `packingGroup`). LABELS keys camelCase.
+- **Tailwind v4 + `@apply`:** needs `@reference "tailwindcss"` at the top of the `<style>` block.
+- **Internal links** use `resolve()` from `$app/paths` **with route IDs including group segments**, e.g. `resolve('/(app)/dashboard')`, `resolve('/(auth)/login')`, `resolve('/(app)/un/[nummer]', { nummer })` — the generated types reject bare pathnames for grouped routes.
+- **Locked mode rule:** every code path checks `isActive` before touching regulation data; RLS is the backstop, not the primary check. Locked users only ever mount `MultimodalTool` with `demo`.
+- **`state_referenced_locally`:** wrap once-per-component object creation from props in `untrack(() => …)`.
 
 ## Key Notes
 
-- Nuxt 4 app structure: source files live in `app/` directory
-- i18n: UI supports de / en / fr / tr via `LABELS` constant in `utils/multimodal.ts` — no i18n module used for regulation data
-- Supabase runtime config keys are set via environment variables (`NUXT_PUBLIC_SUPABASE_URL`, `NUXT_PUBLIC_SUPABASE_KEY`); the server-only service key uses `runtimeConfig.supabaseServiceRoleKey` with an empty default — **production must set `NUXT_SUPABASE_SERVICE_ROLE_KEY`** (runtime env; never baked into the build)
-- **Current state (July 2026):** schema migrated + all data seeded (16,730 entries, 1,354 SVs incl. en/fr). Working public routes: `/` (landing with waitlist, FAQ, JSON-LD SEO), `/search` (live search), `/un/:nummer`. Waitlist API live. 102 tests green. Auth/dashboard/tools not started.
-- **Data flow:** `MultimodalTool.vue` takes either `demo` (hardcoded) or `unNumber` (calls `loadCompare` → `fetchCompareForUn` → 4 parallel queries against entry tables). Client queries Supabase directly via `@nuxtjs/supabase`; the ONLY Nitro route is `POST /api/waitlist` (rate-limited 5/IP/h, honeypot, service-role insert — captcha slot marked for later).
-- **Rate-limit IP:** the route keys on the LAST `x-forwarded-for` hop — the reverse proxy (Caddy) must append the real client IP (its default). Trusting the first hop is a bypass.
-- **Auth gating:** `@nuxtjs/supabase` redirects to `/login` by default. Public routes are listed in `nuxt.config.ts` → `supabase.redirectOptions.exclude` (currently `/`, `/un/**`, `/search`). Add new public routes there.
-- **SSR caveat:** `/un/:nummer` loads data client-side via `onMounted`. Fine for dev; switch to `useAsyncData` before launch for SEO.
-- **Tailwind v4 dev gotcha:** files created AFTER the dev server started are sometimes never scanned — their utility classes silently produce no CSS (page looks half-unstyled). Fix: `touch app/assets/css/main.css` or restart `pnpm dev`.
-- **SEO invariant:** the visible FAQ (`Faq.vue`) and the FAQPage JSON-LD both render from `FAQ_ITEMS` in `utils/landingFaq.ts` — never let them diverge (Google requirement). Site facts (entry counts etc.) must stay consistent across meta description, FAQ, SeoContent, and `public/llms.txt`.
+- **i18n:** UI supports de / en / fr / tr via `LABELS` in `lib/multimodal/types.ts` — no i18n module.
+- **Current state (2026-09-04):** SvelteKit rewrite + auth/entitlement (F-04). Public: `/`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`, `/auth/fehler`. Login required: `/dashboard`, `/suche`, `/un/:nummer` (guard in `hooks.server.ts` → `/login?next=…`). 215 tests green, `pnpm check` clean. Both migrations are applied and verified live (trigger, anon/locked = 0 rows, activated = full data). Still open: Supabase dashboard configuration (email provider, redirect URLs, token-hash email templates, SMTP) — see spec §6.
+- **Data flow:** `/un/:nummer` loads on the server via `locals.supabase` and passes `initialData` to `MultimodalTool`; `/suche` queries client-side via `data.supabase`; SV texts load lazily on the client. Landing demo and locked mode use hardcoded `DEMO_DATA`/`DEMO_SVS` (no database).
+- **Auth flow:** email confirmation and password recovery go through `/auth/confirm?token_hash=…&type=…&next=…` (server-side `verifyOtp`); the Supabase email templates must link there with `{{ .TokenHash }}` (spec §6). Rate limits: login 10/IP/15 min, register + reset 5/IP/hour. Registration and reset never reveal whether an address exists.
+- **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` in `lib/landing/faq.ts` — never let them diverge. Site facts (16.730 entries, 1.354 SVs, 5 free searches) must stay consistent across meta description, FAQ, SeoContent, and `static/llms.txt`.
+- **Known no-op kept for parity:** `Features.svelte` builds `hover:border-[${color}]` at runtime; Tailwind can't see it, so it produces no CSS (same as before the rewrite).

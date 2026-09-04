@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { fetchCompareForUn } from '~/utils/multimodalMappers'
+import { fetchCompareForUn } from '$lib/multimodal/mappers'
 
 type TableResponse = { data: Record<string, unknown>[] | null, error: unknown }
 

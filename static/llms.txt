@@ -1,0 +1,33 @@
+# gefahrgut.org
+
+> Gefahrgut-Datenbank und Arbeitsplattform für Gefahrgutbeauftragte (dangerous goods
+> safety advisers). Multimodaler Vergleich der Regelwerke ADR (Straße), RID (Schiene),
+> IMDG-Code (See) und ICAO (Luft) je UN-Nummer. Aktuell im Aufbau — Registrierung ist offen.
+
+## Datenbasis
+
+- Quelle: GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und -prüfung (BAM)
+- Umfang: 16.730 Einträge — ADR 2025 (3.374), RID 2025 (3.350), IMDG Amdt. 42-24 (3.246),
+  ICAO 2025 (3.528), UN-Modellvorschriften (3.232); dazu ca. 1.350 Sondervorschriften im
+  Volltext (DE/EN/FR, soweit amtlich verfügbar)
+- Lizenz: Datenlizenz Deutschland — Namensnennung — Version 2.0 (dl-de/by-2-0);
+  Änderungen gegenüber der Quelle werden gekennzeichnet
+
+## Funktionen (bei Launch)
+
+- UN-Nummern- und Stoffnamen-Suche über alle Verkehrsträger
+- Multimodaler Regelwerksvergleich (ADR / RID / IMDG / ICAO nebeneinander)
+- Sondervorschriften im Volltext, mehrsprachig (DE/EN/FR/TR-Oberfläche)
+- 1000-Punkte-Rechner nach ADR 1.1.3.6, Dokumentengenerator, Prüflisten
+
+## Preise und Zugang
+
+Ein Tarif mit vollem Funktionsumfang; der Preis wird zuerst registrierten Nutzern bekannt
+gegeben. Registrierung ist offen; bis zur Freischaltung steht eine Demo mit UN 1203 zur
+Verfügung. Suche und Regelwerksvergleich erfordern ein freigeschaltetes Konto.
+
+## Links
+
+- Startseite: https://gefahrgut.org/
+- Registrierung: https://gefahrgut.org/registrieren
+- Blog (Fachartikel zu Gefahrstofflagerung, TRGS 510, ADR): https://gefahrgut.org/blog

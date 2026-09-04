@@ -19,11 +19,11 @@ import 'dotenv/config'
 // Config
 // ---------------------------------------------------------------------------
 
-const SUPABASE_URL = process.env.NUXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing NUXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env')
+  console.error('Missing PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env')
   process.exit(1)
 }
 

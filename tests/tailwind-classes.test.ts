@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,14 +11,14 @@ import { describe, expect, it } from 'vitest'
  * syntax; v4 requires `placeholder:text-slate-400`).
  */
 
-const APP_DIR = fileURLToPath(new URL('../app', import.meta.url))
+const SRC_DIR = fileURLToPath(new URL('../src', import.meta.url))
 
-function collectVueFiles(dir: string): string[] {
+function collectSvelteFiles(dir: string): string[] {
   const files: string[] = []
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
-    if (statSync(full).isDirectory()) files.push(...collectVueFiles(full))
-    else if (entry.endsWith('.vue')) files.push(full)
+    if (statSync(full).isDirectory()) files.push(...collectSvelteFiles(full))
+    else if (entry.endsWith('.svelte')) files.push(full)
   }
   return files
 }
@@ -29,9 +30,9 @@ const REMOVED_UTILITIES: [RegExp, string][] = [
 ]
 
 describe('tailwind class validity', () => {
-  const files = collectVueFiles(APP_DIR)
+  const files = collectSvelteFiles(SRC_DIR)
 
-  it('finds vue files to scan', () => {
+  it('finds svelte files to scan', () => {
     expect(files.length).toBeGreaterThan(0)
   })
 

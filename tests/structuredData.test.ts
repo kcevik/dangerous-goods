@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { FAQ_ITEMS } from '~/utils/landingFaq'
+import { FAQ_ITEMS } from '$lib/landing/faq'
 import {
   buildFaqPageLd,
   buildOrganizationLd,
   buildSoftwareApplicationLd,
   buildWebSiteLd,
   SITE_URL,
-} from '~/utils/structuredData'
+} from '$lib/seo/structuredData'
 
 describe('structured data', () => {
   it('Organization has name, url and logo', () => {
@@ -23,12 +23,10 @@ describe('structured data', () => {
     expect(ld.url).toBe(SITE_URL)
   })
 
-  it('SoftwareApplication carries the free-tier offer', () => {
+  it('SoftwareApplication carries no offer until a price exists', () => {
     const ld = buildSoftwareApplicationLd()
     expect(ld['@type']).toBe('SoftwareApplication')
-    expect(ld.offers.price).toBe('0')
-    expect(ld.offers.priceCurrency).toBe('EUR')
-    expect(ld.offers.description).toContain('5 Suchanfragen')
+    expect('offers' in ld).toBe(false)
   })
 
   it('FAQPage mirrors the visible FAQ items exactly', () => {

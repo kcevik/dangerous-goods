@@ -1,11 +1,13 @@
-// @vitest-environment nuxt
-import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
-import { flushPromises } from '@vue/test-utils'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { fireEvent, render } from '@testing-library/svelte'
+import { tick } from 'svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import SearchPage from '~/pages/search.vue'
+import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
+import SearchPage from '../src/routes/(app)/suche/+page.svelte'
 
-const { supabaseClientMock } = vi.hoisted(() => ({ supabaseClientMock: vi.fn() }))
-mockNuxtImport('useSupabaseClient', () => supabaseClientMock)
+vi.mock('$lib/multimodal/MultimodalTool.svelte', async () => ({
+  default: (await import('./stubs/ToolStub.svelte')).default,
+}))
 
 const ROW = {
   un_number: '1203',
@@ -24,28 +26,20 @@ function stubSearch(data: Record<string, unknown>[]) {
     limit: () => Promise.resolve({ data, error: null }),
   }
   const from = vi.fn(() => builder)
-  supabaseClientMock.mockReturnValue({ from })
-  return { from }
+  return { client: { from } as unknown as SupabaseClient, from }
 }
 
-const TOOL_STUB = {
-  props: ['unNumber'],
-  template: '<div data-testid="tool-stub">TOOL:{{ unNumber }}</div>',
+function renderPage(client: SupabaseClient, isActive = true) {
+  return render(SearchPage, { props: { data: { supabase: client, cookies: [], isActive } as never } })
 }
 
-function mountPage() {
-  return mountSuspended(SearchPage, {
-    global: { stubs: { MultimodalTool: TOOL_STUB } },
-  })
+async function typeAndDebounce(container: HTMLElement, text: string) {
+  await fireEvent.input(container.querySelector('input')!, { target: { value: text } })
+  await vi.advanceTimersByTimeAsync(300)
+  await tick()
 }
 
-async function typeAndDebounce(wrapper: Awaited<ReturnType<typeof mountPage>>, text: string) {
-  await wrapper.find('input').setValue(text)
-  vi.advanceTimersByTime(300)
-  await flushPromises()
-}
-
-describe('/search page', () => {
+describe('/suche page (active account)', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   })
@@ -54,67 +48,104 @@ describe('/search page', () => {
     vi.useRealTimers()
   })
 
-  it('shows the empty state with example chips initially', async () => {
-    stubSearch([])
-    const wrapper = await mountPage()
-    expect(wrapper.text()).toContain('Gib eine UN-Nummer oder einen Stoffnamen ein')
-    const chips = wrapper.findAll('.rounded-full')
-    expect(chips.length).toBe(4)
-    expect(chips[0]!.text()).toContain('1203')
+  it('shows the empty state with example chips initially and focuses the input', () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    expect(container).toHaveTextContent('Gib eine UN-Nummer oder einen Stoffnamen ein')
+    const chips = container.querySelectorAll('.rounded-full')
+    expect(chips).toHaveLength(4)
+    expect(chips[0]).toHaveTextContent('1203')
+    expect(document.activeElement).toBe(container.querySelector('input'))
   })
 
   it('keeps the empty state below the minimum query length without querying', async () => {
-    const { from } = stubSearch([])
-    const wrapper = await mountPage()
-    await typeAndDebounce(wrapper, 'B')
+    const { client, from } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'B')
     expect(from).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Gib eine UN-Nummer')
+    expect(container).toHaveTextContent('Gib eine UN-Nummer')
   })
 
   it('renders result cards for a text query after the debounce', async () => {
-    stubSearch([ROW])
-    const wrapper = await mountPage()
-    await typeAndDebounce(wrapper, 'Benzin')
+    const { client } = stubSearch([ROW])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Benzin')
 
-    expect(wrapper.text()).toContain('1 Ergebnisse (ADR)')
-    expect(wrapper.text()).toContain('UN 1203')
-    expect(wrapper.text()).toContain('BENZIN')
-    expect(wrapper.text()).toContain('Kl. 3')
-    expect(wrapper.text()).toContain('VG II')
+    expect(container).toHaveTextContent('1 Ergebnisse (ADR)')
+    expect(container).toHaveTextContent('UN 1203')
+    expect(container).toHaveTextContent('BENZIN')
+    expect(container).toHaveTextContent('Kl. 3')
+    expect(container).toHaveTextContent('VG II')
   })
 
   it('opens the tool when a result card is clicked', async () => {
-    stubSearch([ROW])
-    const wrapper = await mountPage()
-    await typeAndDebounce(wrapper, 'Benzin')
+    const { client } = stubSearch([ROW])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Benzin')
 
-    await wrapper.find('.space-y-2 button').trigger('click')
-    expect(wrapper.find('[data-testid="tool-stub"]').text()).toBe('TOOL:1203')
-    expect(wrapper.text()).not.toContain('Ergebnisse (ADR)')
+    await fireEvent.click(container.querySelector('.space-y-2 button')!)
+    expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
+    expect(container).not.toHaveTextContent('Ergebnisse (ADR)')
   })
 
   it('loads the tool directly for a 4-digit UN number without querying', async () => {
-    const { from } = stubSearch([])
-    const wrapper = await mountPage()
-    await typeAndDebounce(wrapper, '1203')
+    const { client, from } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, '1203')
 
     expect(from).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="tool-stub"]').text()).toBe('TOOL:1203')
+    expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
   })
 
   it('shows the no-results message for an unmatched query', async () => {
-    stubSearch([])
-    const wrapper = await mountPage()
-    await typeAndDebounce(wrapper, 'xyzxyzxyz')
-    expect(wrapper.text()).toContain('Keine Ergebnisse für')
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'xyzxyzxyz')
+    expect(container).toHaveTextContent('Keine Ergebnisse für')
   })
 
   it('fills the query and loads the tool when an example chip is clicked', async () => {
-    stubSearch([])
-    const wrapper = await mountPage()
-    await wrapper.find('.rounded-full').trigger('click')
-    await flushPromises()
-    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('1203')
-    expect(wrapper.find('[data-testid="tool-stub"]').text()).toBe('TOOL:1203')
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    await fireEvent.click(container.querySelector('.rounded-full')!)
+    await tick()
+    expect(container.querySelector('input')).toHaveValue('1203')
+    expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
+  })
+
+  it('does not show the lock notice or the demo tool', () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    expect(container).not.toHaveTextContent(LOCK_MESSAGE)
+    expect(container.querySelector('[data-testid="tool-stub"]')).toBeNull()
+  })
+})
+
+describe('/suche page (locked account)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('shows the lock notice and the demo tool instead of the example chips', () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client, false)
+    expect(container).toHaveTextContent(LOCK_MESSAGE)
+    expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
+    expect(container.querySelectorAll('.rounded-full')).toHaveLength(0)
+  })
+
+  it('never queries when typing, even a 4-digit UN number', async () => {
+    const { client, from } = stubSearch([ROW])
+    const { container } = renderPage(client, false)
+    await typeAndDebounce(container, 'Benzin')
+    await typeAndDebounce(container, '1090')
+    expect(from).not.toHaveBeenCalled()
+    expect(container).not.toHaveTextContent('Ergebnisse (ADR)')
+    expect(container).not.toHaveTextContent('TOOL:1090')
+    expect(container).toHaveTextContent(LOCK_MESSAGE)
   })
 })

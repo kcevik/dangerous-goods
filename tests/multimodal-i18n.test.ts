@@ -8,7 +8,7 @@ import {
   LANGS,
   MODAL_DESC_I18N,
   MODALS,
-} from '~/utils/multimodal'
+} from '$lib/multimodal/types'
 
 describe('LABELS', () => {
   const deKeys = Object.keys(LABELS.de).sort()

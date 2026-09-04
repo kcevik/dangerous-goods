@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRateLimiter } from '../server/utils/rateLimit'
+import { createRateLimiter } from '$lib/server/rateLimit'
 
 describe('createRateLimiter', () => {
   beforeEach(() => vi.useFakeTimers())

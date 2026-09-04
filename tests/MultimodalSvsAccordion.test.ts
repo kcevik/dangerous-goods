@@ -1,13 +1,9 @@
-// @vitest-environment nuxt
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { mount } from '@vue/test-utils'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { fireEvent, render, screen } from '@testing-library/svelte'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import MultimodalSvsAccordion from '~/components/multimodal/MultimodalSvsAccordion.vue'
-import { clearSpecialProvisionsCache } from '~/composables/useSpecialProvisions'
-import { DEMO_SVS } from '~/utils/multimodal'
-
-const { supabaseClientMock } = vi.hoisted(() => ({ supabaseClientMock: vi.fn() }))
-mockNuxtImport('useSupabaseClient', () => supabaseClientMock)
+import MultimodalSvsAccordion from '$lib/multimodal/MultimodalSvsAccordion.svelte'
+import { clearSpecialProvisionsCache } from '$lib/multimodal/specialProvisions.svelte'
+import { DEMO_SVS } from '$lib/multimodal/types'
 
 const BASE_PROPS = {
   label: 'Sondervorschriften',
@@ -31,8 +27,8 @@ function stubSupabase(rows: Record<string, Record<string, unknown> | null>) {
       return Promise.resolve({ data: rows[`${mode}:${code}`] ?? null, error: null })
     },
   }
-  supabaseClientMock.mockReturnValue({ from: () => builder })
-  return counter
+  const from = vi.fn(() => builder)
+  return { client: { from } as unknown as SupabaseClient, from, counter }
 }
 
 async function flush() {
@@ -45,140 +41,118 @@ beforeEach(() => {
 
 describe('MultimodalSvsAccordion', () => {
   it('renders nothing when svs is empty', () => {
-    stubSupabase({})
-    const wrapper = mount(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '' } })
-    expect(wrapper.find('button').exists()).toBe(false)
+    const { client } = stubSupabase({})
+    render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '', supabase: client } })
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('renders one row per comma-separated code', () => {
-    stubSupabase({})
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163, 243, 640D', mode: 'ADR' },
-    })
-    const rows = wrapper.findAll('button')
+    const { client } = stubSupabase({})
+    render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163, 243, 640D', mode: 'ADR', supabase: client } })
+    const rows = screen.getAllByRole('button')
     expect(rows).toHaveLength(3)
-    expect(rows[0]!.text()).toContain('SV 163')
-    expect(rows[2]!.text()).toContain('SV 640D')
+    expect(rows[0]).toHaveTextContent('SV 163')
+    expect(rows[2]).toHaveTextContent('SV 640D')
   })
 
   it('shows the click-to-open hint before a row is expanded', () => {
-    stubSupabase({})
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', mode: 'ADR' },
-    })
-    expect(wrapper.text()).toContain(BASE_PROPS.clickLoad)
+    const { client } = stubSupabase({})
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163', mode: 'ADR', supabase: client } })
+    expect(container).toHaveTextContent(BASE_PROPS.clickLoad)
   })
 
   it('demo mode shows DEMO_SVS text without any network call', async () => {
-    const fromSpy = vi.fn()
-    supabaseClientMock.mockReturnValue({ from: fromSpy })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', demo: true },
-    })
-    await wrapper.find('button').trigger('click')
-    expect(wrapper.text()).toContain(DEMO_SVS['163'])
-    expect(fromSpy).not.toHaveBeenCalled()
+    const { client, from } = stubSupabase({})
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163', demo: true, supabase: client } })
+    await fireEvent.click(screen.getByRole('button'))
+    expect(container).toHaveTextContent(DEMO_SVS['163']!)
+    expect(from).not.toHaveBeenCalled()
   })
 
   it('expanding a row loads and shows the German text', async () => {
-    stubSupabase({ 'ADR:163': { text_de: 'Deutscher SV-Text', text_en: 'English SV text' } })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', mode: 'ADR' },
-    })
-    await wrapper.find('button').trigger('click')
+    const { client } = stubSupabase({ 'ADR:163': { text_de: 'Deutscher SV-Text', text_en: 'English SV text' } })
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163', mode: 'ADR', supabase: client } })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain('Deutscher SV-Text')
+    expect(container).toHaveTextContent('Deutscher SV-Text')
   })
 
   it('prefers English text when lang is "en"', async () => {
-    stubSupabase({ 'ICAO:A1': { text_de: null, text_en: 'English only' } })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: 'A1', mode: 'ICAO', lang: 'en' },
-    })
-    await wrapper.find('button').trigger('click')
+    const { client } = stubSupabase({ 'ICAO:A1': { text_de: null, text_en: 'English only' } })
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: 'A1', mode: 'ICAO', lang: 'en', supabase: client } })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain('English only')
+    expect(container).toHaveTextContent('English only')
   })
 
   it('Turkish prefers English text over German (no Turkish data in BAM dataset)', async () => {
-    stubSupabase({ 'ADR:163': { text_de: 'Deutsch', text_en: 'English' } })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', mode: 'ADR', lang: 'tr' },
-    })
-    await wrapper.find('button').trigger('click')
+    const { client } = stubSupabase({ 'ADR:163': { text_de: 'Deutsch', text_en: 'English' } })
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163', mode: 'ADR', lang: 'tr', supabase: client } })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain('English')
-    expect(wrapper.text()).not.toContain('Deutsch')
+    expect(container).toHaveTextContent('English')
+    expect(container).not.toHaveTextContent('Deutsch')
   })
 
   it('switching the language re-renders the already-loaded text without refetching', async () => {
-    const mock = stubSupabase({ 'ADR:163': { text_de: 'Deutsch', text_en: 'English' } })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', mode: 'ADR', lang: 'de' },
-    })
-    await wrapper.find('button').trigger('click')
+    const { client, counter } = stubSupabase({ 'ADR:163': { text_de: 'Deutsch', text_en: 'English' } })
+    const props = { ...BASE_PROPS, svs: '163', mode: 'ADR' as const, lang: 'de' as const, supabase: client }
+    const { container, rerender } = render(MultimodalSvsAccordion, { props })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain('Deutsch')
+    expect(container).toHaveTextContent('Deutsch')
 
-    await wrapper.setProps({ lang: 'en' })
-    expect(wrapper.text()).toContain('English')
-    expect(mock.calls).toBe(1)
+    await rerender({ ...props, lang: 'en' })
+    expect(container).toHaveTextContent('English')
+    expect(counter.calls).toBe(1)
   })
 
   it('reloads texts for open rows when the transport mode changes (no stuck "…")', async () => {
-    stubSupabase({
+    const { client } = stubSupabase({
       'ADR:163': { text_de: 'ADR-Text' },
       'RID:163': { text_de: 'RID-Text' },
     })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', mode: 'ADR' },
-    })
-    await wrapper.find('button').trigger('click')
+    const props = { ...BASE_PROPS, svs: '163', mode: 'ADR' as const, supabase: client }
+    const { container, rerender } = render(MultimodalSvsAccordion, { props })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain('ADR-Text')
+    expect(container).toHaveTextContent('ADR-Text')
 
-    await wrapper.setProps({ mode: 'RID' })
+    await rerender({ ...props, mode: 'RID' })
     await flush()
-    expect(wrapper.text()).toContain('RID-Text')
-    expect(wrapper.text()).not.toContain('…')
+    expect(container).toHaveTextContent('RID-Text')
+    expect(container).not.toHaveTextContent('…')
   })
 
   it('falls back to another language when the preferred one is missing', async () => {
-    stubSupabase({ 'ICAO:A1': { text_de: null, text_en: 'English fallback' } })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: 'A1', mode: 'ICAO' }, // lang defaults to de
-    })
-    await wrapper.find('button').trigger('click')
+    const { client } = stubSupabase({ 'ICAO:A1': { text_de: null, text_en: 'English fallback' } })
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: 'A1', mode: 'ICAO', supabase: client } })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain('English fallback')
+    expect(container).toHaveTextContent('English fallback')
   })
 
   it('shows the no-text fallback when no row exists for the code', async () => {
-    stubSupabase({})
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '999', mode: 'ADN' },
-    })
-    await wrapper.find('button').trigger('click')
+    const { client } = stubSupabase({})
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '999', mode: 'ADN', supabase: client } })
+    await fireEvent.click(screen.getByRole('button'))
     await flush()
-    expect(wrapper.text()).toContain(BASE_PROPS.noText)
+    expect(container).toHaveTextContent(BASE_PROPS.noText)
   })
 
   it('collapses an expanded row on second click, keeping a preview snippet', async () => {
-    stubSupabase({ 'ADR:163': { text_de: 'Voller SV-Text' } })
-    const wrapper = mount(MultimodalSvsAccordion, {
-      props: { ...BASE_PROPS, svs: '163', mode: 'ADR' },
-    })
-    const button = wrapper.find('button')
-    const panel = () => wrapper.find('.whitespace-pre-wrap')
+    const { client } = stubSupabase({ 'ADR:163': { text_de: 'Voller SV-Text' } })
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163', mode: 'ADR', supabase: client } })
+    const button = screen.getByRole('button')
+    const panel = () => container.querySelector('.whitespace-pre-wrap')
 
-    await button.trigger('click')
+    await fireEvent.click(button)
     await flush()
-    expect(panel().exists()).toBe(true)
+    expect(panel()).not.toBeNull()
 
-    await button.trigger('click')
-    expect(panel().exists()).toBe(false)
-    // once loaded, the closed row shows a text preview instead of the click hint
-    expect(wrapper.text()).toContain('Voller SV-Text')
-    expect(wrapper.text()).not.toContain(BASE_PROPS.clickLoad)
+    await fireEvent.click(button)
+    expect(panel()).toBeNull()
+    expect(container).toHaveTextContent('Voller SV-Text')
+    expect(container).not.toHaveTextContent(BASE_PROPS.clickLoad)
   })
 })
