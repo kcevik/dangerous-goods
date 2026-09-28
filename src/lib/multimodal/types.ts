@@ -56,6 +56,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     class: 'Klasse', classCode: 'Klassifizierungscode', packingGroup: 'Verpackungsgruppe',
     labels: 'Gefahrzettel', exceptedQty: 'Freigestellte Mengen', limitedQty: 'Begrenzte Mengen',
     transportCat: 'Beförderungskategorie', kemler: 'Kemler-Zahl', tunnelCode: 'Tunnelcode',
+    pgShort: 'VP-Gr.', transportCatShort: 'BK',
     ems: 'EmS', stowageCat: 'Staukategorie', stowage: 'Stauung', segregation: 'Trennung',
     marpol: 'MARPOL', packingInstr: 'Verpackungsanweisungen',
     piPassenger: 'PI Passagier', piCargo: 'PI Fracht',
@@ -72,6 +73,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     class: 'Class', classCode: 'Classification code', packingGroup: 'Packing group',
     labels: 'Labels', exceptedQty: 'Excepted qty.', limitedQty: 'Limited qty.',
     transportCat: 'Transport cat.', kemler: 'Kemler number', tunnelCode: 'Tunnel code',
+    pgShort: 'PG', transportCatShort: 'TC',
     ems: 'EmS', stowageCat: 'Stowage cat.', stowage: 'Stowage', segregation: 'Segregation',
     marpol: 'MARPOL', packingInstr: 'Packing instructions',
     piPassenger: 'PI Passenger', piCargo: 'PI Cargo',
@@ -88,6 +90,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     class: 'Classe', classCode: 'Code de classification', packingGroup: "Groupe d'emballage",
     labels: 'Étiquettes', exceptedQty: 'Qté exemptée', limitedQty: 'Qté limitée',
     transportCat: 'Catégorie transp.', kemler: 'Numéro Kemler', tunnelCode: 'Code tunnel',
+    pgShort: 'GE', transportCatShort: 'CT',
     ems: 'EmS', stowageCat: "Catégorie d'arrimage", stowage: 'Arrimage', segregation: 'Séparation',
     marpol: 'MARPOL', packingInstr: "Instructions d'emballage",
     piPassenger: 'PI Passagers', piCargo: 'PI Cargo',
@@ -104,6 +107,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     class: 'Sınıf', classCode: 'Sınıflandırma kodu', packingGroup: 'Ambalaj grubu',
     labels: 'Tehlike etiketleri', exceptedQty: 'Muaf miktar', limitedQty: 'Sınırlı miktar',
     transportCat: 'Taşıma kategorisi', kemler: 'Kemler numarası', tunnelCode: 'Tünel kodu',
+    pgShort: 'AG', transportCatShort: 'TK',
     ems: 'EmS', stowageCat: 'İstif kategorisi', stowage: 'İstif', segregation: 'Ayrıştırma',
     marpol: 'MARPOL', packingInstr: 'Ambalaj talimatları',
     piPassenger: 'Yolcu talimatı', piCargo: 'Kargo talimatı',
@@ -122,72 +126,112 @@ export function getL(lang: Lang, key: string): string {
   return LABELS[lang]?.[key] ?? LABELS.de[key] ?? key
 }
 
-// ── Demo data (UN 1203 · Benzin/Gasoline) ───────────────────
+/**
+ * Text of one special provision in the languages BAM publishes.
+ * Structurally identical to a `special_provisions` row.
+ */
+export interface SvText {
+  textDe: string | null
+  textEn: string | null
+  textFr: string | null
+}
+
+/**
+ * Picks the best available text for `lang`.
+ * Turkish has no official BAM text, so it reads English first, like `getName()`.
+ * Returns `null` when the provision has no text in any language.
+ */
+export function pickSvText(sv: SvText, lang: Lang): string | null {
+  if (lang === 'en' || lang === 'tr') return sv.textEn ?? sv.textDe ?? sv.textFr ?? null
+  if (lang === 'fr') return sv.textFr ?? sv.textEn ?? sv.textDe ?? null
+  return sv.textDe ?? sv.textEn ?? sv.textFr ?? null
+}
+
+// ── Demo data (UN 1203 · BENZIN / MOTOR SPIRIT) ─────────────
+//
+// Generated from the live BAM tables for UN 1203, sequence 1, on 2026-09-28.
+// Never hand-write values here: the landing page shows this to safety advisers,
+// so every field must match what an activated account actually sees.
+// Source: BAM GEFAHRGUT database, dl-de/by-2-0.
 
 export const DEMO_DATA: Record<string, Entry[]> = {
   ADR: [{
     unNumber: '1203', sequenceNumber: 1,
-    name: 'BENZIN', nameEn: 'PETROL', nameFr: 'ESSENCE',
-    specification: 'oder KRAFTSTOFF FÜR MOTOREN, BENZIN',
-    specificationEn: 'or MOTOR SPIRIT or GASOLINE',
-    specificationFr: 'ou ESSENCE POUR MOTEURS',
+    name: 'BENZIN', nameEn: 'MOTOR SPIRIT', nameFr: 'ESSENCE',
     hazardClass: '3', classificationCode: 'F1', packingGroup: 'II',
     hazardLabels: '3', exceptedQty: 'E2', limitedQty: '1 L',
-    transportCategory: '2', multiplier: '1000',
+    transportCategory: '2', multiplier: '3',
     kemlerNumber: '33', tunnelCode: 'D/E',
-    packingInstructions: 'P001, IBC02',
-    specialProvisions: '163, 243, 274, 601, 640D',
+    packingInstructions: 'P001, IBC02, R001',
+    specialProvisions: '243, 534, 664',
   }],
   RID: [{
     unNumber: '1203', sequenceNumber: 1,
-    name: 'BENZIN', nameEn: 'PETROL', nameFr: 'ESSENCE',
-    specification: 'oder KRAFTSTOFF FÜR MOTOREN, BENZIN',
-    specificationEn: 'or MOTOR SPIRIT or GASOLINE',
+    name: 'BENZIN', nameEn: 'MOTOR SPIRIT',
     hazardClass: '3', classificationCode: 'F1', packingGroup: 'II',
     hazardLabels: '3', exceptedQty: 'E2', limitedQty: '1 L',
-    transportCategory: '2', multiplier: '1000',
-    packingInstructions: 'P001, IBC02',
-    specialProvisions: '163, 274, 601',
+    transportCategory: '2',
+    packingInstructions: 'P001, IBC02, R001',
+    specialProvisions: '243, 534',
   }],
   IMDG: [{
     unNumber: '1203', sequenceNumber: 1,
-    name: 'GASOLINE', nameEn: 'GASOLINE', nameFr: 'ESSENCE',
-    specificationEn: 'or PETROL or MOTOR SPIRIT',
+    name: 'OTTOKRAFTSTOFF', nameEn: 'MOTOR SPIRIT',
     hazardClass: '3', packingGroup: 'II',
     hazardLabels: '3', exceptedQty: 'E2', limitedQty: '1 L',
-    ems1: 'F-E', ems2: 'S-E',
-    stowageCategory: 'B', stowage: 'SW2', segregation: 'SG35',
-    marpol: '–',
-    specialProvisions: '163, 223, 955',
+    packingInstructions: 'P001',
+    ems1: 'F-E', ems2: 'S-E', stowageCategory: 'E',
+    specialProvisions: '243',
   }],
   ICAO: [{
     unNumber: '1203', sequenceNumber: 1,
     name: 'Gasoline',
     hazardClass: '3', packingGroup: 'II',
-    hazardLabels: '3', exceptedQty: 'E2',
-    packingInstrPassenger: '353', packingInstrCargo: '364',
-    maxNetCargo: '60 L',
-    specialProvisions: '',
+    hazardLabels: 'Liquid flammable', exceptedQty: 'E2',
+    packingInstrPassenger: '353', maxNetPassenger: '5 L',
+    packingInstrCargo: '364', maxNetCargo: '60 L',
+    specialProvisions: 'A100',
   }],
-  ADN: [{
-    unNumber: '1203', sequenceNumber: 1,
-    name: 'BENZIN', nameEn: 'PETROL', nameFr: 'ESSENCE',
-    specification: 'oder KRAFTSTOFF FÜR MOTOREN',
-    hazardClass: '3', classificationCode: 'F1', packingGroup: 'II',
-    hazardLabels: '3', exceptedQty: 'E2', limitedQty: '1 L',
-    cones: '1',
-    specialProvisions: '163, 274',
-  }],
+  // BAM ships no ADN data, so the real app always renders this tab empty — the demo must match
+  ADN: [],
 }
 
-export const DEMO_SVS: Record<string, string> = {
-  '163': 'Wenn dieses Gut befördert wird und im Falle eines Unfalls Feuer entsteht, darf das Feuer im Allgemeinen nicht mit Wasser gelöscht werden. Wasser kann dazu benutzt werden, benachbarte Güter zu kühlen. Wasser kann in Form von Sprühwasser oder Sprühnebel angewendet werden, um Dämpfe einzuengen oder zu zerstreuen.',
-  '243': 'Kanister aus Kunststoff (4H2) sind ebenfalls zugelassen.',
-  '274': 'Die Benennung des Gutes muss ergänzt werden durch den technischen Namen des Erzeugnisses (vgl. 3.1.2.8.1 und 3.1.2.8.1.1).',
-  '601': 'Kraftstoffe für Motoren, die Benzin oder Benzin-Blends enthalten, dürfen befördert werden, sofern der Flammpunkt nicht über 60 °C liegt.',
-  '640D': 'Die großen Aufschriften müssen nicht auf Teilen der Verpackung angebracht werden, die normalerweise nicht sichtbar sind.',
-  '223': 'Dieses Gut darf in IBCs des Typs 31A, 31B und 31N befördert werden.',
-  '955': 'Zugelassen als Tankcontainer der Typen T1–T22.',
+export const DEMO_SVS: Record<string, SvText> = {
+  'ADR:243': {
+    textDe: "Benzin und Ottokraftstoff für die Verwendung in Ottomotoren (z.B. in Kraftfahrzeugen, ortsfesten Motoren und anderen Motoren) sind ungeachtet der Bandbreite der Flüchtigkeit dieser Eintragung zuzuordnen.",
+    textEn: "Gasoline, motor spirit and petrol for use in spark-ignition engines (e.g. in automobiles, stationary engines and other engines) shall be assigned to this entry regardless of variations in volatility.",
+    textFr: "L'essence destinée à être utilisée comme carburant pour moteurs d'automobiles, moteurs fixes et autres moteurs à allumage commandé doit être classée sous cette rubrique indépendamment de ses caractéristiques de volatilité.",
+  },
+  'ADR:534': {
+    textDe: "Obwohl Benzin unter gewissen klimatischen Bedingungen bei 50 °C einen Dampfdruck von mehr als 110 kPa (1,10 bar) bis höchstens 150 kPa (1,50 bar) haben kann, muss es einem Stoff gleichgestellt bleiben, der bei 50 °C einen Dampfdruck von höchstens 110 kPa (1,10 bar) hat.",
+    textEn: "While in some climatic conditions, petrol (gasoline) may have a vapour pressure at 50 °C of more than 110 kPa (1.10 bar) but not more than 150 kPa (1.50 bar) it is to continue to be considered as a substance having a vapour pressure at 50 °C of not more than 110 kPa (1.10 bar).",
+    textFr: "Nonobstant que l'essence peut, sous certaines conditions climatiques, avoir une pression de vapeur à 50 °C supérieure à 110 kPa (1,10 bar), sans dépasser 150 kPa (1,50 bar), elle doit continuer à être assimilée à une matière ayant une pression de vapeur à 50 °C ne dépassant pas 110 kPa (1,10 bar).",
+  },
+  'ADR:664': {
+    textDe: "Werden Stoffe unter dieser Eintragung in festverbundenen Tanks (Tankfahrzeugen) oder Aufsetztanks befördert, so dürfen diese Tanks mit Additivierungseinrichtungen ausgerüstet sein. […]",
+    textEn: "When substances under this entry are carried in fixed tanks (tank-vehicles) or demountable tanks, these tanks may be equipped with additive devices. […]",
+    textFr: "Lorsque des matières classées sous cette rubrique sont transportées dans des citernes fixes (véhicules-citernes) ou des citernes démontables, ces citernes peuvent être équipées de dispositifs pour additifs. […]",
+  },
+  'RID:243': {
+    textDe: "Benzin und Ottokraftstoff für die Verwendung in Ottomotoren (z.B. in Kraftfahrzeugen, ortsfesten Motoren und anderen Motoren) sind ungeachtet der Bandbreite der Flüchtigkeit dieser Eintragung zuzuordnen.",
+    textEn: "Gasoline, motor spirit and petrol for use in spark-ignition engines (e.g. in automobiles, stationary engines and other engines) shall be assigned to this entry regardless of variations in volatility.",
+    textFr: null,
+  },
+  'RID:534': {
+    textDe: "Obwohl Benzin unter gewissen klimatischen Bedingungen bei 50 °C einen Dampfdruck von mehr als 110 kPa (1,10 bar) bis höchstens 150 kPa (1,50 bar) haben kann, muss es einem Stoff gleichgestellt bleiben, der bei 50 °C einen Dampfdruck von höchstens 110 kPa (1,10 bar) hat.",
+    textEn: "While in some climatic conditions, petrol (gasoline) may have a vapour pressure at 50 °C of more than 110 kPa (1.10 bar) but not more than 150 kPa (1.50 bar) it is to continue to be considered as a substance having a vapour pressure at 50 °C of not more than 110 kPa (1.10 bar).",
+    textFr: null,
+  },
+  'IMDG:243': {
+    textDe: "Benzin und Ottokraftstoff für die Verwendung in Ottomotoren (z. B. in Kraftfahrzeugen, ortsfesten Motoren und anderen Motoren) sind ungeachtet der Bandbreite der Flüchtigkeit dieser Eintragung zuzuordnen.",
+    textEn: "Gasoline, motor spirit and petrol for use in spark-ignition engines (e.g. in automobiles, stationary engines and other engines) shall be assigned to this entry regardless of variations in volatility.",
+    textFr: null,
+  },
+  'ICAO:A100': {
+    textDe: null,
+    textEn: "Gasoline, motor spirit and petrol for use in spark-ignition engines (e.g. in automobiles, stationary engines and other engines) must be assigned to this entry regardless of variations in volatility.",
+    textFr: null,
+  },
 }
 
 // ── Color helpers ─────────────────────────────────────────────

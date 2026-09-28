@@ -78,7 +78,7 @@ pnpm dev                 # Vite dev server
 pnpm build               # Production build → build/ (adapter-node)
 pnpm preview             # Serve the production build
 pnpm check               # svelte-kit sync + svelte-check
-pnpm test                # vitest suite (215 tests)
+pnpm test                # vitest suite (241 tests)
 pnpm test:watch          # vitest watch mode
 pnpm import:regulations  # Import BAM CSVs + SV texts into Supabase
 ```
@@ -110,7 +110,7 @@ src/
         +page.svelte
   lib/
     multimodal/
-      types.ts                    # Entry, Modal, Lang, LABELS (i18n), DEMO_DATA, BK_CLASSES
+      types.ts                    # Entry, Modal, Lang, LABELS (i18n), SvText, pickSvText, DEMO_DATA, DEMO_SVS, BK_CLASSES
       mappers.ts                  # row → Entry per mode; fetchCompareForUn(client, un)
       multimodalTool.svelte.ts    # MultimodalToolState class ($state/$derived)
       specialProvisions.svelte.ts # module-level SV text cache + loader (de/en/fr)
@@ -223,7 +223,8 @@ Everything below is code-complete, tested (226 tests), type-checked, and the two
 
 - **i18n:** UI supports de / en / fr / tr via `LABELS` in `lib/multimodal/types.ts` — no i18n module.
 - **Current state (2026-09-04):** SvelteKit rewrite + auth/entitlement (F-04). Public: `/`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`, `/auth/fehler`. Login required: `/dashboard`, `/suche`, `/un/:nummer` (guard in `hooks.server.ts` → `/login?next=…`). 215 tests green, `pnpm check` clean. Both migrations are applied and verified live (trigger, anon/locked = 0 rows, activated = full data). Still open: Supabase dashboard configuration (email provider, redirect URLs, token-hash email templates, SMTP) — see spec §6.
-- **Data flow:** `/un/:nummer` loads on the server via `locals.supabase` and passes `initialData` to `MultimodalTool`; `/suche` queries client-side via `data.supabase`; SV texts load lazily on the client. Landing demo and locked mode use hardcoded `DEMO_DATA`/`DEMO_SVS` (no database).
+- **Data flow:** `/un/:nummer` loads on the server via `locals.supabase` and passes `initialData` to `MultimodalTool`; `/suche` queries client-side via `data.supabase`; SV texts load lazily on the client. Landing demo and locked mode use `DEMO_DATA`/`DEMO_SVS` from `types.ts` (no database).
+- **Demo constants (2026-09-28):** `DEMO_DATA` and `DEMO_SVS` are **generated from the live BAM tables** for UN 1203 sequence 1 — never hand-edit them. The earlier hand-written values were wrong in nearly every field, including the special provision codes. `DEMO_SVS` is keyed `MODE:code` because the same code carries different official text per mode; SV 664's text is abridged with a `[…]` marker to keep the landing bundle small. `DEMO_DATA.ADN` is empty on purpose, matching what `fetchCompareForUn` returns. `pickSvText()` in `types.ts` is the single home of the language fallback chain (tr reads en first) — reuse it, don't reimplement it.
 - **Auth flow:** email confirmation and password recovery go through `/auth/confirm?token_hash=…&type=…&next=…` (server-side `verifyOtp`); the Supabase email templates must link there with `{{ .TokenHash }}` (spec §6). Rate limits: login 10/IP/15 min, register + reset 5/IP/hour. Registration and reset never reveal whether an address exists.
 - **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` in `lib/landing/faq.ts` — never let them diverge. Site facts (16.730 entries, 1.354 SVs, 5 free searches) must stay consistent across meta description, FAQ, SeoContent, and `static/llms.txt`.
 - **Known no-op kept for parity:** `Features.svelte` builds `hover:border-[${color}]` at runtime; Tailwind can't see it, so it produces no CSS (same as before the rewrite).

@@ -63,10 +63,22 @@ describe('MultimodalSvsAccordion', () => {
 
   it('demo mode shows DEMO_SVS text without any network call', async () => {
     const { client, from } = stubSupabase({})
-    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '163', demo: true, supabase: client } })
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '243', demo: true, mode: 'ADR', supabase: client } })
     await fireEvent.click(screen.getByRole('button'))
-    expect(container).toHaveTextContent(DEMO_SVS['163']!)
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textDe!)
     expect(from).not.toHaveBeenCalled()
+  })
+
+  it('demo mode reads the text for the current mode, not just the code', async () => {
+    const { client } = stubSupabase({})
+    const props = { ...BASE_PROPS, svs: '243', demo: true, mode: 'ADR' as const, lang: 'fr' as const, supabase: client }
+    const { container, rerender } = render(MultimodalSvsAccordion, { props })
+    await fireEvent.click(screen.getByRole('button'))
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textFr!)
+
+    // sea mode has no French text, so it must fall back to English
+    await rerender({ ...props, mode: 'IMDG' })
+    expect(container).toHaveTextContent(DEMO_SVS['IMDG:243']!.textEn!)
   })
 
   it('expanding a row loads and shows the German text', async () => {
@@ -154,5 +166,24 @@ describe('MultimodalSvsAccordion', () => {
     expect(panel()).toBeNull()
     expect(container).toHaveTextContent('Voller SV-Text')
     expect(container).not.toHaveTextContent(BASE_PROPS.clickLoad)
+  })
+
+  it('demo mode follows the selected language', async () => {
+    const { client, from } = stubSupabase({})
+    const props = { ...BASE_PROPS, svs: '243', demo: true, mode: 'ADR' as const, lang: 'de' as const, supabase: client }
+    const { container, rerender } = render(MultimodalSvsAccordion, { props })
+    await fireEvent.click(screen.getByRole('button'))
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textDe!)
+
+    await rerender({ ...props, lang: 'en' })
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textEn!)
+    expect(container).not.toHaveTextContent(DEMO_SVS['ADR:243']!.textDe!)
+
+    await rerender({ ...props, lang: 'fr' })
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textFr!)
+
+    await rerender({ ...props, lang: 'tr' })
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textEn!)
+    expect(from).not.toHaveBeenCalled()
   })
 })

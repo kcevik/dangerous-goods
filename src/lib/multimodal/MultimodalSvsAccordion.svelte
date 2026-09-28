@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js'
   import { getSpecialProvision, loadSpecialProvision } from './specialProvisions.svelte'
-  import { DEMO_SVS, type Lang, type Modal } from './types'
+  import { DEMO_SVS, type Lang, type Modal, pickSvText, type SvText } from './types'
 
   interface Props {
     svs: string
     label: string
     noText: string
     clickLoad: string
-    /** When true, uses hardcoded DEMO_SVS instead of Supabase */
+    /** When true, reads DEMO_SVS instead of Supabase */
     demo?: boolean
     /** Transport mode the SV codes belong to — required for live lookup */
     mode?: Modal
@@ -23,14 +23,11 @@
   const nrs = $derived(svs.split(',').map(s => s.trim()).filter(Boolean))
 
   function text(nr: string): string {
-    if (demo) return DEMO_SVS[nr] ?? noText
-    const sv = getSpecialProvision(mode, nr)
+    // DEMO_SVS is keyed by mode too: the same code carries different official text per mode
+    const sv: SvText | null | undefined = demo ? (DEMO_SVS[`${mode}:${nr}`] ?? null) : getSpecialProvision(mode, nr)
     if (sv === undefined) return '…'
     if (sv === null) return noText
-    // language preference mirrors getName(): tr users read English before German
-    if (lang === 'en' || lang === 'tr') return sv.textEn ?? sv.textDe ?? sv.textFr ?? noText
-    if (lang === 'fr') return sv.textFr ?? sv.textEn ?? sv.textDe ?? noText
-    return sv.textDe ?? sv.textEn ?? sv.textFr ?? noText
+    return pickSvText(sv, lang) ?? noText
   }
 
   function preview(nr: string): string {

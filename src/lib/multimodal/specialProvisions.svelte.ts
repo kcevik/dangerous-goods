@@ -1,10 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SvText } from './types'
 
-export interface SpecialProvisionText {
-  textDe: string | null
-  textEn: string | null
-  textFr: string | null
-}
+export type SpecialProvisionText = SvText
 
 /** Module-level cache shared by all accordion instances; key = `${mode}:${code}` */
 const cache = $state<Record<string, SpecialProvisionText | null>>({})

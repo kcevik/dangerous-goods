@@ -61,11 +61,11 @@ describe('MultimodalToolState', () => {
       const entry = tool.currentEntry!
       expect(tool.getName(entry)).toBe('BENZIN')
       tool.setLang('en')
-      expect(tool.getName(entry)).toBe('PETROL')
+      expect(tool.getName(entry)).toBe('MOTOR SPIRIT')
       tool.setLang('fr')
       expect(tool.getName(entry)).toBe('ESSENCE')
       tool.setLang('tr')
-      expect(tool.getName(entry)).toBe('PETROL')
+      expect(tool.getName(entry)).toBe('MOTOR SPIRIT')
     })
 
     it('always uses the raw name for ICAO (English-only dataset)', () => {
@@ -81,22 +81,37 @@ describe('MultimodalToolState', () => {
     it('lists the other language names, excluding the current language', () => {
       const tool = demoTool()
       const entry = tool.currentEntry!
-      expect(tool.getNameSub(entry)).toBe('PETROL · ESSENCE')
+      expect(tool.getNameSub(entry)).toBe('MOTOR SPIRIT · ESSENCE')
       tool.setLang('en')
       expect(tool.getNameSub(entry)).toBe('BENZIN · ESSENCE')
     })
   })
 
   describe('getSpez', () => {
+    // UN 1203 carries no specification in any mode, so use a literal entry here
+    const spezEntry = {
+      unNumber: '1263', sequenceNumber: 1,
+      specification: 'oder FARBZUBEHÖRSTOFFE',
+      specificationEn: 'or PAINT RELATED MATERIAL',
+      specificationFr: 'ou MATIÈRES APPARENTÉES AUX PEINTURES',
+    }
+
     it('follows the language fallback chain for specifications', () => {
-      const tool = demoTool()
-      const entry = tool.currentEntry!
-      expect(tool.getSpez(entry)).toBe('oder KRAFTSTOFF FÜR MOTOREN, BENZIN')
+      const tool = new MultimodalToolState()
+      expect(tool.getSpez(spezEntry)).toBe('oder FARBZUBEHÖRSTOFFE')
       tool.setLang('en')
-      expect(tool.getSpez(entry)).toBe('or MOTOR SPIRIT or GASOLINE')
+      expect(tool.getSpez(spezEntry)).toBe('or PAINT RELATED MATERIAL')
       tool.setLang('fr')
-      tool.switchModal('IMDG')
-      expect(tool.getSpez(tool.currentEntry!)).toBe('or PETROL or MOTOR SPIRIT')
+      expect(tool.getSpez(spezEntry)).toBe('ou MATIÈRES APPARENTÉES AUX PEINTURES')
+    })
+
+    it('falls back to English for French and Turkish when no French text exists', () => {
+      const tool = new MultimodalToolState()
+      const noFrench = { ...spezEntry, specificationFr: undefined }
+      tool.setLang('fr')
+      expect(tool.getSpez(noFrench)).toBe('or PAINT RELATED MATERIAL')
+      tool.setLang('tr')
+      expect(tool.getSpez(noFrench)).toBe('or PAINT RELATED MATERIAL')
     })
   })
 

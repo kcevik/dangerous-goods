@@ -111,7 +111,7 @@
                 <div class="font-mono text-base font-bold text-[#0f2744]">{entry.hazardClass}</div>
                 {#if entry.packingGroup}
                   <div class="font-mono text-[11px] text-[#5a7a99] mt-0.5">
-                    VP-Gr. {entry.packingGroup}
+                    {tool.L('pgShort')} {entry.packingGroup}
                   </div>
                 {/if}
                 {#if entry.kemlerNumber}
@@ -208,7 +208,7 @@
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('packingGroup')}</td>
                   <td class="field-value">
-                    <span class="badge bg-[#1e3a5f] text-blue-200">VP-Gr. {currentEntry.packingGroup}</span>
+                    <span class="badge bg-[#1e3a5f] text-blue-200">{tool.L('pgShort')} {currentEntry.packingGroup}</span>
                   </td>
                 </tr>
               {/if}
@@ -244,7 +244,7 @@
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('transportCat')}</td>
                   <td class="field-value">
-                    <span class={['badge', tool.bkClass(currentEntry.transportCategory)]}>BK {currentEntry.transportCategory}</span>
+                    <span class={['badge', tool.bkClass(currentEntry.transportCategory)]}>{tool.L('transportCatShort')} {currentEntry.transportCategory}</span>
                     {#if currentEntry.multiplier}
                       <span class="font-mono text-xs text-[#5a7a99] ml-1.5">
                         × {currentEntry.multiplier}

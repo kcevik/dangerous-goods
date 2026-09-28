@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { fireEvent, render, screen } from '@testing-library/svelte'
 import { describe, expect, it, vi } from 'vitest'
 import MultimodalTool from '$lib/multimodal/MultimodalTool.svelte'
-import { DEMO_DATA } from '$lib/multimodal/types'
+import { DEMO_DATA, DEMO_SVS } from '$lib/multimodal/types'
 
 function stubSupabase(responses: Partial<Record<string, { data: unknown[] | null, error: unknown }>>) {
   const from = vi.fn((table: string) => ({
@@ -34,7 +34,7 @@ describe('MultimodalTool', () => {
     const { container } = render(MultimodalTool, { props: { demo: true } })
     await fireEvent.click(screen.getByRole('button', { name: 'EN' }))
     expect(container).toHaveTextContent('Availability in all modes')
-    expect(container).toHaveTextContent('PETROL')
+    expect(container).toHaveTextContent('MOTOR SPIRIT')
   })
 
   it('switches the detail panel when a mode tab is clicked', async () => {
@@ -68,5 +68,37 @@ describe('MultimodalTool', () => {
     const { container } = render(MultimodalTool, { props: {} })
     expect(container).toHaveTextContent('UN-Nummer oder Stoffname…')
     expect(container).not.toHaveTextContent('Verfügbarkeit in allen Modi')
+  })
+
+  it('translates the packing-group and transport-category badges', async () => {
+    const { container } = render(MultimodalTool, { props: { demo: true } })
+    expect(container).toHaveTextContent('VP-Gr. II')
+    expect(container).toHaveTextContent('BK 2')
+
+    await fireEvent.click(screen.getByRole('button', { name: 'EN' }))
+    expect(container).not.toHaveTextContent('VP-Gr.')
+    expect(container).not.toHaveTextContent('BK 2')
+    expect(container).toHaveTextContent('PG II')
+    expect(container).toHaveTextContent('TC 2')
+  })
+
+  it('leaves no German badge text behind in French or Turkish', async () => {
+    const { container } = render(MultimodalTool, { props: { demo: true } })
+    for (const lang of ['FR', 'TR']) {
+      await fireEvent.click(screen.getByRole('button', { name: lang }))
+      expect(container.textContent, lang).not.toContain('VP-Gr.')
+    }
+  })
+
+  it('switches the demo special-provision text with the language', async () => {
+    const { container } = render(MultimodalTool, { props: { demo: true } })
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textDe!.slice(0, 40))
+
+    await fireEvent.click(screen.getByRole('button', { name: 'EN' }))
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textEn!.slice(0, 40))
+    expect(container).not.toHaveTextContent(DEMO_SVS['ADR:243']!.textDe!.slice(0, 40))
+
+    await fireEvent.click(screen.getByRole('button', { name: 'FR' }))
+    expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textFr!.slice(0, 40))
   })
 })
