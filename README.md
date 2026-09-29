@@ -8,7 +8,7 @@ Stack: SvelteKit 2 · Svelte 5 · Tailwind CSS 4 · Supabase · pnpm.
 
 ```bash
 pnpm install
-cp .env.example .env   # fill in Supabase URL, publishable key, service-role key
+cp .env.example .env   # Supabase URL + publishable key; service-role key only for the import script
 pnpm dev
 ```
 
@@ -24,16 +24,25 @@ Note: Vite loads `.env.local` with priority over `.env`. Do not keep a placehold
 | `pnpm check` | svelte-check type check |
 | `pnpm test` | vitest suite |
 | `pnpm import:regulations` | import BAM CSVs + special provisions into Supabase |
+| `pnpm deploy:test` / `pnpm deploy:rollback` | deploy to / roll back the VPS |
 
-## Production
+## Deployment
+
+The app runs as a Docker container behind nginx + certbot on a Netcup VPS:
 
 ```bash
-pnpm build
-ORIGIN=https://gefahrgut.org \
-ADDRESS_HEADER=X-Forwarded-For XFF_DEPTH=1 \
-PORT=3000 \
-PUBLIC_SUPABASE_URL=… PUBLIC_SUPABASE_PUBLISHABLE_KEY=… \
-node build
+cp .deploy.env.example .deploy.env   # DEPLOY_HOST, DEPLOY_USER
+pnpm deploy:test                     # build image → ship over SSH → switch → /healthz → auto-rollback
+pnpm deploy:rollback                 # back to the previous image
 ```
 
-`ORIGIN` is required for form actions and for the confirmation-mail redirect URLs. `ADDRESS_HEADER`/`XFF_DEPTH` make `getClientAddress()` return the right-most `X-Forwarded-For` hop that Caddy appends, which the auth rate limiters key on. Apply migrations with `supabase db push`; Supabase dashboard setup (email provider, redirect URLs, token-hash email templates, SMTP) is listed in `docs/superpowers/specs/2026-09-04-auth-and-entitlement-design.md` §6. See `CLAUDE.md` for architecture and conventions.
+Server setup, nginx and certificates: `docs/deploy/` (runbook) and `deploy/` (compose file,
+env template, nginx configs). Runtime settings live in `/etc/gefahrgut/app.env` on the server —
+see `deploy/app.env.example`. `REGISTRATION_MODE` decides whether `/registrieren` creates
+accounts (`open`) or collects launch notifications (anything else).
+
+## Docs
+
+- `docs/STATUS.md` — where the project stands, next steps, go-live blockers
+- `docs/README.md` — index of designs and plans
+- `CLAUDE.md` — architecture, conventions and rules

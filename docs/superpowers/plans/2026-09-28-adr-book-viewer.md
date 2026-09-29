@@ -1,5 +1,4 @@
-> **Progress 2026-09-29:** Tasks 11–16 **done** (inline execution; rulings in the ledger
-> `.superpowers/sdd/2026-09-28-adr-book-viewer/progress.md`). Route is `/regelwerk/[mode=bookMode]`,
+> **Progress 2026-09-29:** Tasks 11–16 **done** (inline; decisions in "Execution notes" at the end). Route is `/regelwerk/[mode=bookMode]`,
 > Ctrl+F not intercepted (owner). 551 tests green, `pnpm check` 0 errors, `pnpm build` OK,
 > anonymous smoke test on the build passes. Budgets measured on the real book: index build
 > 245 ms (over 100 ms), `?sv=274` payload 390 KB raw (over 350 KB). The logged-in browser pass of
@@ -387,3 +386,38 @@ reachable, so it is the one that must not run early.
   - keyboard-only pass: skip link → find bar → next/prev → TOC → table scroll, all reachable and visibly focused.
 - [ ] Measure against the spec §9 budgets (index build time and resident memory at boot, initial payload, one `window` fetch, `markMatches` timing on a Table A window) and record the numbers in the checkpoint. Anything over budget is a finding, not a pass.
 - [ ] **Verify:** every bullet above observed and recorded. Report to the owner, repeating spec §11's remaining open questions verbatim. **Do not commit** — the owner commits.
+
+## Execution notes
+
+Decisions and findings recorded while this plan was executed (copied from the execution
+ledger, which is not in git). `Ruling:` = a decision taken on the owner's behalf, with its cost if wrong.
+
+- Setup: Ruling: no worktree, no commits — owner rule (CLAUDE.md + memory) overrides skill; BASE = working tree — cost if wrong: none, owner commits
+- Setup: Ruling: route /regelwerk/[mode] with a param matcher allowing only `adr` (owner 2026-09-29, spec §11.5/§11.9) — replaces /regulations/adr everywhere in Tasks 12–16 — cost if wrong: rename of one route dir
+- Setup: Ruling: Ctrl+F is NOT intercepted (owner 2026-09-29, spec §11.6) — find bar always visible; drop the Ctrl+F test bullets — cost if wrong: add one key handler
+- Setup: Ruling: source = official public text, exact document TBD (owner) — Task 0 partially answered; nothing deployed — cost if wrong: feature cannot ship
+- Task 11: Ruling: window endpoint takes `dir=1/-1` (window starting after / ending before `line`, ADJACENT_WINDOW_LINES=300) besides centred `line` — sliceAround snaps outward, so a centred fetch next to a loaded window would render text twice; ensureLineLoaded uses adjacent fetches when the hit is within 300 lines of a loaded edge, centred otherwise — cost if wrong: rare one-line overlap (MAX_SNAP case)
+- Task 11: Ruling: toggling includeIncidental calls fetchCodeHits → search endpoint also accepts `sv=`/`un=` (+`all=1`) and answers from hitsFor — spec §6.1 names no endpoint for it — cost if wrong: one extra query mode
+- Task 11: Ruling: capped counter total comes from new label `cappedTotal` ('{shown}+ ({total} Treffer)') in all four languages — the plan's string embeds German "Treffer" — cost if wrong: none
+- Task 11: Ruling: plan's `sections`/`isOverloaded` = spec's `windows`; cap MAX_LOADED_WINDOWS=40; reset() keeps only the window holding the current hit (sync, no fetch)
+- Task 12: Ruling: endpoints answer 401 {error:'unauthenticated'} with no session (defence in depth behind the hooks redirect) and check the rate limit before the session (limits Supabase auth calls too) — cost if wrong: none
+- Task 12: Ruling: shared gate in src/lib/server/adrBook/access.ts (bookAccessDenied); SV_CODE_RE/UN_NUMBER_RE live in bookTypes.ts because SvelteKit rejects extra exports from +server.ts
+- Task 12: Ruling: added src/params/bookMode.ts matcher (only 'adr') + tests/bookMode-matcher.test.ts, per owner's /regelwerk/[mode] decision
+- Task 13: Ruling: not-found case uses sv=999 (plan's 99999 fails the SV code shape → 400 by design); the "supabase.from never called" check becomes "getBookIndex never called" — the book is not in Postgres
+- Task 13: Ruling: load returns focusLine (scroll target), resolvedCode (640D→640 parent fallback, whose hits are then listed) and totalLines; locked payload is { locked: true, mode } only
+- Task 14: Ruling: renderer tags every non-heading block and every table row with `book-ln-<line>` (render.ts sourceLines + api.ts subsequence mapping) and the highlighter gains `wholeToken` + `sourceLineOf`/`pickActiveMark` — without them the active <mark> for "Treffer k von n" cannot be identified (marks only knew their window). Verified on the real book: 0/3551 row tags mismatched — cost if wrong: active highlight on a neighbouring occurrence
+- Task 14: Ruling: added BookViewer.svelte (orchestrator) + bookFetch.ts (+test) beyond the plan's five files; BookPageData type moved to bookTypes.ts so components share it
+- Task 14: Ruling: reading backward is a "Vorherigen Abschnitt laden" button, forward is IntersectionObserver + button — auto-prepending shifts the scroll position (no scroll anchoring in Safari) — cost if wrong: one click
+- Task 14: Ruling: "Auch beiläufige Treffer" shown for every code target (spec: only when rank-5 hits exist, with a count) — the count needs an extra query — cost if wrong: a checkbox that sometimes changes nothing
+- Task 14: Ruling: autofixer "replaceState() without resolve()" kept as false positive — the path is resolve()d inline; resolve() cannot carry the query string (spec §1.3). {@html} warning expected: server-sanitised HTML, commented in BookWindow.svelte
+- Task 14: Final: minor (deferred): TOC has no aria-current for the section in view (needs scroll tracking)
+- Task 15: Ruling: links point at /regelwerk/adr (owner route); link copy/aria from new labels openSvInBook/openUnInBook (4 langs); autofixer "href without resolve()" is the same resolve()+query false positive spec §1.3 prescribes
+- Task 16: Ruling: budgets over — index build 245 ms (budget 100), ?sv=274 payload 390 KB raw (budget 350; 41 KB gz) — recorded as findings, not fixed — cost if wrong: slower first request per worker; heavier page for common codes
+- Final review: self-review (no subagent tool use without owner request)
+- Final: fixed focus stolen from the search field when a hit is activated — "keeps focus in the search field…" RED→GREEN, suite 554/554
+- Final: fixed no scroll when a search's first hit lies outside the loaded windows (scroll key consumed before the window arrived) — "scrolls to the first hit of a search…" RED→GREEN, suite 554/554
+- Final: fixed lettered provision (640D) marks/hits mismatch — load retargets to the parent and reports fallbackFrom — "retargets a lettered provision…" RED→GREEN, suite 554/554
+- Final: minor (deferred): hit payload repeats the full heading object per hit (drives the 390 KB case)
+- Final: minor (deferred): "Tunnelcode" has 0 hits — the ADR says "Tunnelbeschränkungscode"; synonyms would help
+- Owner 2026-09-29: shortcut list removed from the find bar ("confusing"); keys still work — test 'shows no keyboard-shortcut list' RED→GREEN, suite 555/555
+- Owner 2026-09-29: ALL shortcuts removed ("overkill") — only Enter in the search field = next hit; Ctrl+F hint removed — test 'has no keyboard shortcuts…' RED→GREEN, suite 554/554

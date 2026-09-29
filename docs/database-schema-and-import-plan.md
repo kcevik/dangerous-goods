@@ -1,5 +1,8 @@
 # Database Schema & CSV Import Plan
 
+> Sections 1–6 describe the import as designed and built. Sections 7–9 were updated on
+> 2026-09-29 to the live state (access control, auth tables, the dropped comparison view).
+
 > **Data source:** BAM GEFAHRGUT database  
 > **License:** dl-de/by-2-0 — attribution required, modifications must be marked  
 
@@ -422,39 +425,44 @@ The `UNIQUE (un_number, sequence_number)` constraint makes upsert safe.
 
 ---
 
-## 7. Supabase Row-Level Security (RLS)
+## 7. Access control (RLS) — current state
 
-All regulation tables should be **publicly readable** (no auth required for lookups). User data stays separate.
+> Updated 2026-09-29. The original "public read" policies were replaced by migration
+> `20260904120000_auth_and_entitlement` and tightened by `20260904123000_harden_grants`.
 
-```sql
--- Allow anyone to read regulation data
-ALTER TABLE adr_entries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read" ON adr_entries FOR SELECT USING (true);
--- Repeat for rid_entries, icao_entries, imdg_entries, un_entries,
--- special_provisions, segregation_matrix, segregation_codes
-```
+- Every regulation table (`adr_entries`, `rid_entries`, `imdg_entries`, `icao_entries`,
+  `un_entries`, `special_provisions`, `segregation_matrix`, `segregation_codes`) has exactly one
+  policy, `activated read`: `for select to authenticated using (is_activated())`.
+- `anon` has no table-level `SELECT` grant at all; locked accounts (`profiles.activated_at` is
+  NULL) read nothing.
+- `is_activated()` is security-invoker over `profiles`; `handle_new_user()` (security definer,
+  `search_path = ''`) creates the profile on signup.
 
----
+## 8. Auth and pre-launch tables
 
-## 8. Phase Roadmap
+### Table: `profiles`
 
-| Phase | Tables needed |
-|-------|--------------|
-| MVP (all modes) | All entry tables, `special_provisions` (all modes), `segregation_matrix` (all modes), `un_comparison` view |
-| Phase 2 (tools) | No new tables — builds features on top of existing schema |
-| Phase 3 (AI) | Full-text indexes already in place; Meilisearch sync |
+`id` (→ `auth.users`), `email`, `activated_at` (NULL = locked). Users can select their own row
+only; the owner activates an account by setting `activated_at` (later: a Stripe webhook).
 
-### Cross-mode comparison view (MVP)
+### Table: `launch_signups` (migration `20260929120000_launch_signups`)
 
 ```sql
-CREATE VIEW un_comparison AS
-  SELECT un_number, 'ADR'  AS mode, hazard_class, packing_group, transport_category AS cat, kemler_number AS kemler, NULL AS ems, NULL AS stowage_category FROM adr_entries
-  UNION ALL
-  SELECT un_number, 'RID'  AS mode, hazard_class, packing_group, transport_category, NULL, NULL, NULL FROM rid_entries
-  UNION ALL
-  SELECT un_number, 'IMDG' AS mode, hazard_class, packing_group, NULL, NULL, ems_fire, stowage_category FROM imdg_entries
-  UNION ALL
-  SELECT un_number, 'ICAO' AS mode, hazard_class, packing_group, NULL, NULL, NULL, NULL FROM icao_entries;
+id bigint identity primary key,
+email text not null unique check (email = lower(btrim(email)) and length(email) between 6 and 254),
+consent_version text not null,
+consented_at timestamptz not null default now(),
+confirmed_at timestamptz,          -- set by the later double opt-in
+created_at timestamptz not null default now()
 ```
 
-This is what powers the multimodal comparison feature — query once by UN number, get all modes back.
+RLS on with **no policies** and all privileges revoked from `anon`/`authenticated`. Written only
+through `join_launch_list(p_email, p_consent_version)` — security definer, insert-only,
+`on conflict (email) do nothing`, returns nothing.
+
+## 9. Cross-mode comparison
+
+The `un_comparison` view planned here was dropped in `20260904120000_auth_and_entitlement`.
+The comparison tool reads each mode's table separately (`fetchCompareForUn` in
+`src/lib/multimodal/mappers.ts`); the side-by-side view (F-10) is designed in
+`docs/superpowers/specs/2026-09-28-regulatory-comparison-design.md`.

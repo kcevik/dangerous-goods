@@ -1,5 +1,9 @@
 # gefahrgut.org — Readiness Report
 
+> **Historical snapshot (2026-09-28).** Several points are resolved since (registration works,
+> deployment is planned with Docker + nginx instead of PM2 + Caddy). Open items are tracked in
+> [`STATUS.md`](STATUS.md).
+
 **Date:** 2026-09-28
 **Scope:** read-only audit of `/home/dilli/projects/dangerous-goods` (SvelteKit app), the live `gefahrgut.org` WordPress site, and the hosted Supabase project `nmigeqhrquzmdxjeuite`.
 **Nothing in the repo was changed.** No git commands that write were run.

@@ -1,5 +1,4 @@
-> **Progress 2026-09-29:** Tasks 1–7 **done** (inline; rulings in
-> `.superpowers/sdd/2026-09-29-prelaunch-deployment/progress.md`). 610 tests green, `pnpm check`
+> **Progress 2026-09-29:** Tasks 1–7 **done** (inline; decisions in "Execution notes" at the end). 610 tests green, `pnpm check`
 > 0 errors, `pnpm build` OK. Migration applied and verified live 2026-09-29. Local Docker image verified.
 > Tasks 8–11 not started.
 
@@ -988,7 +987,6 @@ tests
 docs
 .superpowers
 .git
-multimodal-tool.html
 ```
 
 - [ ] **Step 6: `deploy/compose.yaml`**
@@ -1538,3 +1536,22 @@ and in `tests/hooks.test.ts` add a case: a request for a listed path → `handle
 
 - Spec §1 → Tasks 1, 3, 4, 5; §2 → Task 2; §3 → Task 6; §4 → Task 8; §5 → Task 7; §6 Phase A → Task 8 runbook, Phase B → Task 10, Phase C → Task 11; §7 → tests in every task; §8 → Task 9 docs; §9 → Task 9.
 - Names used across tasks: `registrationMode()`, `registrationOpen`, `CONSENT_VERSION`, `LAUNCH_CONSENT_TEXT`, `signupCtaLabel()`, `LAUNCH_HEADING`, `LAUNCH_INTRO`, `LAUNCH_THANKS`, `PRIVACY_URL`, `IMPRINT_URL`, `BLOG_URL`, `join_launch_list`, `legacyRedirectTarget()`, `LEGACY_PATHS` — each defined in exactly one task.
+
+## Execution notes
+
+Decisions and findings recorded while this plan was executed (copied from the execution
+ledger, which is not in git). `Ruling:` = a decision taken on the owner's behalf, with its cost if wrong.
+
+- Setup: Ruling: no worktree, no commits (owner rule) — cost if wrong: none
+- Task 2: Ruling: Steps 5–6 (apply to hosted project + live verification) DEFERRED — needs explicit owner approval (plan + global rule); code/test done — cost if wrong: waitlist RPC fails live until applied
+- Task 4: Ruling: added registrationOpen pass-through in src/routes/+layout.ts (universal load rebuilds data; the plan missed it — svelte-check caught it) + new tests/root-layout-universal.test.ts RED→GREEN — cost if wrong: none
+- Task 4: Ruling: autofixer "href without resolve()" on {PRIVACY_URL} is a false positive (external absolute URL from src/lib/legal.ts)
+- Task 5: Ruling: Navbar/Cta internal links (/login, /registrieren) switched to resolve() — project convention, surfaced by the autofixer once the files got a script block — cost if wrong: none (same hrefs, tests unchanged)
+- Task 5: Ruling: remaining autofixer findings kept: BLOG_URL/PRIVACY_URL/IMPRINT_URL are external; Footer's mixed link list and the landing JSON-LD {@html} are pre-existing
+- Task 6: Ruling: Step 9 (local docker build + run + healthz) NOT RUN — Docker Desktop WSL integration is off for this distro ('docker' not found); owner must enable it (Settings → Resources → WSL Integration); Dockerfile verified only by static tests — cost if wrong: first real build may fail and need a fix
+- Task 7: Ruling: '[ -n "$current" ] && ssh …' written as an if-block — under set -e a false test as a function's last statement leaks a non-zero status — cost if wrong: none
+- Final review: self-review (no subagent without owner OK) over Tasks 1–7 — no Critical/Important findings
+- Final: minor (deferred): FAQ "Was kostet…" still says "zuerst registrierten Nutzern" — reads oddly in waitlist mode
+- Final: minor (deferred): until the migration is applied, submitting the notification form answers with the generic error (RPC missing)
+- Task 2: Steps 5–6 done with owner approval (2026-09-29): applied via execute_sql in one transaction + schema_migrations row 20260929120000 'launch_signups' (same method as 2026-09-04; apply_migration would have minted a different version). Live: anon/auth select+insert false, anon exec true, RLS on, 0 policies; '  Probe@Example.DE ' + 'probe@example.de' → 1 row; POST via dev server (anon key) → {notified} twice, 1 row; REST read with publishable key → 401 permission denied. Test rows deleted (0 remaining). Advisors: rls_enabled_no_policy + security_definer_executable (anon/auth) on join_launch_list = intended by design; new unrelated: auth_leaked_password_protection disabled
+- Task 6: Step 9 done 2026-09-29 after owner enabled WSL integration: image builds (240 MB), container runs as node, /healthz ok, Docker health 'healthy', book mounted read-only and readable (8,534,589 bytes), no book text inside the image, landing shows 6× waitlist CTA, /regelwerk/adr → 303 login, POST /registrieren validates (400 invalid_email)
