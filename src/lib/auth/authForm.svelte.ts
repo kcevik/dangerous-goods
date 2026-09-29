@@ -1,4 +1,4 @@
-export type AuthFormKind = 'login' | 'register' | 'reset' | 'newPassword'
+export type AuthFormKind = 'login' | 'register' | 'reset' | 'newPassword' | 'notify'
 export type AuthFormStatus = 'idle' | 'submitting' | 'sent' | 'error'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -29,6 +29,7 @@ export class AuthFormState {
       case 'register': return this.emailValid && this.passwordStrong && this.passwordsMatch && this.consent
       case 'reset': return this.emailValid
       case 'newPassword': return this.passwordStrong && this.passwordsMatch
+      case 'notify': return this.emailValid && this.consent
     }
   })
 }

@@ -1,10 +1,14 @@
 <script lang="ts">
-  const linkColumns = [
+  import { BLOG_URL, IMPRINT_URL, PRIVACY_URL } from '$lib/legal'
+
+  let { registrationOpen = false }: { registrationOpen?: boolean } = $props()
+
+  const linkColumns = $derived([
     {
       heading: 'Produkt',
       links: [
         { label: 'Funktionen', href: '#features' },
-        { label: 'Registrieren', href: '/registrieren' },
+        { label: registrationOpen ? 'Registrieren' : 'Zum Launch benachrichtigen', href: '/registrieren' },
         { label: 'Regelwerksvergleich', href: '#comparison' },
         { label: 'Änderungsmonitor', href: '#' },
       ],
@@ -14,19 +18,19 @@
       links: [
         { label: 'Dokumentation', href: '#' },
         { label: 'ADR-Leitfaden', href: '#' },
-        { label: 'Blog', href: 'https://gefahrgut.org/blog/' },
+        { label: 'Blog', href: BLOG_URL },
         { label: 'BAM-Datenbasis', href: '#' },
       ],
     },
     {
       heading: 'Rechtliches',
       links: [
-        { label: 'Impressum', href: 'https://gefahrgut.org/impressum/' },
-        { label: 'Datenschutz', href: 'https://gefahrgut.org/datenschutzerklaerung/' },
+        { label: 'Impressum', href: IMPRINT_URL },
+        { label: 'Datenschutz', href: PRIVACY_URL },
         { label: 'AGB', href: '#' },
       ],
     },
-  ]
+  ])
 </script>
 
 <footer class="bg-white border-t border-slate-200">

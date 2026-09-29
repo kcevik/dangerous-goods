@@ -26,6 +26,14 @@ describe('AuthFormState.canSubmit', () => {
     expect(f.canSubmit).toBe(false)
   })
 
+  it('notify: needs a valid email and consent', () => {
+    const f = new AuthFormState('notify')
+    f.email = 'k@example.de'
+    expect(f.canSubmit).toBe(false)
+    f.consent = true
+    expect(f.canSubmit).toBe(true)
+  })
+
   it('reset needs only an email', () => {
     const f = new AuthFormState('reset')
     expect(f.canSubmit).toBe(false)

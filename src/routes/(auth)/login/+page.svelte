@@ -79,5 +79,5 @@
 
 <div class="mt-6 flex flex-col gap-2 text-sm text-slate-500">
   <a href={resolve('/(auth)/passwort-vergessen')} class="hover:text-[#0f2744] underline">Passwort vergessen?</a>
-  <span>Noch kein Konto? <a href={resolve('/(auth)/registrieren')} class="font-semibold underline" style="color: #0f2744;">Registrieren</a></span>
+  <span>Noch kein Konto? <a href={resolve('/(auth)/registrieren')} class="font-semibold underline" style="color: #0f2744;">{data.registrationOpen ? 'Registrieren' : 'Zum Launch benachrichtigen'}</a></span>
 </div>

@@ -11,6 +11,7 @@
   import SeoContent from '$lib/landing/SeoContent.svelte'
   import Stats from '$lib/landing/Stats.svelte'
   import { FAQ_ITEMS } from '$lib/landing/faq'
+  import { signupCtaLabel } from '$lib/prelaunch/copy'
   import {
     buildFaqPageLd,
     buildOrganizationLd,
@@ -20,7 +21,10 @@
   } from '$lib/seo/structuredData'
 
   const title = 'gefahrgut.org – Gefahrgut-Datenbank & Tools für Gefahrgutbeauftragte'
-  const description = 'ADR, RID, IMDG und ICAO in einer Plattform: 16.730 Einträge der BAM-GEFAHRGUT-Datenbank, multimodaler Regelwerksvergleich, Sondervorschriften im Volltext und Werkzeuge wie der 1000-Punkte-Rechner. Jetzt registrieren.'
+  let { data } = $props()
+  // fail-closed: without layout data the page shows the pre-launch wording
+  const registrationOpen = $derived(data?.registrationOpen === true)
+  const description = $derived(`ADR, RID, IMDG und ICAO in einer Plattform: 16.730 Einträge der BAM-GEFAHRGUT-Datenbank, multimodaler Regelwerksvergleich, Sondervorschriften im Volltext und Werkzeuge wie der 1000-Punkte-Rechner. ${signupCtaLabel(registrationOpen)}.`)
 
   // JSON-LD is injected with {@html}; escaping "<" guarantees content can never close the script tag
   function ldScript(ld: unknown): string {
@@ -56,7 +60,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-white font-sans antialiased">
-  <Navbar />
+  <Navbar {registrationOpen} />
   <Hero />
   <Stats />
   <Features />
@@ -65,6 +69,6 @@
   <SeoContent />
   <DataSource />
   <Faq />
-  <Cta />
-  <Footer />
+  <Cta {registrationOpen} />
+  <Footer {registrationOpen} />
 </div>

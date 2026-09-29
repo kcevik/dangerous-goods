@@ -10,7 +10,9 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "import:regulations": "tsx scripts/import-regulations.ts"
+    "import:regulations": "tsx scripts/import-regulations.ts",
+    "deploy:test": "bash scripts/deploy.sh deploy",
+    "deploy:rollback": "bash scripts/deploy.sh rollback"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.5",

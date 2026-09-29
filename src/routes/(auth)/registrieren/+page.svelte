@@ -4,8 +4,11 @@
   import { untrack } from 'svelte'
   import { AuthFormState } from '$lib/auth/authForm.svelte'
   import { AUTH_MESSAGES } from '$lib/auth/messages'
+  import { PRIVACY_URL } from '$lib/legal'
+  import { LAUNCH_HEADING } from '$lib/prelaunch/copy'
+  import LaunchNotifyForm from '$lib/prelaunch/LaunchNotifyForm.svelte'
 
-  let { form } = $props()
+  let { data, form } = $props()
 
   // created once; a no-JS round trip returns the typed email in `form`
   const formState = untrack(() => {
@@ -17,10 +20,13 @@
 </script>
 
 <svelte:head>
-  <title>Registrieren – gefahrgut.org</title>
+  <title>{data.mode === 'open' ? 'Registrieren' : LAUNCH_HEADING} – gefahrgut.org</title>
 </svelte:head>
 
-{#if form?.sent}
+{#if data.mode !== 'open'}
+  <!-- pre-launch: collect launch notifications instead of creating accounts -->
+  <LaunchNotifyForm form={form ?? null} />
+{:else if form?.sent}
   <div role="status">
     <div class="text-4xl mb-4">✉️</div>
     <h1 class="text-2xl font-bold mb-2" style="color: #0f2744;">Bestätige deine E-Mail-Adresse</h1>
@@ -86,7 +92,7 @@
     <label class="flex items-start gap-3 cursor-pointer">
       <input type="checkbox" name="consent" bind:checked={formState.consent} required class="mt-1 w-4 h-4 accent-orange-500" />
       <span class="text-xs text-slate-500 leading-relaxed">
-        Ich habe die <a href="https://gefahrgut.org/datenschutzerklaerung/" class="underline hover:text-[#0f2744]">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu.
+        Ich habe die <a href={PRIVACY_URL} class="underline hover:text-[#0f2744]">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu.
       </span>
     </label>
 

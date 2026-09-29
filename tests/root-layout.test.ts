@@ -7,6 +7,9 @@ import { createRawSnippet } from 'svelte'
 const { invalidateMock } = vi.hoisted(() => ({ invalidateMock: vi.fn() }))
 vi.mock('$app/navigation', () => ({ invalidate: invalidateMock }))
 
+const { dynamicEnv } = vi.hoisted(() => ({ dynamicEnv: {} as Record<string, string | undefined> }))
+vi.mock('$env/dynamic/private', () => ({ env: dynamicEnv }))
+
 describe('root +layout.server load', () => {
   it('exposes cookies, session, a slim user and isActive from safeGetSession', async () => {
     const session = { access_token: 't', expires_at: 123 }
@@ -25,7 +28,18 @@ describe('root +layout.server load', () => {
       session,
       user: { id: 'u1', email: 'k@example.de' },
       isActive: true,
+      registrationOpen: false,
     })
+  })
+
+  it('reports registrationOpen from REGISTRATION_MODE', async () => {
+    dynamicEnv.REGISTRATION_MODE = 'open'
+    const result = await load({
+      cookies: { getAll: () => [] },
+      locals: { safeGetSession: async () => ({ session: null, user: null, isActive: false }) },
+    } as never)
+    expect(result).toMatchObject({ registrationOpen: true })
+    delete dynamicEnv.REGISTRATION_MODE
   })
 
   it('returns null user and inactive when logged out', async () => {

@@ -23,5 +23,6 @@ export const load: LayoutLoad = async ({ fetch, data, depends }) => {
     session: data.session,
     user: data.user,
     isActive: data.isActive,
+    registrationOpen: data.registrationOpen,
   }
 }

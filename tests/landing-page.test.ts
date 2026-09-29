@@ -7,7 +7,7 @@ afterEach(() => {
   document.head.innerHTML = ''
 })
 
-const PROPS = {}
+const PROPS = { data: { registrationOpen: true } as never }
 
 describe('landing page', () => {
   it('renders the main sections in order', () => {
@@ -87,5 +87,28 @@ describe('landing page', () => {
       .map(s => JSON.parse(s.textContent ?? '{}'))
       .find(ld => ld['@type'] === 'FAQPage')
     expect(faqLd.mainEntity.map((e: { name: string }) => e.name)).toEqual(FAQ_ITEMS.map(i => i.question))
+  })
+})
+
+describe('landing page — waitlist mode', () => {
+  const WAITLIST = { data: { registrationOpen: false } as never }
+
+  it('labels every sign-up call to action "Zum Launch benachrichtigen" and keeps Anmelden', () => {
+    const { container } = render(LandingPage, { props: WAITLIST })
+    const signup = Array.from(container.querySelectorAll('a[href="/registrieren"]'))
+    expect(signup.length).toBeGreaterThanOrEqual(3)
+    for (const link of signup) expect(link).toHaveTextContent('Zum Launch benachrichtigen')
+    expect(container).not.toHaveTextContent('Jetzt registrieren')
+    expect(container.querySelector('header a[href="/login"]')).toHaveTextContent('Anmelden')
+  })
+
+  it('uses the waitlist wording in the meta description', () => {
+    render(LandingPage, { props: WAITLIST })
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('Zum Launch benachrichtigen')
+  })
+
+  it('treats missing layout data as waitlist (fail-closed)', () => {
+    const { container } = render(LandingPage, { props: {} as never })
+    expect(container).not.toHaveTextContent('Jetzt registrieren')
   })
 })

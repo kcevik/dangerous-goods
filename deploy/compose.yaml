@@ -1,0 +1,28 @@
+# Copied to /opt/gefahrgut/compose.yaml on the server.
+# IMAGE_TAG comes from /opt/gefahrgut/.env, written by scripts/deploy.sh.
+services:
+  app:
+    image: gefahrgut-app:${IMAGE_TAG:?IMAGE_TAG is set by scripts/deploy.sh}
+    restart: unless-stopped
+    # Loopback only: nginx on the same host is the one way in. Docker publishes
+    # ports around the ufw firewall, so "3000:3000" would expose the app to the internet.
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - /etc/gefahrgut/app.env
+    environment:
+      ADR_BOOK_PATH: /data/adr.md
+    volumes:
+      - type: bind
+        source: /var/lib/gefahrgut/ADR2025-konsolidiert.md
+        target: /data/adr.md
+        read_only: true
+        bind:
+          # fail loudly if the book was not copied yet, instead of creating an empty directory
+          create_host_path: false
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
