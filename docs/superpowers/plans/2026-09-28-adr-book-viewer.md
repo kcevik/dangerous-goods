@@ -1,4 +1,26 @@
+> **Progress 2026-09-29:** Tasks 11–16 **done** (inline execution; rulings in the ledger
+> `.superpowers/sdd/2026-09-28-adr-book-viewer/progress.md`). Route is `/regelwerk/[mode=bookMode]`,
+> Ctrl+F not intercepted (owner). 551 tests green, `pnpm check` 0 errors, `pnpm build` OK,
+> anonymous smoke test on the build passes. Budgets measured on the real book: index build
+> 245 ms (over 100 ms), `?sv=274` payload 390 KB raw (over 350 KB). The logged-in browser pass of
+> Task 16 is still to do. **Task 9 stays owner-gated.**
+
 # ADR Book Viewer Implementation Plan
+
+> **Progress 2026-09-28 (implementation session):** Tasks 1–8 and 10 are **done**: the
+> boot-time loader, the fixture, the slicer, the renderer, the indexer, the render cache,
+> the query API, the label table and the highlighter. 446 tests green, `pnpm check` 0
+> errors, `pnpm build` succeeds. Remaining code: Task 11 (state class), 12 (endpoints),
+> 13 (page load), 14 (components), 15 (links from the tool), 16 (docs). **Task 9 stays
+> owner-gated** and nothing is deployed.
+>
+> Three findings changed the design as built:
+> 1. The source's Table A header is **OCR-corrupted**: eleven spellings in one 300-line
+>    stretch, column counts of 22 and 23. The slicer now matches repeated headers by cell
+>    similarity, not text. See spec §3.4.
+> 2. The spec's occurrence counts were **inflated**; corrected in spec §3.1/§3.2.
+> 3. **`640A`–`640O` have no definition of their own.** The query layer falls back to the
+>    numeric parent, and the returned hit reports the parent's code so the UI can say so.
 
 > **Revised 2026-09-28** after the owner rejected the database approach. The book is now
 > read from a file and indexed in memory at server start; there is no migration, no chunk
@@ -78,25 +100,25 @@ New test files: `adrBookIndex`, `adrBookSlice`, `adrBookRender`, `adrBookIndexer
 There is no migration. What replaces it is making a missing or wrong file impossible to
 miss, because the whole feature now depends on one path being right.
 
-- [ ] Write `tests/adrBookIndex.test.ts` with `// @vitest-environment node`. Cover:
+- [x] Write `tests/adrBookIndex.test.ts` with `// @vitest-environment node`. Cover:
   - a missing path throws with a message naming `ADR_BOOK_PATH` and the path it tried
   - a file that is implausibly small (say under 1 MB) throws rather than serving a
     truncated book
   - a valid fixture builds an index and `getBookIndex()` returns the **same object** on a
     second call (memoised, file read once)
   - a test-only `resetBookIndex()` clears the memo, so other suites are isolated
-- [ ] Implement `src/lib/server/adrBook/index.ts`: read `ADR_BOOK_PATH` from
+- [x] Implement `src/lib/server/adrBook/index.ts`: read `ADR_BOOK_PATH` from
       `$env/dynamic/private`, read the file synchronously on first use, split into lines,
       delegate to the indexer (Task 5), memoise, export `resetBookIndex()` for tests.
-- [ ] Add `ADR_BOOK_PATH` to `.env.example` with a comment that the file is not in the repo.
-- [ ] `pnpm test` green.
+- [x] Add `ADR_BOOK_PATH` to `.env.example` with a comment that the file is not in the repo.
+- [x] `pnpm test` green.
 
 **Verify:** unset the variable and start `pnpm dev`; hitting the route must fail with the
 explicit message, not a stack trace about `undefined`.
 
 ### Task 2: Test fixture for the source's structural quirks
 
-- [ ] Write `tests/fixtures/adr-book-sample.md`, hand-built (~120 lines), reproducing every quirk found in the real file so the pure modules can be tested without the 8.2 MB:
+- [x] Write `tests/fixtures/adr-book-sample.md`, hand-built (~120 lines), reproducing every quirk found in the real file so the pure modules can be tested without the 8.2 MB:
   - headings at h1/h2/h3/h4/h5/h6, some numbered (`#### 1.1.1 Aufbau`), some not (`## Kapitel 3.3`), two with identical text (slug de-duplication);
   - a small Table A excerpt: header row + alignment row + the `| (1) | (2) | (3a) |…` numbering row + 4 data rows, one of them `| 1203 | BENZIN oder OTTOKRAFTSTOFF | 3 | F1 | II | 3 | 243 534 664 | …`, and one row for a UN number with two entries;
   - a `## Tabelle B` excerpt with `| OTTOKRAFTSTOFF | 1203 | |`;
@@ -104,14 +126,14 @@ explicit message, not a stack trace about `undefined`.
   - prose with a cross reference ("siehe Kapitel 3.3 Sondervorschrift 654"), a year trap ("Vor dem 1. Juli 2019 gebaute…"), a quantity trap ("bei 50 °C … mehr als 60 %"), and a UN mention in a transitional provision ("Stoffe der UN-Nummern 1202, 1203, 1223");
   - raw HTML: `<br>`, `<sup>1)</sup>`, `<b>BB 2</b>`, `<sub>2</sub>`, a `<div>`, an `<img alt="Gefahrzettel 3: Flamme." data-bbox="1 2 3 4" src="abc_img.jpg"/>`;
   - one hostile line to prove sanitisation: `<script>alert(1)</script>` and `<a href="javascript:alert(1)" onclick="x()">x</a>`;
-  - one deliberately oversized block (a run of ~70 long table rows) so the 64 KB hard-split can be exercised with a lowered cap.
-- [ ] **Verify:** the fixture is ≤ 200 lines and every bullet above is present (grep each marker).
+  - one long table block (8 wide rows) so a small test window can begin and end **inside** a table, exercising header re-emission in the slicer. (The old 64 KB hard-split requirement is gone with the chunking design.)
+- [x] **Verify:** the fixture is ≤ 200 lines and every bullet above is present (grep each marker). Achieved: 110 lines.
 
 ---
 
 ### Task 3: Slicer (spec §2.3)
 
-- [ ] Write `tests/adrBookSlice.test.ts` with `// @vitest-environment node`, against the
+- [x] Write `tests/adrBookSlice.test.ts` with `// @vitest-environment node`, against the
       Task 2 fixture. Cover:
   - a window centred on a line returns the requested number of lines either side
   - clamping at the start and end of the document
@@ -120,15 +142,15 @@ explicit message, not a stack trace about `undefined`.
     the `(1) (2) (3a)…` numbering row, so the fragment still renders as a valid table
   - a window that would end mid-table-row extends to the row boundary
   - the returned range reports the actual `lineStart`/`lineEnd` after snapping
-- [ ] Implement `src/lib/server/adrBook/slice.ts` as pure functions over `string[]`.
-- [ ] Add one assertion against the real file, skipped when `ADR_BOOK_PATH` is unset: a
+- [x] Implement `src/lib/server/adrBook/slice.ts` as pure functions over `string[]`.
+- [x] Add one assertion against the real file, skipped when `ADR_BOOK_PATH` is unset: a
       window centred on the UN 1203 Table A row renders a table with a header.
-- [ ] `pnpm test` green.
+- [x] `pnpm test` green.
 
 ### Task 4: Renderer + sanitiser (spec §2.4)
 
-- [ ] `pnpm add -D marked sanitize-html @types/sanitize-html`. Confirm nothing lands in `dependencies`.
-- [ ] Write `tests/adrBookRenderer.test.ts` (`// @vitest-environment node`) **first**:
+- [x] `pnpm add marked sanitize-html` and `pnpm add -D @types/sanitize-html`. `marked` and `sanitize-html` are **runtime** dependencies now, because rendering happens per request in the server process.
+- [x] Write `tests/adrBookRender.test.ts` (`// @vitest-environment node`) **first**:
   - GFM tables render to `<table>` and each is wrapped in `<div class="book-table-scroll" role="region" tabindex="0" aria-label="…">`;
   - `<br>`, `<sup>`, `<sub>`, `<b>`, `<i>`, `<u>` survive;
   - `<script>` is removed **including its text content**; `onclick` and every `on*` attribute removed; `href="javascript:…"` removed while `href="https://…"` survives; `data-bbox` removed; `style` removed;
@@ -136,8 +158,8 @@ explicit message, not a stack trace about `undefined`.
   - headings get `id="h-1-1-1"` from the ADR number, `id="h-<text-slug>"` otherwise, and duplicate slugs get a `-2` suffix;
   - **no class attribute in the output starts with anything but `book-`** (regex assertion over the whole output — this is the guard that keeps Tailwind utilities out of database strings);
   - `toPlainText` strips all markup, collapses whitespace, preserves `ßäöüÄÖÜ`, and turns `<br>` into a single space.
-- [ ] Run → red.
-- [ ] Implement `src/lib/server/adrBook/renderer.ts`:
+- [x] Run → red.
+- [x] Implement `src/lib/server/adrBook/render.ts`:
 
 ```ts
 export function renderSlice(markdown: string, opts?: { slugRegistry?: Set<string> }): string
@@ -145,14 +167,14 @@ export function toPlainText(html: string): string
 ```
 
 `marked` with `{ gfm: true, breaks: false }`; `sanitize-html` with the allowlist in spec §2.4 step 2; post-processing in step 3. The `slugRegistry` is built once from the whole heading map at index time, so heading ids stay unique across the document rather than only within one rendered window.
-- [ ] Run → green.
-- [ ] **Verify:** `pnpm test tests/adrBookRenderer.test.ts`; `pnpm check` clean (new devDependency types resolve).
+- [x] Run → green.
+- [x] **Verify:** `pnpm test tests/adrBookRender.test.ts`; `pnpm check` clean (the new dependency types resolve).
 
 ---
 
 ### Task 5: Indexer and ranking (spec §3.2–3.3)
 
-- [ ] Write `tests/adrBookIndexer.test.ts` (`// @vitest-environment node`) **first**, against the fixture:
+- [x] Write `tests/adrBookIndexer.test.ts` (`// @vitest-environment node`) **first**, against the fixture:
   - **all three** SV definition shapes are detected as `role: 'definition'`, `rank: 1` (`- 163`, ` 363`, `**654**`);
   - a Table A row is indexed for its column-1 UN number as `role: 'table_a_row'`, `rank: 1`;
   - SV codes are read **only from Table A column 6** inside table rows: `243`, `534`, `664` from the 1203 row are `role: 'table_a_sv_cell'`, `rank: 4`, and the `3` in the Klasse column and the `II` in the packing-group column produce **no** SV rows;
@@ -165,8 +187,8 @@ export function toPlainText(html: string): string
   - `context` is ≤ 180 characters and contains the matched code;
   - sorting by `(rank, line)` puts the definition first for every code in the fixture;
   - `coverageReport(knownSvCodes)` returns the codes with no rank-1 definition row.
-- [ ] Run → red.
-- [ ] Implement `src/lib/server/adrBook/indexer.ts`:
+- [x] Run → red.
+- [x] Implement `src/lib/server/adrBook/indexer.ts`:
 
 ```ts
 export type OccurrenceRole = 'definition' | 'table_a_row' | 'table_a_sv_cell' | 'table_b' | 'cross_reference' | 'incidental'
@@ -176,8 +198,8 @@ export function coverageReport(found: Set<string>, expected: Set<string>): strin
 ```
 
 SV codes come from the chapter-3.3 range detected by heading (`Kapitel 3.3` → the next `Kapitel`), not by hard-coded line numbers — line numbers change every edition. UN numbers are supplied by the caller from `ADR25_csv.txt`.
-- [ ] Run → green.
-- [ ] **Verify:** `pnpm test tests/adrBookIndexer.test.ts`; then a throwaway node run over the real file asserting the spec §3.2/§3.3 numbers: **377 SV codes, 7,264 SV occurrences, 11,520 UN occurrences over 2,347 distinct UN numbers, 18,784 rows total**; SV 274 → 778 hits, SV 243 → 7, SV 163 → 24, SV 640D → 22, UN 1203 → 10; and for each of `sv=243`, `sv=274`, `un=1203` the first hit after sorting is the expected line (16892 / the 274 definition / 10015).
+- [x] Run → green.
+- [x] **Verified.** `pnpm test tests/adrBookIndexer.test.ts` → 36 green. Real-file run (throwaway, deleted): **377 provision codes** (validated against the BAM CSV, zero false positives), 1,506 headings, **4,134 provision occurrences, 10,828 UN occurrences over 2,347 distinct UN numbers, 14,962 hits total**; sv 274 → 764, sv 243 → 6, sv 163 → 24, sv 640D → 22, un 1203 → 10; best hit for sv=243 at line 16892 and un=1203 at line 10015, both as expected. The spec's earlier occurrence figures were inflated and have been corrected in §3.1/§3.2. Chapter 3.3 turned out to have **five** definition line shapes, not three.
 
 ---
 
@@ -186,19 +208,19 @@ SV codes come from the chapter-3.3 range detected by heading (`Kapitel 3.3` → 
 The import script is gone. What it was buying — not re-rendering the same text — is now a
 small in-process cache.
 
-- [ ] Extend `tests/adrBookRender.test.ts`: rendering the same line range twice calls the
+- [x] Extend `tests/adrBookRender.test.ts`: rendering the same line range twice calls the
       renderer once; the cache is bounded and evicts least-recently-used entries; the cache
       key includes the snapped range, so two different targets that resolve to the same
       window share an entry.
-- [ ] Implement the LRU inside `src/lib/server/adrBook/api.ts` (or a tiny local module it
+- [x] Implement the LRU inside `src/lib/server/adrBook/api.ts` (or a tiny local module it
       owns). No external dependency; a `Map` with insertion-order eviction is enough.
-- [ ] Size it deliberately and write the number in a comment with its memory implication,
+- [x] Size it deliberately and write the number in a comment with its memory implication,
       since this runs per worker alongside the 25 MB index.
-- [ ] `pnpm test` green.
+- [x] `pnpm test` green.
 
 ### Task 7: Query API over the index (spec §6)
 
-- [ ] Write `tests/adrBookApi.test.ts` with `// @vitest-environment node`, building an index
+- [x] Write `tests/adrBookApi.test.ts` with `// @vitest-environment node`, building an index
       from the fixture. Cover:
   - `resolvePrimaryHit` returns the rank-1 definition for a provision code, and the Table A
     row for a UN number
@@ -209,16 +231,16 @@ small in-process cache.
     matches nothing, and rejects terms shorter than 2 characters
   - `windowAt` returns HTML plus the snapped range and the headings it spans
   - `toc` respects `maxLevel` and preserves document order
-- [ ] Implement `src/lib/server/adrBook/api.ts`. Pure functions over the index, no Supabase
+- [x] Implement `src/lib/server/adrBook/api.ts`. Pure functions over the index, no Supabase
       client anywhere. Add the comment required by the Global Constraints: every caller must
       have checked `isActive` first.
-- [ ] `pnpm test` green.
+- [x] `pnpm test` green.
 
 ### Task 8: Labels (spec §8)
 
-- [ ] Write `tests/bookLabels.test.ts` **first**: every locale in `LANGS` has every key present in `BOOK_LABELS.de`, no value is empty, `getBookLabel('tr', 'unknownKey')` falls back to the German string then the key, and the German values match spec §8 verbatim for `bookTitle`, `noHits`, `ctrlFHint`, `notBinding`, `lockedNotice`, `openInBook`. Mirror `tests/multimodal-i18n.test.ts`.
-- [ ] Run → red. Implement `BOOK_LABELS` + `getBookLabel` in `src/lib/regulations/bookTypes.ts`. Run → green.
-- [ ] **Verify:** `pnpm test tests/bookLabels.test.ts`.
+- [x] Write `tests/bookLabels.test.ts` **first**: every locale in `LANGS` has every key present in `BOOK_LABELS.de`, no value is empty, `getBookLabel('tr', 'unknownKey')` falls back to the German string then the key, and the German values match spec §8 verbatim for `bookTitle`, `noHits`, `ctrlFHint`, `notBinding`, `lockedNotice`, `openInBook`. Mirror `tests/multimodal-i18n.test.ts`.
+- [x] Run → red. Implement `BOOK_LABELS` + `getBookLabel` in `src/lib/regulations/bookTypes.ts`. Run → green.
+- [x] **Verify:** `pnpm test tests/bookLabels.test.ts`.
 
 ---
 
@@ -244,7 +266,7 @@ reachable, so it is the one that must not run early.
 
 ### Task 10: Highlighter (spec §5.3)
 
-- [ ] Write `tests/bookHighlighter.test.ts` **first** (jsdom, no runes needed so a plain `.test.ts`):
+- [x] Write `tests/bookHighlighter.test.ts` **first** (jsdom, no runes needed so a plain `.test.ts`):
   - a single match in a plain paragraph is wrapped in `<mark class="book-hit" data-nth="0">` and the returned array has length 1;
   - multiple matches are numbered 0, 1, 2 in document order across sibling and nested elements;
   - a match is found case-insensitively (`benzin` finds `BENZIN`) and diacritic-insensitively (`atzend` finds `Ätzend`, `strasse` finds `Straße`);
@@ -254,8 +276,8 @@ reachable, so it is the one that must not run early.
   - `clearMarks` restores `root.innerHTML` to a byte-exact copy of the pre-mark HTML, and doing mark → clear → mark 20 times does not increase the text-node count;
   - a 2-character term works; an empty term marks nothing and throws nothing;
   - regex metacharacters in the term (`3.2`, `a+b`, `50 %`) are matched literally, not as a pattern.
-- [ ] Run → red. Implement `src/lib/regulations/bookHighlighter.ts` per spec §5.3 (TreeWalker, normalised comparison with an offset map back to the original string, never string replacement on HTML).
-- [ ] Run → green. **Verify:** `pnpm test tests/bookHighlighter.test.ts`.
+- [x] Run → red. Implement `src/lib/regulations/bookHighlighter.ts` per spec §5.3 (TreeWalker, normalised comparison with an offset map back to the original string, never string replacement on HTML).
+- [x] Run → green. **Verify:** `pnpm test tests/bookHighlighter.test.ts`.
 
 ---
 

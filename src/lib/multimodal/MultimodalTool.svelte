@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js'
   import { untrack } from 'svelte'
+  import { resolve } from '$app/paths'
+  import { formatBookLabel } from '$lib/regulations/bookTypes'
   import MultimodalSvsAccordion from './MultimodalSvsAccordion.svelte'
   import { MultimodalToolState } from './multimodalTool.svelte'
   import { DEMO_DATA, type Entry, LANGS } from './types'
@@ -169,9 +171,19 @@
 
           <!-- UN header -->
           <div class="flex flex-wrap items-start gap-3.5 pb-4 mb-4 border-b border-[#c8d6e5]">
-            <div class="font-mono text-3xl font-bold text-orange-500 leading-none flex-shrink-0">
-              UN {currentEntry.unNumber}
-            </div>
+            {#if tool.currentModal === 'ADR' && !demo}
+              <a
+                href={`${resolve('/(app)/regelwerk/[mode=bookMode]', { mode: 'adr' })}?un=${currentEntry.unNumber}`}
+                target="_blank"
+                rel="noopener"
+                title={formatBookLabel(tool.currentLang, 'openUnInBook', { code: currentEntry.unNumber })}
+                class="font-mono text-3xl font-bold text-orange-500 leading-none flex-shrink-0 underline decoration-orange-300 decoration-2 underline-offset-4 hover:decoration-orange-500"
+              >UN {currentEntry.unNumber}</a>
+            {:else}
+              <div class="font-mono text-3xl font-bold text-orange-500 leading-none flex-shrink-0">
+                UN {currentEntry.unNumber}
+              </div>
+            {/if}
             <div>
               <div class="text-base font-semibold text-[#0f2744]">{tool.getName(currentEntry)}</div>
               {#if tool.getNameSub(currentEntry)}

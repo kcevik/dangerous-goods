@@ -11,7 +11,7 @@
       <!-- Badge -->
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 border" style="background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.3); color: #fdba74;">
         <span class="w-1.5 h-1.5 rounded-full bg-[#f97316] animate-pulse"></span>
-        Neu: Regelwerksvergleich ADR · RID · IMDG · ICAO · ADN
+        Demnächst: Regelwerksvergleich ADR · RID · IMDG · ICAO · ADN
       </div>
 
       <!-- Headline -->

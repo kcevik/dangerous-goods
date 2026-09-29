@@ -30,4 +30,4 @@ Verfügung. Suche und Regelwerksvergleich erfordern ein freigeschaltetes Konto.
 
 - Startseite: https://gefahrgut.org/
 - Registrierung: https://gefahrgut.org/registrieren
-- Blog (Fachartikel zu Gefahrstofflagerung, TRGS 510, ADR): https://gefahrgut.org/blog
+- Blog (Fachartikel zu Gefahrstofflagerung, TRGS 510, ADR): https://gefahrgut.org/blog/

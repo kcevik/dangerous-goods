@@ -1,7 +1,11 @@
 # ADR Book Viewer — Design
 
 **Date:** 2026-09-28
-**Status:** design only — not implemented. **Blocked on the owner answering §11.1 (licence/provenance of the source file) before any of this ships.**
+**Status (2026-09-29):** code-complete, not deployed. Owner answers so far: §11.1 — the source is
+the official public text, exact document still to be named (deploy stays blocked until it is);
+§11.5 — route `/regelwerk/[mode]` (German, matching `/suche`); §11.6 — Ctrl+F is **not**
+intercepted; §11.9 — other books will come later, so the route takes a mode (only `adr` today).
+Where this document still says `/regulations/adr`, read `/regelwerk/adr`.
 **Feature:** F-13 — the consolidated ADR 2025 text as a readable, deep-linkable, searchable companion to the comparison tool.
 
 ## Goal
@@ -92,7 +96,7 @@ Both tool links carry German `title` attributes and open in a new window; nothin
 | Biggest block | Table A body, lines 9154–13635, **2,619 KB** |
 | Chapter 3.2 (Table A + Table B) | lines 8963–16694, 3,109,934 bytes |
 | Chapter 3.3 (special provisions) | lines 16695–18321, 256,676 bytes |
-| Table A data rows | 3,842 rows, 25 pipe columns, longest line 4,699 chars |
+| Table A pipe lines | 4,127 total: **2,939 real substance rows** (4-digit column 1), 297 repeated numbering rows, 296 continuation rows with an empty column 1. 25 pipe columns, longest line 4,699 chars. (An earlier figure of 3,842 data rows conflated these.) |
 | Raw HTML in the markdown | `<br>` ×12,761, `<b>` ×1,766, `<sup>` ×1,444, `<sub>` ×385, `<p>`, `<ul>/<li>`, `<div>`, `<i>`, `<u>`, `<img>` ×57 |
 | Referenced images | 57 distinct `*_img.jpg` filenames — **the files are absent** |
 
@@ -124,7 +128,7 @@ by the locked-mode rule in `CLAUDE.md`.
 
 **C — Postgres chunk table plus a prebuilt occurrence index, imported by a script.**
 This was the original design here and it is **rejected**. It requires a migration, two
-tables, roughly 1,441 chunk rows and 18,800 index rows, a 64 KB hard-split algorithm that
+tables, roughly 1,441 chunk rows and 15,000 index rows, a 64 KB hard-split algorithm that
 has to re-emit table headers so a split table still renders, a plain-text shadow column,
 and a service-role import step the owner must run every year. All of it to avoid 37 ms of
 startup work. It also stores a second, derived copy of the licensed text, which makes the
@@ -267,8 +271,15 @@ export interface BookIndex {
 export function getBookIndex(): BookIndex   // memoised; builds on first call
 ```
 
-Measured on the real file: 1,506 headings, roughly 18,800 hits across all codes, 25 MB
-resident, 37 ms to build.
+Measured on the real file: 1,506 headings and **14,962 hits** across all codes (4,134 for
+provisions, 10,828 for UN numbers), roughly 25 MB resident, tens of milliseconds to build.
+
+> **Corrected 2026-09-28 during implementation.** This section previously claimed 7,264
+> provision occurrences, 11,520 UN occurrences and 18,784 rows. Those figures were
+> produced by a scan with no column-6 restriction and no unit suppression, and they exceed
+> what the document can contain: Table A holds only 2,483 column-6 code tokens in total,
+> and a maximal UN scan yields 11,400 raw matches before de-duplication. The numbers above
+> are from the implemented indexer and were cross-checked with an independent count.
 
 **Operational consequence.** Each worker process holds its own copy of the index, so
 budget about 25 MB per worker in the process manager, or pin this route to a single
@@ -287,11 +298,11 @@ deploy notes.
 
 The detector matches `^(?:- |\s+|\*\*)?(\d{1,3}[A-Z]?)\*{0,2}\s` inside the 3.3 line range and yields **377 codes**. The import script must print a **coverage report**: the set of distinct `special_provision_codes` for mode ADR in `adr_entries` minus the set of codes with a `definition` row. A non-empty difference is a warning, not a failure — it means the conversion mangled that provision and the owner should know.
 
-**SV occurrences.** 7,264 across the document. They are found in two ways, never by a single bare regex:
+**Provision occurrences.** 4,134 across the document. They are found in two ways, never by a single bare regex:
 - Inside **Table A rows** (`^\| \d{4} `): the row is split on `|` and only **column 6** (`Sondervorschriften`) is scanned, its space-separated codes taken as exact tokens. This is what makes SV 60 usable at all — a bare `\b60\b` scan matches "60 °C" and "60 %" hundreds of times and drowns the real hits.
 - **Outside tables**: a token match with non-alphanumeric boundaries, classified `cross_reference` when "Sondervorschrift", "Sondervorschriften" or "Kapitel 3.3" occurs within 60 characters, otherwise `incidental`.
 
-**UN numbers.** 11,520 occurrences of the 2,347 distinct UN numbers present in `ADR25_csv.txt`. Only numbers that are actually UN numbers are indexed — indexing every 4-digit token gives 12,615 hits over 2,513 tokens, most of them years. Even so, **years collide with real UN numbers**: the top "UN numbers" by raw frequency are 2019 (91), 2014 (88), 2018 (82), 2012, 2026, 2015 — these are dates in transitional provisions, and UN 2019/2014/2018 are real entries. So a match is demoted to `incidental` when a German month name, a year-context word (`vor dem`, `ab dem`, `bis zum`, `Ausgabe`, `Fassung`, `ISO`, `EN`) or a `dd.mm.` pattern sits within 30 characters to its left.
+**UN numbers.** 10,828 occurrences of the 2,347 distinct UN numbers present in `ADR25_csv.txt`. Only numbers that are actually UN numbers are indexed — indexing every 4-digit token gives 12,615 hits over 2,513 tokens, most of them years. Even so, **years collide with real UN numbers**: the top "UN numbers" by raw frequency are 2019 (91), 2014 (88), 2018 (82), 2012, 2026, 2015 — these are dates in transitional provisions, and UN 2019/2014/2018 are real entries. So a match is demoted to `incidental` when a German month name, a year-context word (`vor dem`, `ab dem`, `bis zum`, `Ausgabe`, `Fassung`, `ISO`, `EN`) or a `dd.mm.` pattern sits within 30 characters to its left.
 
 ### 3.3 Hit ranking
 
@@ -307,9 +318,35 @@ The detector matches `^(?:- |\s+|\*\*)?(\d{1,3}[A-Z]?)\*{0,2}\s` inside the 3.3 
 
 Ordering of the hit list: `rank asc, line asc`. Rank 5 is excluded unless `?all=1`.
 
-Consequence, with real numbers: `?sv=243` → 7 occurrences, lands on line 16892 (its 3.3 definition). `?sv=274` → 778 occurrences, still lands on the definition, with 770-odd rank-4 Table A cells behind it. `?un=1203` → 10 occurrences, lands on the Table A row at line 10015, with Table B (13969, 15800), the Teil-4 table (18913) and four prose mentions in transitional provisions (1545, 1675, 2076, 23988, 24820) behind it. `?sv=163` → 24. `?sv=640D` → 22.
+Consequence, with the implemented indexer's numbers: `?sv=243` → 6 occurrences, lands on line 16892 (its 3.3 definition). `?sv=274` → 764 occurrences, still lands on the definition, with the rank-4 Table A cells behind it. `?un=1203` → 10 occurrences, lands on the Table A row at line 10015, with Table B, the Teil-4 table and the prose mentions in transitional provisions behind it. `?sv=163` → 24. `?sv=640D` → 22, **but none of them is a definition** — see §3.4.
 
 Multiple rank-1 hits are possible and legal (a UN number with several Table A rows, e.g. UN 1202 has four). The list keeps them all in document order; the counter shows the true total.
+
+---
+
+### 3.4 Two problems the implementation uncovered
+
+**Lettered provisions have no definition of their own.** 640A to 640O are defined only
+inside provision 640's paragraph, as «Sondervorschrift 640X» rows, so `?sv=640D` has no
+rank-1 hit and its best hit is an arbitrary Table A cell. That is a bad landing place for a
+tank code an officer has to transcribe into the Beförderungspapier. The indexer stays
+honest and invents nothing; **the query layer must fall back**: when a lettered code has no
+rank-1 hit, strip the letter and resolve the numeric parent (640D → 640), landing the reader
+in the paragraph that actually defines it. Tested in `api.ts`, not in the indexer.
+
+**The source's Table A header is OCR-corrupted and inconsistent.** Within a single 300-line
+stretch the header appears in **eleven different spellings** — "Gefahrzettel" also occurs as
+"Gefährzettel", "Gefährdungen" and "Gefährlichkeit"; "Begrenzte" as "Begrenze" and
+"Begrenzung" — and the column count varies between 22 and 23. Two consequences:
+
+1. The slicer's repeat detection cannot compare header text exactly or even cell-by-cell. It
+   matches headers by how many of their non-empty cells agree once case and diacritics are
+   normalised, at a 60% threshold. Without that, a window on the UN 1203 row renders as 23
+   separate tables, each its own scroll container and keyboard tab stop.
+2. **This is evidence about the source document's quality, not just its formatting.** If the
+   header is misread in eleven ways, body text is unlikely to be clean either. It raises the
+   stakes on open question 2 (who owns text accuracy) and strengthens the case for the
+   "kein rechtsverbindlicher Text" disclaimer being prominent rather than a footnote.
 
 ---
 
@@ -385,17 +422,10 @@ Layout, inside the existing `(app)` shell (so the brand, nav, logout and — for
 
 ### 5.2 Keyboard
 
-| Key | Action |
-|---|---|
-| `Ctrl`/`⌘` + `F` | **Intercepted** (`preventDefault`) → focuses and selects the term input. Rationale: the native find only searches the loaded window, so it would report "3 of 12" for a term with 778 hits — actively misleading. A hint line under the bar states "Ctrl+F sucht im gesamten ADR-Text, nicht nur im geladenen Abschnitt." A second `Ctrl+F` while the input is already focused lets the event through to the browser, so the native find is never permanently stolen. |
-| `Enter` (in the input) | Next hit |
-| `Shift` + `Enter` | Previous hit |
-| `F3` / `Ctrl`+`G` | Next hit (document-wide, `preventDefault`) |
-| `Shift`+`F3` / `Ctrl`+`Shift`+`G` | Previous hit |
-| `Escape` | First press: clear the term and all marks, keep the scroll position. Second press: blur the input. |
-| `Alt`+`I` | Toggle the TOC |
-
-All handlers are attached with `{@attach …}` on the page root (never `use:action`, never a bare `window` listener that outlives the page), and are skipped when the event target is a `<textarea>` or a `contenteditable`.
+**No keyboard shortcuts** (owner, 2026-09-29: "overkill"). The only key the viewer handles is
+`Enter` in the search field, which goes to the next hit, the way any find field behaves. `F3`,
+`Ctrl+G`, `Shift+Enter`, `Escape` and `Alt+I` are not bound, `Ctrl+F` stays the browser's own,
+and no shortcut list or Ctrl+F hint is shown.
 
 ### 5.3 Highlighting
 
@@ -550,7 +580,7 @@ German copy, fixed here so implementation does not invent it:
 | `includeIncidental` | `Auch beiläufige Treffer` |
 | `hitList` | `Trefferliste` |
 | `toc` | `Inhaltsverzeichnis` |
-| `ctrlFHint` | `Ctrl+F sucht im gesamten ADR-Text, nicht nur im geladenen Abschnitt.` |
+| `ctrlFHint` | `Strg+F durchsucht nur den geladenen Abschnitt – diese Suchleiste durchsucht den gesamten ADR-Text.` |
 | `wrapped` | `Am Ende fortgesetzt` |
 | `loadGap` | `Übersprungenen Abschnitt laden` |
 | `tooManySections` | `Viele Abschnitte geladen – Ansicht zurücksetzen?` |
@@ -594,7 +624,7 @@ Checked during implementation with `pnpm build` + preview and the browser devtoo
 - TOC is a `<nav aria-label="Inhaltsverzeichnis">` with a real nested list; `aria-current="true"` on the section in view.
 - Contrast: all `<mark>` states ≥ 4.5:1; the orange accent is never the only signal (active hit also gets an outline).
 - `prefers-reduced-motion: reduce` → `behavior: 'auto'` for every scroll and no transitions.
-- Keyboard shortcut reference in a `<details><summary>Tastaturkürzel</summary>` in the bar, so the shortcuts are discoverable without a tooltip.
+- No keyboard shortcuts and no shortcut reference (owner, 2026-09-29) — see §5.2.
 - `lang="de"` on the book content wrapper regardless of the chrome language, so screen readers pronounce the German text correctly.
 
 **Attribution** — a persistent block at the foot of the content column and in the page's `<svelte:head>` as a `meta name="robots" content="noindex"` (already inherited from the `(app)` layout):

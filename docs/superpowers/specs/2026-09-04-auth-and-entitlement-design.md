@@ -166,11 +166,11 @@ No change to the component contract. In locked mode the tool is only ever mounte
 ## 6. Supabase project configuration (owner, dashboard)
 
 1. **Authentication → Providers → Email:** enabled, "Confirm email" on, "Secure email change" on. Minimum password length 10.
-2. **Authentication → URL Configuration:** Site URL `https://gefahrgut.org`. Redirect URLs: `https://gefahrgut.org/auth/confirm`, `http://localhost:5173/auth/confirm`, `http://localhost:4173/auth/confirm`.
-3. **Authentication → Emails → Templates** (subject lines in German; body link is the important part):
-   - Confirm signup: link `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard`
-   - Reset password: link `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/passwort-neu`
-   - Change email address: link `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/dashboard`
+2. **Authentication → URL Configuration:** Site URL `https://gefahrgut.org`. Redirect URLs: `https://gefahrgut.org/**`, `http://localhost:5173/**`, `http://localhost:4173/**`.
+3. **Authentication → Emails → Templates:** paste the files from `supabase/templates/` (subjects and mapping in its README). *Revised 2026-09-29:* the links extend `{{ .RedirectTo }}` — the app's `emailRedirectTo`/`redirectTo`, which already is `<origin>/auth/confirm?next=…` — instead of `{{ .SiteURL }}`, because the Site URL still serves WordPress and local signups must link back to localhost.
+   - Confirm signup: `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email`
+   - Reset password: `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`
+   - Change email address: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/dashboard` (no change-email flow exists yet, so there is no redirect to extend)
    - Magic link template: unused (provider off), leave as is.
 4. **SMTP:** configure a real sender (Project Settings → Auth → SMTP) before launch. The built-in sender is limited to a few emails per hour and is for development only.
 5. **Activation:** Table Editor → `profiles` → set `activated_at` to now for a customer. (Later: Stripe webhook sets the same column.)

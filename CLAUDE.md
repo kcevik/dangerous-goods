@@ -20,6 +20,7 @@ A specialized web platform for **Gefahrgutbeauftragte** (dangerous goods officer
 - **Package Manager:** pnpm (never npm/npx)
 - **Hosting:** Netcup (Node.js via `@sveltejs/adapter-node` + PM2) behind Caddy (Let's Encrypt)
 - **Testing:** Vitest 5 + jsdom + `@testing-library/svelte`
+- **Markdown (ADR book viewer):** `marked` 18 + `sanitize-html` 2 — **runtime** dependencies, because the book is rendered per request in the server process
 - **PDF generation (planned):** Puppeteer
 - **Search (Phase 3):** Meilisearch
 
@@ -37,6 +38,10 @@ A specialized web platform for **Gefahrgutbeauftragte** (dangerous goods officer
 - F-06: ADR duty checker (Sollte)
 - F-07: Special provisions browser (Sollte)
 - F-08: Packaging instructions browser (Sollte)
+- F-13: ADR book viewer — click a provision code or UN number in the comparison tool, open the
+  consolidated ADR text at that spot with a find-in-page bar. **The owner calls this the
+  second most important feature and a launch blocker.** Code complete 2026-09-29 at
+  `/regelwerk/adr`; not deployed (Task 9, owner-gated). See "Where we left off".
 
 ### Phase 2 – Tools & Documents
 
@@ -63,7 +68,7 @@ A specialized web platform for **Gefahrgutbeauftragte** (dangerous goods officer
 /tools/verpackung
 /documents
 /changes
-/regulations/adr
+/regelwerk/:mode          # book viewer; matcher `bookMode` allows only `adr` (RID/IMDG/ICAO books later)
 /settings
 ```
 
@@ -78,7 +83,7 @@ pnpm dev                 # Vite dev server
 pnpm build               # Production build → build/ (adapter-node)
 pnpm preview             # Serve the production build
 pnpm check               # svelte-kit sync + svelte-check
-pnpm test                # vitest suite (241 tests)
+pnpm test                # vitest suite (554 tests)
 pnpm test:watch          # vitest watch mode
 pnpm import:regulations  # Import BAM CSVs + SV texts into Supabase
 ```
@@ -108,6 +113,12 @@ src/
       un/[nummer]/
         +page.server.ts   # 404 unless 4 digits; locked → demo for 1203 / null; active → fetchCompareForUn
         +page.svelte
+      regelwerk/[mode=bookMode]/  # ADR book viewer
+        +page.server.ts   # ?sv|un|section|q (+hit, all); locked → { locked: true, mode } without touching the book
+        +page.svelte      # LockNotice | {#key data} BookViewer
+        window/+server.ts # GET ?line=n[&dir=±1] → RenderedWindow (120/min/IP)
+        search/+server.ts # GET ?q= | ?sv= | ?un= [&all=1][&limit=] → { hits, total, capped } (60/min/IP)
+  params/bookMode.ts      # route matcher over BOOK_MODES (['adr'])
   lib/
     multimodal/
       types.ts                    # Entry, Modal, Lang, LABELS (i18n), SvText, pickSvText, DEMO_DATA, DEMO_SVS, BK_CLASSES
@@ -123,9 +134,23 @@ src/
       LockNotice.svelte           # LOCK_MESSAGE + inline lock card
     landing/                      # Navbar, Hero, Stats, Features, MultimodalDemo (#demo),
                                   # Comparison, SeoContent, DataSource, Faq, Cta, Footer; faq.ts
+    regulations/                  # ADR book viewer (client-safe half)
+      bookTypes.ts                # types, BOOK_MODES, BookPageData, limits, SV/UN regexes, BOOK_LABELS (de/en/fr/tr)
+      bookHighlighter.ts          # markMatches(wholeToken)/clearMarks/setActiveMark/sourceLineOf/pickActiveMark
+      adrBookViewer.svelte.ts     # AdrBookViewerState: hit navigation, lazy windows, debounced search
+      bookFetch.ts                # createBookFetchers(base) → ViewerDeps over the two endpoints
+      BookViewer.svelte           # orchestrator: marks, scroll, URL sync (replaceState), shortcuts, read-ahead
+      BookFindBar.svelte  BookToc.svelte  BookWindow.svelte ({@html}, server-sanitised)  BookAttribution.svelte
     search/search.svelte.ts       # SearchState: debounce, MIN_QUERY_LENGTH=2, UN shortcut, race guard, { locked }
     seo/structuredData.ts         # SITE_URL + JSON-LD builders
     server/
+      adrBook/                    # ADR book viewer (server half) — no DB, no migration
+        index.ts                  # getBookIndex() memoised from ADR_BOOK_PATH; loud startup check; MIN_BOOK_BYTES
+        indexer.ts                # indexBook(lines) → headings + ranked occurrence hits + svCodes
+        slice.ts                  # sliceAround() — line window, boundary snapping, table-header repair
+        render.ts                 # renderSlice()/toPlainText() — marked + sanitize-html, book-* classes only; book-ln-<line> tags
+        api.ts                    # resolvePrimaryHit/hitsFor/searchText/windowAt/toc + LRU render cache
+        access.ts                 # bookAccessDenied(locals) — THE entitlement gate (401/403), positiveInt()
       rateLimit.ts                # createRateLimiter() — in-memory sliding window (auth actions)
       authValidation.ts           # validateEmail/validatePassword/validateRegistration, AuthErrorCode
 tests/                    # vitest — see Testing
@@ -171,6 +196,7 @@ Full schema in `docs/database-schema-and-import-plan.md`.
 | `ORIGIN` | adapter-node | `https://gefahrgut.org` — required or form actions reject POSTs |
 | `ADDRESS_HEADER` / `XFF_DEPTH` | adapter-node | `X-Forwarded-For` / `1` — `getClientAddress()` = right-most hop appended by Caddy |
 | `PORT` | adapter-node | default 3000 |
+| `ADR_BOOK_PATH` | `$env/dynamic/private` | absolute path to the consolidated ADR markdown on the server. **Not in the repo**, deployed by hand; keep it outside the release dir so a redeploy cannot remove it. The viewer refuses to start if unset or if the file is under 1 MB. |
 
 Template: `.env.example`. **Vite gotcha:** `.env.local` overrides `.env` — never keep a placeholder template under that name (the old one is parked as `.env.local.bak`).
 
@@ -186,6 +212,7 @@ Template: `.env.example`. **Vite gotcha:** `.env.local` overrides `.env` — nev
 - `tests/migration-auth.test.ts` and `tests/migration-harden-grants.test.ts` are static guards over the two migration files (policy swap per table, security-definer trigger, dropped view/table, anon grant revokes).
 - **Applying migrations:** `supabase db push` needs the DB password interactively. Alternative used on 2026-09-04: run the SQL via the Supabase MCP `execute_sql` and insert the version row into `supabase_migrations.schema_migrations` yourself so the CLI history stays in sync.
 - `tests/tailwind-classes.test.ts` scans `src/**/*.svelte` for Tailwind utilities that silently compile to nothing.
+- **ADR book tests:** all pure-node (`// @vitest-environment node`) except `bookHighlighter` which needs jsdom. `$env/dynamic/private` is mocked with `vi.mock('$env/dynamic/private', () => ({ env: dynamicEnv }))` plus a top-level `await import(...)` so the mock is in place first. Real-file assertions are **not** committed — `csvbase/` is gitignored and absent elsewhere; `tests/fixtures/adr-book-sample.md` (110 lines) reproduces every structural quirk instead.
 - **Every new feature ships with tests** — the user explicitly requires this.
 
 ## Coding Conventions
@@ -199,32 +226,142 @@ Template: `.env.example`. **Vite gotcha:** `.env.local` overrides `.env` — nev
 - **Locked mode rule:** every code path checks `isActive` before touching regulation data; RLS is the backstop, not the primary check. Locked users only ever mount `MultimodalTool` with `demo`.
 - **`state_referenced_locally`:** wrap once-per-component object creation from props in `untrack(() => …)`.
 
-## Where we left off (2026-09-04) — resume here
+## Where we left off (2026-09-29) — resume here
 
-Everything below is code-complete, tested (226 tests), type-checked, and the two DB migrations are applied live. Nothing was committed yet — the owner commits.
+Nothing is committed; the owner commits everything. **554 tests green, `pnpm check` 0 errors
+(5 known `@apply` warnings in `MultimodalTool.svelte`), `pnpm build` succeeds.**
 
-**Open, owner only (Supabase dashboard, spec §6 of `docs/superpowers/specs/2026-09-04-auth-and-entitlement-design.md`):**
+### Done 2026-09-29
+
+1. **Signup works end-to-end** on the built-in sender (register → confirm mail → locked
+   dashboard → activation → real data). Email templates live in `supabase/templates/` and link via
+   `{{ .RedirectTo }}` (guarded by `tests/email-templates.test.ts`). The app addresses users with
+   **"du"** — the templates too.
+2. **Landing + dashboard show only the Stoffsuche as live**; every other tool is a grayed
+   "Demnächst verfügbar" card (see "Parked" below).
+3. **ADR book viewer code-complete** at `/regelwerk/adr` (Tasks 11–16). Not deployed.
+
+### ADR book viewer — state of play
+
+**Design:** `docs/superpowers/specs/2026-09-28-adr-book-viewer-design.md`
+**Plan:** `docs/superpowers/plans/2026-09-28-adr-book-viewer.md` (progress at the top; execution
+ledger with every ruling in `.superpowers/sdd/2026-09-28-adr-book-viewer/progress.md`, gitignored)
+
+The book is **a file on the server, indexed in memory at boot** — no Postgres table, no
+migration, no import step (owner decision; spec §2.2). Owner decisions 2026-09-29: route
+**`/regelwerk/[mode]`** (only `adr`), **no keyboard shortcuts** — only Enter in the search field (next hit); Ctrl+F stays the browser's,
+source is **the official public text** — exact document still to be named (the «» quotes suggest
+the Swiss Fedlex publication, SR 0.741.621).
+
+- **All code tasks done** (1–8, 10–16). Links: SV rows and the `UN …` header in the comparison
+  tool (ADR tab, not demo) open the book in a new window; nav link "ADR-Text".
+- **Local run:** set `ADR_BOOK_PATH=<repo>/csvbase/ADR2025-konsolidiert.md` (e.g. in `.env`).
+- **Task 9 (deploy) is owner-gated** — needs the named source document first.
+- **Mark ↔ hit mapping:** the renderer tags every block and table row with `book-ln-<line>`;
+  `pickActiveMark` uses that to light the right `<mark>` for "Treffer k von n". Verified on the
+  real book: 0 of 3,551 row tags wrong.
+- **Measured (real book):** index build 245 ms / +31 MB heap (budget 100 ms / 40 MB — **build time
+  over budget**, once per worker); `?sv=274` payload 390 KB raw / 41 KB gzip (**over the 350 KB
+  raw budget**, hit list dominates); windows ≤ 102 KB, ≤ 23 ms; `searchText` ≤ 47 ms.
+- **"Tunnelcode" finds nothing** — the ADR only says "Tunnelbeschränkungscode". Synonyms are a
+  possible follow-up.
+
+**Three findings that changed the design:**
+
+- **The source is OCR-corrupted, not just oddly formatted.** Table A's header appears in
+  **eleven different spellings** within one 300-line stretch ("Gefahrzettel" also as
+  "Gefährzettel", "Gefährdungen", "Gefährlichkeit"; "Begrenzte" as "Begrenze", "Begrenzung")
+  and its column count varies between 22 and 23. `slice.ts` therefore matches repeated headers
+  by **cell similarity** (case/diacritic-insensitive, 60% threshold), not by text — without
+  that, one window renders as 23 stacked tables. **Implication beyond formatting:** if the
+  header is misread eleven ways, the body text is unlikely to be clean either. Spec §3.4.
+- **The spec's occurrence counts were inflated** and are corrected: **4,134** provision
+  occurrences and **10,828** UN occurrences (not 7,264 / 11,520), **14,962** hits total,
+  1,506 headings, **377** provision codes validated against the BAM CSV with zero false
+  positives. Chapter 3.3 has **five** definition line shapes, not three.
+- **`640A`–`640O` have no definition of their own** (the ADR defines them inside the 640
+  paragraph). `resolvePrimaryHit` falls back to the numeric parent and returns the parent's
+  `code` so the UI can tell the reader what it opened.
+
+**Blocking, owner only:** the owner says the source is the official public text but has not yet
+named the document; the BAM dl-de/by-2-0 licence does **not** cover it. Nothing ships until it is
+named — spec §11.1. Still open in §11: text-accuracy ownership (pressing given the OCR finding),
+the 57 missing images, the 500-hit cap, editions.
+
+### F-10 regulatory comparison — planned, not started
+
+**Design:** `docs/superpowers/specs/2026-09-28-regulatory-comparison-design.md`
+**Plan:** `docs/superpowers/plans/2026-09-28-regulatory-comparison.md` (7 tasks)
+
+The owner chose to build the real side-by-side view rather than delete the landing page's
+claims. Central rule: **absence of a column is not a deviation** — tunnel code is road-only,
+stowage sea-only, so a naive diff would flag a deviation on nearly every substance. Three
+open questions for the owner at the end of the spec; #1 (row alignment across modes) should be
+settled before Task 1.
+
+### Launch readiness
+
+**Report:** `docs/go-live-readiness-2026-09-28.md` — answers "what next" and separates a
+show-someone bar from a take-money bar. Blockers it found:
+
+1. **Impressum and Datenschutz links are dead** — both linked from the footer and the
+   registration consent checkbox, both render the coming-soon splash. Actionable in Germany.
+2. ~~Registration has never worked~~ — **works end-to-end since 2026-09-29** (register → confirm
+   mail → locked dashboard → activation → real data), still on the built-in sender; real SMTP is open.
+3. **Google Fonts is loaded from Google's servers** with no consent (`routes/+layout.svelte`).
+   About an hour to self-host, and it removes the cookie-banner question.
+4. **No backups** — the Supabase org is on the free plan.
+5. **Nothing exists for deployment** — no PM2 config, Caddyfile, systemd unit or deploy script.
+   `.env.example` has since been completed (ORIGIN, ADDRESS_HEADER, XFF_DEPTH, PORT, ADR_BOOK_PATH).
+6. **The landing comparison mockup's deviation warning is factually false**, and the WordPress
+   cutover is **219 URLs**, not 25, including 15 working tool pages. The report recommends
+   launching on a subdomain instead of repointing the apex; that looks right.
+
+Also noted there: `un_entries` (3,232 rows) is counted in the advertised 16.730 but never
+queried by `fetchCompareForUn`, and `/suche` queries only `adr_entries` and swallows errors,
+so a failure renders as "Keine Ergebnisse".
+
+### Still open from 2026-09-04 (owner, Supabase dashboard)
+
+Spec §6 of `docs/superpowers/specs/2026-09-04-auth-and-entitlement-design.md`:
+
 1. Authentication → Providers → Email: enabled, "Confirm email" on, min password length 10.
-2. Authentication → URL Configuration: Site URL `https://gefahrgut.org`; redirect URLs `https://gefahrgut.org/auth/confirm`, `http://localhost:5173/auth/confirm`, `http://localhost:4173/auth/confirm`.
-3. Authentication → Emails → Templates: Confirm signup link → `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard`; Reset password → `…&type=recovery&next=/passwort-neu`; Change email → `…&type=email_change&next=/dashboard`. **Until this is done, confirmation mails land on `/auth/fehler`.**
-4. SMTP: configure a real sender before launch (built-in sender is dev-only, few mails/hour).
-5. End-to-end check with `pnpm dev`: register → confirm → locked dashboard → set `profiles.activated_at` in the table editor → `/un/1090` shows real data.
+2. Authentication → URL Configuration: Site URL `https://gefahrgut.org`; redirect URLs `https://gefahrgut.org/**`, `http://localhost:5173/**`, `http://localhost:4173/**`.
+3. Authentication → Emails → Templates: paste `supabase/templates/{confirm,recovery,email_change}.html` (subjects in its README). Links extend `{{ .RedirectTo }}` (not `{{ .SiteURL }}`, which still serves WordPress), guarded by `tests/email-templates.test.ts`. **Until this is done, confirmation mails land on `/auth/fehler`.**
+4. SMTP: built-in sender for testing (only delivers to Supabase org members, a few mails/hour); a real sender before launch.
+5. ~~End-to-end check~~ — passed 2026-09-29. Items 1–3 are done in the dashboard; item 4 (real SMTP) is open.
 
-**Open, code (next features, in suggested order):**
+### Parked by the owner on 2026-09-29 (do not start without being asked)
+
+1. Live test of the password-reset mail flow (signup itself passed end-to-end).
+2. Admin notification on new signups (DB webhook → mail) — activation is manual, nobody is told.
+3. Self-host Google Fonts (`routes/+layout.svelte`).
+4. Impressum/Datenschutz links in the `(app)` and `(auth)` layouts.
+5. Impressum + Datenschutzerklärung on WordPress still render the "Under Construction" splash (owner, WordPress side).
+6. Real SMTP sender (Brevo or the mail host; SPF/DKIM for gefahrgut.org).
+
+Landing page since 2026-09-29: only the Stoffsuche card is live; the other five feature cards and the
+comparison section carry a grayed "Demnächst verfügbar" badge (guarded in `tests/landing-page.test.ts`).
+Un-gray a card when its tool ships.
+
+### Other code work still open
+
 - Visual pass on the landing page + auth pages in a browser (never done after the Nuxt→SvelteKit port).
-- F-05 dashboard proper (current one is a shell with two cards + "in Vorbereitung" placeholders).
-- F-02 1000-Punkte-Rechner (pure logic, `lib/tools/…`, tests first).
+- F-05 dashboard proper (current one is a shell with placeholders). The "Regelwerksvergleich" tile is a disabled "Demnächst verfügbar" card until F-10 ships — re-link it then (and update `tests/dashboard-page.test.ts`).
+- F-02 1000-Punkte-Rechner (pure logic in `lib/tools/…`, tests first).
 - Stripe later: a webhook sets `profiles.activated_at`; no schema change needed.
-- Optional cleanups: delete `.env.local.bak`; `multimodal-tool.html` at repo root is an old static prototype.
+- Cleanups: delete `.env.local.bak`; `multimodal-tool.html` at repo root is an old static prototype.
 
-**Process that worked:** brainstorming → spec in `docs/superpowers/specs/` → plan in `docs/superpowers/plans/` → TDD with `pnpm test` per task → Svelte MCP autofixer on every `.svelte`/`.svelte.ts` → `pnpm check` → `pnpm build` + preview smoke test.
+**Process that worked:** brainstorming → spec in `docs/superpowers/specs/` → plan in `docs/superpowers/plans/` → TDD with `pnpm test` per task → Svelte MCP autofixer on every `.svelte`/`.svelte.ts` → `pnpm check` → `pnpm build` + preview smoke test. Independent pure modules parallelise well across subagents; give each a fixed type contract first (`bookTypes.ts` served that role) so their files stay disjoint.
 
 ## Key Notes
 
 - **i18n:** UI supports de / en / fr / tr via `LABELS` in `lib/multimodal/types.ts` — no i18n module.
-- **Current state (2026-09-04):** SvelteKit rewrite + auth/entitlement (F-04). Public: `/`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`, `/auth/fehler`. Login required: `/dashboard`, `/suche`, `/un/:nummer` (guard in `hooks.server.ts` → `/login?next=…`). 215 tests green, `pnpm check` clean. Both migrations are applied and verified live (trigger, anon/locked = 0 rows, activated = full data). Still open: Supabase dashboard configuration (email provider, redirect URLs, token-hash email templates, SMTP) — see spec §6.
+- **Current state (2026-09-29):** SvelteKit rewrite + auth/entitlement (F-04) shipped and signup verified live; ADR book viewer code-complete at `/regelwerk/adr` (not deployed). Public: `/`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`, `/auth/fehler`. Login required: `/dashboard`, `/suche`, `/un/:nummer`, `/regelwerk/adr` (guard in `hooks.server.ts` → `/login?next=…`). 554 tests green, `pnpm check` 0 errors. Both migrations are applied and verified live (trigger, anon/locked = 0 rows, activated = full data). Still open: Supabase dashboard configuration — see spec §6 and the readiness report.
 - **Data flow:** `/un/:nummer` loads on the server via `locals.supabase` and passes `initialData` to `MultimodalTool`; `/suche` queries client-side via `data.supabase`; SV texts load lazily on the client. Landing demo and locked mode use `DEMO_DATA`/`DEMO_SVS` from `types.ts` (no database).
 - **Demo constants (2026-09-28):** `DEMO_DATA` and `DEMO_SVS` are **generated from the live BAM tables** for UN 1203 sequence 1 — never hand-edit them. The earlier hand-written values were wrong in nearly every field, including the special provision codes. `DEMO_SVS` is keyed `MODE:code` because the same code carries different official text per mode; SV 664's text is abridged with a `[…]` marker to keep the landing bundle small. `DEMO_DATA.ADN` is empty on purpose, matching what `fetchCompareForUn` returns. `pickSvText()` in `types.ts` is the single home of the language fallback chain (tr reads en first) — reuse it, don't reimplement it.
-- **Auth flow:** email confirmation and password recovery go through `/auth/confirm?token_hash=…&type=…&next=…` (server-side `verifyOtp`); the Supabase email templates must link there with `{{ .TokenHash }}` (spec §6). Rate limits: login 10/IP/15 min, register + reset 5/IP/hour. Registration and reset never reveal whether an address exists.
+- **Auth flow:** email confirmation and password recovery go through `/auth/confirm?token_hash=…&type=…&next=…` (server-side `verifyOtp`); the Supabase email templates (`supabase/templates/`) link there by extending `{{ .RedirectTo }}` with `{{ .TokenHash }}` (spec §6). Rate limits: login 10/IP/15 min, register + reset 5/IP/hour. Registration and reset never reveal whether an address exists.
 - **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` in `lib/landing/faq.ts` — never let them diverge. Site facts (16.730 entries, 1.354 SVs, 5 free searches) must stay consistent across meta description, FAQ, SeoContent, and `static/llms.txt`.
+- **ADR book viewer rules:** the book is a **file**, never in Postgres and never in `static/`. It therefore has **no RLS backstop** — the explicit `isActive` check in the page load and both endpoints *is* the gate, so any new reader must repeat it (`api.ts` carries that comment). Generated HTML may only carry `book-*` class names: Tailwind v4 scans `src/**` and cannot see classes produced at runtime, which is the failure `tests/tailwind-classes.test.ts` guards. Each worker holds its own ~25 MB index, so budget per worker or pin the route.
+- **The ADR source file is OCR-corrupted** — eleven spellings of Table A's header in one 300-line stretch. Treat its text as untrusted even though we author the file, keep the "kein rechtsverbindlicher Text" disclaimer prominent, and never compare its content against the database to judge the database (the DB comes from the official BAM feed and is authoritative).
 - **Known no-op kept for parity:** `Features.svelte` builds `hover:border-[${color}]` at runtime; Tailwind can't see it, so it produces no CSS (same as before the rewrite).

@@ -40,7 +40,7 @@ describe('register page', () => {
     expect(container.querySelector('input[name="password"]')).not.toBeNull()
     expect(container.querySelector('input[name="passwordRepeat"]')).not.toBeNull()
     expect(container.querySelector('input[name="consent"][type="checkbox"]')).not.toBeNull()
-    expect(container.querySelector('a[href="https://gefahrgut.org/datenschutz"]')).not.toBeNull()
+    expect(container.querySelector('a[href="https://gefahrgut.org/datenschutzerklaerung/"]')).not.toBeNull()
     expect(container.querySelector('a[href="/login"]')).not.toBeNull()
   })
 

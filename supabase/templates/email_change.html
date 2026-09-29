@@ -1,0 +1,10 @@
+<div style="font-family: Arial, Helvetica, sans-serif; color: #1f2937; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #0f2744; margin: 0 0 16px;">Neue E-Mail-Adresse bestätigen</h2>
+  <p>Hallo,</p>
+  <p>für dein Konto bei gefahrgut.org wurde eine Änderung der E-Mail-Adresse von {{ .Email }} auf {{ .NewEmail }} angefordert. Bitte bestätige die Änderung:</p>
+  <p style="margin: 24px 0;">
+    <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/dashboard"
+       style="background: #f97316; color: #ffffff; padding: 12px 20px; border-radius: 6px; text-decoration: none; display: inline-block;">Änderung bestätigen</a>
+  </p>
+  <p style="font-size: 14px; color: #6b7280;">Du hast diese Änderung nicht angefordert? Dann ignoriere diese E-Mail und ändere vorsichtshalber dein Passwort.</p>
+</div>

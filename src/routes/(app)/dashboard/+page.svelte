@@ -4,9 +4,10 @@
 
   let { data } = $props()
 
+  // `href: null` = announced but not built yet (Regelwerksvergleich = F-10).
   const tools = [
     { title: 'Stoffsuche', description: 'UN-Nummer oder Stoffname suchen und alle Regelwerke vergleichen.', href: resolve('/(app)/suche') },
-    { title: 'Regelwerksvergleich', description: 'ADR, RID, IMDG und ICAO nebeneinander – Beispiel UN 1203.', href: resolve('/(app)/un/[nummer]', { nummer: '1203' }) },
+    { title: 'Regelwerksvergleich', description: 'ADR, RID, IMDG und ICAO nebeneinander – Abweichungen auf einen Blick.', href: null },
   ]
 
   const upcoming = ['1000-Punkte-Rechner', 'Dokumentengenerator', 'LQ/EQ-Rechner', 'Transportmodus-Assistent']
@@ -29,10 +30,20 @@
 
   <div class="grid sm:grid-cols-2 gap-4 mb-10">
     {#each tools as tool (tool.title)}
-      <a href={tool.href} class="block rounded-2xl bg-white border border-slate-200 p-6 hover:shadow-lg hover:border-orange-300 transition-all">
-        <h2 class="font-semibold text-lg mb-1" style="color: #0f2744;">{tool.title}</h2>
-        <p class="text-sm text-slate-500">{tool.description}</p>
-      </a>
+      {#if tool.href}
+        <a href={tool.href} class="block rounded-2xl bg-white border border-slate-200 p-6 hover:shadow-lg hover:border-orange-300 transition-all">
+          <h2 class="font-semibold text-lg mb-1" style="color: #0f2744;">{tool.title}</h2>
+          <p class="text-sm text-slate-500">{tool.description}</p>
+        </a>
+      {:else}
+        <div class="rounded-2xl bg-slate-100 border border-slate-200 p-6 cursor-not-allowed select-none" aria-disabled="true">
+          <div class="flex items-center justify-between gap-3 mb-1">
+            <h2 class="font-semibold text-lg text-slate-400">{tool.title}</h2>
+            <span class="shrink-0 rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-500">Demnächst verfügbar</span>
+          </div>
+          <p class="text-sm text-slate-400">{tool.description}</p>
+        </div>
+      {/if}
     {/each}
   </div>
 

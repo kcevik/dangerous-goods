@@ -33,6 +33,27 @@ describe('landing page', () => {
     expect(container).toHaveTextContent('zuerst registrierten Nutzern')
   })
 
+  // Only the Stoffsuche is live; everything else must not look available.
+  it('shows only the Stoffsuche as available and grays out the other features', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const cards = Array.from(container.querySelectorAll('#features .grid > div'))
+    const live = cards.filter(c => !c.hasAttribute('aria-disabled'))
+    const soon = cards.filter(c => c.getAttribute('aria-disabled') === 'true')
+    expect(live).toHaveLength(1)
+    expect(live[0]).toHaveTextContent('Stoffsuche')
+    expect(live[0]).not.toHaveTextContent('Demnächst verfügbar')
+    expect(soon).toHaveLength(5)
+    for (const card of soon) expect(card).toHaveTextContent('Demnächst verfügbar')
+  })
+
+  it('does not advertise the regulatory comparison as available', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    expect(container).not.toHaveTextContent('Neu: Regelwerksvergleich')
+    expect(container).toHaveTextContent('Demnächst: Regelwerksvergleich')
+    expect(container.querySelector('#comparison')).toHaveTextContent('Demnächst verfügbar')
+    expect(container.querySelector('#comparison a[href="#demo"]')).toHaveTextContent('Stoffsuche ausprobieren')
+  })
+
   it('renders the embedded demo tool with UN 1203', () => {
     const { container } = render(LandingPage, { props: PROPS })
     expect(container.querySelector('#demo')).toHaveTextContent('UN 1203 · Verfügbarkeit in allen Modi')

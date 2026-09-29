@@ -102,3 +102,25 @@ describe('MultimodalTool', () => {
     expect(container).toHaveTextContent(DEMO_SVS['ADR:243']!.textFr!.slice(0, 40))
   })
 })
+
+describe('MultimodalTool — UN link into the ADR text', () => {
+  it('links the UN header to the book for real ADR data', () => {
+    const { client } = stubSupabase({})
+    const { container } = render(MultimodalTool, { props: { unNumber: '1203', initialData: DEMO_DATA, supabase: client } })
+    const link = container.querySelector('a[href="/regelwerk/adr?un=1203"]')!
+    expect(link).not.toBeNull()
+    expect(link).toHaveTextContent('UN 1203')
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('keeps the header plain in demo mode and on other modes', async () => {
+    const demo = render(MultimodalTool, { props: { demo: true } })
+    expect(demo.container.querySelector('a[href^="/regelwerk/"]')).toBeNull()
+    demo.unmount()
+
+    const { client } = stubSupabase({})
+    const { container } = render(MultimodalTool, { props: { unNumber: '1203', initialData: DEMO_DATA, supabase: client } })
+    await fireEvent.click(screen.getByRole('tab', { name: /IMDG/ }))
+    expect(container.querySelector('a[href="/regelwerk/adr?un=1203"]')).toBeNull()
+  })
+})

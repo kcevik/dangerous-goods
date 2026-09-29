@@ -14,15 +14,15 @@
       links: [
         { label: 'Dokumentation', href: '#' },
         { label: 'ADR-Leitfaden', href: '#' },
-        { label: 'Blog', href: 'https://gefahrgut.org/blog' },
+        { label: 'Blog', href: 'https://gefahrgut.org/blog/' },
         { label: 'BAM-Datenbasis', href: '#' },
       ],
     },
     {
       heading: 'Rechtliches',
       links: [
-        { label: 'Impressum', href: 'https://gefahrgut.org/impressum' },
-        { label: 'Datenschutz', href: 'https://gefahrgut.org/datenschutz' },
+        { label: 'Impressum', href: 'https://gefahrgut.org/impressum/' },
+        { label: 'Datenschutz', href: 'https://gefahrgut.org/datenschutzerklaerung/' },
         { label: 'AGB', href: '#' },
       ],
     },

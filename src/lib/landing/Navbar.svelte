@@ -17,7 +17,7 @@
       <nav class="hidden md:flex items-center gap-8" aria-label="Hauptnavigation">
         <a href="#features" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Funktionen</a>
         <a href="#comparison" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Regelwerke</a>
-        <a href="https://gefahrgut.org/blog" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Blog</a>
+        <a href="https://gefahrgut.org/blog/" class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Blog</a>
       </nav>
 
       <!-- CTA -->

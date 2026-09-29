@@ -16,6 +16,7 @@
       <nav class="flex items-center gap-4 text-sm" aria-label="Hauptnavigation">
         <a href={resolve('/(app)/dashboard')} class="text-slate-300 hover:text-white transition-colors">Dashboard</a>
         <a href={resolve('/(app)/suche')} class="text-slate-300 hover:text-white transition-colors">Suche</a>
+        <a href={resolve('/(app)/regelwerk/[mode=bookMode]', { mode: 'adr' })} class="text-slate-300 hover:text-white transition-colors">ADR-Text</a>
       </nav>
       <div class="ml-auto flex items-center gap-4 text-sm">
         <span class="text-slate-400 hidden sm:inline truncate max-w-[220px]">{data.user?.email}</span>

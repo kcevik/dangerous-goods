@@ -86,7 +86,7 @@
     <label class="flex items-start gap-3 cursor-pointer">
       <input type="checkbox" name="consent" bind:checked={formState.consent} required class="mt-1 w-4 h-4 accent-orange-500" />
       <span class="text-xs text-slate-500 leading-relaxed">
-        Ich habe die <a href="https://gefahrgut.org/datenschutz" class="underline hover:text-[#0f2744]">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu.
+        Ich habe die <a href="https://gefahrgut.org/datenschutzerklaerung/" class="underline hover:text-[#0f2744]">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu.
       </span>
     </label>
 

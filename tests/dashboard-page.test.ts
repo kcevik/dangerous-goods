@@ -7,13 +7,22 @@ function renderDashboard(isActive: boolean) {
 }
 
 describe('dashboard page', () => {
-  it('links to search and the comparison demo and lists upcoming tools', () => {
+  it('links to search and lists upcoming tools', () => {
     const { container } = renderDashboard(true)
     expect(container.querySelector('a[href="/suche"]')).not.toBeNull()
-    expect(container.querySelector('a[href="/un/1203"]')).not.toBeNull()
     expect(container).toHaveTextContent('1000-Punkte-Rechner')
     expect(container).toHaveTextContent('Dokumentengenerator')
     expect(container).toHaveTextContent('in Vorbereitung')
+  })
+
+  // F-10 is not built: the tile must not link to the plain search view it used to duplicate.
+  it('shows the regulatory comparison as a disabled coming-soon tile', () => {
+    const { container } = renderDashboard(true)
+    const tile = container.querySelector('[aria-disabled="true"]')
+    expect(tile).toHaveTextContent('Regelwerksvergleich')
+    expect(tile).toHaveTextContent('Demnächst verfügbar')
+    expect(tile?.closest('a')).toBeNull()
+    expect(container.querySelector('a[href^="/un/"]')).toBeNull()
   })
 
   it('shows the activation status', () => {

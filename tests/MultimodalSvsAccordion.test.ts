@@ -187,3 +187,38 @@ describe('MultimodalSvsAccordion', () => {
     expect(from).not.toHaveBeenCalled()
   })
 })
+
+describe('MultimodalSvsAccordion — links into the ADR text', () => {
+  it('links each ADR provision to the book in a new window', () => {
+    const { client } = stubSupabase({})
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '243, 640D', mode: 'ADR', supabase: client } })
+    const link = screen.getByRole('link', { name: 'Sondervorschrift 243 im ADR-Text öffnen' })
+    expect(link).toHaveAttribute('href', '/regelwerk/adr?sv=243')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link.getAttribute('rel')).toContain('noopener')
+    expect(container.querySelector('a[href="/regelwerk/adr?sv=640D"]')).not.toBeNull()
+    // a sibling of the toggle, never nested inside it
+    expect(link.closest('button')).toBeNull()
+  })
+
+  it('has no link in demo mode, where a locked user would only meet a lock notice', () => {
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '243', mode: 'ADR', demo: true } })
+    expect(container.querySelector('a[href^="/regelwerk/"]')).toBeNull()
+  })
+
+  it('has no link for modes without a book', () => {
+    const { client } = stubSupabase({})
+    for (const mode of ['RID', 'IMDG', 'ICAO'] as const) {
+      const { container, unmount } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '243', mode, supabase: client } })
+      expect(container.querySelector('a[href^="/regelwerk/"]')).toBeNull()
+      unmount()
+    }
+  })
+
+  it('opening the book does not toggle the row', async () => {
+    const { client } = stubSupabase({})
+    const { container } = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '243', mode: 'ADR', supabase: client } })
+    await fireEvent.click(screen.getByRole('link', { name: 'Sondervorschrift 243 im ADR-Text öffnen' }))
+    expect(container.querySelector('.whitespace-pre-wrap')).toBeNull()
+  })
+})

@@ -23,6 +23,7 @@
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border" style="color: #f97316; background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2);">
           Einzigartiges Feature
         </div>
+        <span class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-500 mb-4 ml-2 align-top">Demnächst verfügbar</span>
         <h2 id="comparison-heading" class="text-3xl sm:text-4xl font-bold mb-6" style="color: #0f2744;">
           Alle Regelwerke auf einen Blick – automatisch verglichen
         </h2>
@@ -48,7 +49,7 @@
           onmouseenter={(e) => { e.currentTarget.style.background = '#1e3a5f' }}
           onmouseleave={(e) => { e.currentTarget.style.background = '#0f2744' }}
         >
-          Regelwerksvergleich ausprobieren
+          Stoffsuche ausprobieren
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
