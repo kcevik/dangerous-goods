@@ -166,8 +166,8 @@ describe('searchText', () => {
   })
 
   it('ignores case and diacritics', () => {
-    const plain = searchText(fixtureIndex, 'gefahrzettel', 500)
-    const accented = searchText(fixtureIndex, 'GEFÄHRZETTEL', 500)
+    const plain = searchText(fixtureIndex, 'gefahrlichen', 500)
+    const accented = searchText(fixtureIndex, 'GEFÄHRLICHEN', 500)
     expect(plain.total).toBeGreaterThan(0)
     expect(accented.total).toBeGreaterThan(0)
   })
@@ -191,6 +191,33 @@ describe('searchText', () => {
     expect(hits.length).toBeLessThanOrEqual(2)
     expect(total).toBeGreaterThan(2)
     expect(capped).toBe(true)
+  })
+
+  it('lists every occurrence, numbered within its line', () => {
+    const { hits, total } = searchText(fixtureIndex, 'Prüfzeichen', 500)
+    const line = fixtureIndex.lines.findIndex(l => l.startsWith('Das Prüfzeichen steht')) + 1
+    expect(total).toBe(2)
+    expect(hits.map(h => [h.line, h.ordinal])).toEqual([[line, 0], [line, 1]])
+  })
+
+  it('does not search table header or numbering rows — structure, like headings', () => {
+    // only in the Table A header row and in `(1) (2) …`
+    expect(searchText(fixtureIndex, 'Klassifizierungscode', 500).total).toBe(0)
+    expect(searchText(fixtureIndex, '(3a)', 500).total).toBe(0)
+  })
+
+  it('matches what the reader sees, not the markup: no match across bold or a tag', () => {
+    // `**654** Abfall-Feuerzeuge`: the bold number and the text are separate on the page
+    expect(searchText(fixtureIndex, '654 Abfall', 500).total).toBe(0)
+    // `<b>BB 2</b>`: the tag itself is not text
+    expect(searchText(fixtureIndex, 'b>BB', 500).total).toBe(0)
+    expect(searchText(fixtureIndex, 'BB 2', 500).total).toBe(1)
+  })
+
+  it('does not find an image description, which the page shows as a skipped placeholder', () => {
+    const index = buildBookIndex(['Text davor.', '', '![Diagramm eines Gefahrzettels](x_img.jpg)', '', 'Ein [Gefahrzettel](https://example.org) im Link.'])
+    const { hits } = searchText(index, 'Gefahrzettel', 500)
+    expect(hits.map(h => h.line)).toEqual([5])
   })
 
   it('does not search heading lines, which would scroll the reader to a caption', () => {

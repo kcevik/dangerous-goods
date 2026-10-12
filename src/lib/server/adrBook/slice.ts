@@ -59,6 +59,23 @@ function isNumberingRow(line: string): boolean {
   return isTableRow(line) && /\|\s*\(1\)\s*\|/.test(line)
 }
 
+/** A fence line of a fenced code block (the source has a few flowchart blocks). */
+function isFence(line: string | undefined): boolean {
+  return line !== undefined && /^\s{0,3}(?:```|~~~)/.test(line)
+}
+
+/**
+ * The fence opening the code block that contains `idx`, or -1 when `idx` is not
+ * inside one. Fences pair up from the top of the document, so this counts them.
+ */
+function enclosingFenceStart(lines: string[], idx: number): number {
+  let open = -1
+  for (let i = 0; i < idx; i++) {
+    if (isFence(lines[i])) open = open === -1 ? i : -1
+  }
+  return open
+}
+
 function isBlank(line: string | undefined): boolean {
   return line !== undefined && line.trim() === ''
 }
@@ -268,6 +285,12 @@ export function sliceAround(
     if (startIdx > 0 && isBlank(lines[startIdx - 1])) startIdx--
   }
 
+  // A fragment that opens inside a fenced block turns its closing fence into an
+  // opening one, and the rest of the window renders as literal code — headings
+  // and all. Open at the fence instead.
+  const fenceStart = enclosingFenceStart(lines, startIdx)
+  if (fenceStart !== -1) startIdx = fenceStart
+
   // ── end boundary ─────────────────────────────────────────────
   const endsInTable = isTableRow(lines[endIdx]!)
   if (!endsInTable && !isBlank(lines[endIdx])) {
@@ -277,6 +300,14 @@ export function sliceAround(
       walked++
     }
     if (endIdx < last - 1 && isBlank(lines[endIdx + 1])) endIdx++
+  }
+
+  // likewise never stop between two fences: close the block the window is in
+  const fenceEnd = enclosingFenceStart(lines, endIdx + 1)
+  if (fenceEnd !== -1) {
+    let close = endIdx + 1
+    while (close < last && !isFence(lines[close])) close++
+    if (close < last) endIdx = close
   }
 
   const body = lines.slice(startIdx, endIdx + 1)

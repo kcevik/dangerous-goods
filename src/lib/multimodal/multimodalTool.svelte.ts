@@ -30,6 +30,8 @@ export class MultimodalToolState {
   currentUnNumber = $state('')
   compareData = $state<Record<string, Entry[]>>({})
   isLoading = $state(false)
+  /** the last load failed — never shown as "no data", which would be a statement about the regulation */
+  loadError = $state(false)
 
   readonly MODALS = MODALS
   readonly #supabase: SupabaseClient | undefined
@@ -118,6 +120,13 @@ export class MultimodalToolState {
       this.compareData = data
       this.currentUnNumber = cleaned
       this.currentModal = firstModeWithRows(data)
+      this.loadError = false
+    }
+    catch {
+      // drop the previous UN's rows so they are never shown under the new number
+      this.compareData = {}
+      this.currentUnNumber = cleaned
+      this.loadError = true
     }
     finally {
       this.isLoading = false

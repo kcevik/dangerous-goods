@@ -6,7 +6,7 @@
   import { AdrBookViewerState, type ViewerDeps } from './adrBookViewer.svelte'
   import BookAttribution from './BookAttribution.svelte'
   import BookFindBar from './BookFindBar.svelte'
-  import { clearMarks, markMatches, pickActiveMark, setActiveMark } from './bookHighlighter'
+  import { clearMarks, keepListedMarks, markMatches, setActiveMark } from './bookHighlighter'
   import BookToc from './BookToc.svelte'
   import { type BookPageData, getBookLabel, MIN_BOOK_QUERY_LENGTH, type TocEntry } from './bookTypes'
   import BookWindow from './BookWindow.svelte'
@@ -45,6 +45,17 @@
     if (focus && !typing && el instanceof HTMLElement) el.focus({ preventScroll: true })
   }
 
+  /**
+   * The element for a `?section=` line. Looked up in the loaded windows' own
+   * headings, not in `data.toc`: the TOC stops at level 3 while most sections
+   * (`1.1.3.6.3` …) are deeper. A block tagged with the line is the fallback.
+   */
+  function focusTarget(root: HTMLElement, line: number): Element | null {
+    const heading = viewer.windows.flatMap(w => w.headings).find(entry => entry.line === line)
+    const byId = heading ? document.getElementById(heading.slug) : null
+    return byId ?? root.querySelector(`.book-ln-${line}`)
+  }
+
   // not reactive: remembers what was last scrolled to, so re-marking after a
   // window loads while reading does not yank the page back to the hit
   let scrolledFor = ''
@@ -60,8 +71,11 @@
 
     clearMarks(root)
     const wholeToken = target?.kind === 'sv' || target?.kind === 'un'
-    const marks = term.length >= MIN_BOOK_QUERY_LENGTH ? markMatches(root, term, { wholeToken }) : []
-    const active = pickActiveMark(marks, hits, index)
+    const found = term.length >= MIN_BOOK_QUERY_LENGTH ? markMatches(root, term, { wholeToken }) : []
+    // only the matches the hit list names stay highlighted, so the counter and
+    // the marks can never disagree (see keepListedMarks)
+    const { marks, markOfHit } = keepListedMarks(found, hits)
+    const active = markOfHit[index] ?? -1
     setActiveMark(marks, active)
 
     const key = `${term}|${hits.length}|${index}|${hits[0]?.line ?? ''}`
@@ -76,8 +90,7 @@
     }
     else if (target?.kind === 'section' && data.focusLine !== null) {
       scrolledFor = key
-      const heading = data.toc.find(entry => entry.line === data.focusLine)
-      scrollToElement(heading ? document.getElementById(heading.slug) : null)
+      scrollToElement(focusTarget(root, data.focusLine))
     }
   })
 

@@ -6,6 +6,7 @@ interface Scenario {
   user?: { id: string, email: string } | null
   userError?: boolean
   activatedAt?: string | null
+  getUserCalls?: number
 }
 
 const { scenario, createServerClientMock } = vi.hoisted(() => {
@@ -13,7 +14,7 @@ const { scenario, createServerClientMock } = vi.hoisted(() => {
   const createServerClientMock = vi.fn(() => ({
     auth: {
       getSession: async () => ({ data: { session: scenario.session ?? null } }),
-      getUser: async () => scenario.userError
+      getUser: async () => (scenario.getUserCalls = (scenario.getUserCalls ?? 0) + 1) && scenario.userError
         ? { data: { user: null }, error: new Error('bad token') }
         : { data: { user: scenario.user ?? null }, error: null },
     },
@@ -134,5 +135,21 @@ describe('authGuard', () => {
     expect((await run('/', '/')).response.status).toBe(200)
     expect((await run('/login', '/(auth)/login')).response.status).toBe(200)
     expect((await run('/auth/confirm', '/auth/confirm')).response.status).toBe(200)
+  })
+})
+
+describe('safeGetSession is resolved once per request (code review 2026-09-29)', () => {
+  it('asks Supabase Auth only once, however often the request needs the session', async () => {
+    scenario.session = SESSION
+    scenario.user = USER
+    scenario.activatedAt = '2026-09-29T00:00:00Z'
+    scenario.getUserCalls = 0
+    const event = makeEvent('/dashboard', '/(app)/dashboard')
+    await handle({ event, resolve })
+    const first = await event.locals.safeGetSession()
+    const second = await event.locals.safeGetSession()
+    expect(scenario.getUserCalls).toBe(1)
+    expect(second).toBe(first)
+    expect(first.isActive).toBe(true)
   })
 })

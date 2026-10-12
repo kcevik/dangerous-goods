@@ -124,3 +124,18 @@ describe('MultimodalTool — UN link into the ADR text', () => {
     expect(container.querySelector('a[href="/regelwerk/adr?un=1203"]')).toBeNull()
   })
 })
+
+describe('MultimodalTool — failed load', () => {
+  it('shows an error with a retry button instead of "nicht vorhanden"', async () => {
+    const { client, from } = stubSupabase({ adr_entries: { data: null, error: { message: 'boom' } } })
+    const { container } = render(MultimodalTool, { props: { unNumber: '1090', supabase: client } })
+    await flush()
+    const alert = container.querySelector('[role="alert"]')
+    expect(alert).toHaveTextContent('Die Daten konnten nicht geladen werden.')
+    expect(container).not.toHaveTextContent('nicht vorhanden')
+    const calls = from.mock.calls.length
+    await fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
+    await flush()
+    expect(from.mock.calls.length).toBeGreaterThan(calls)
+  })
+})

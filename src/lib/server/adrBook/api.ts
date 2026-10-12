@@ -155,12 +155,57 @@ export function hitsFor(
   }
 }
 
+/** Stands where markup splits the rendered text: no match may span it. */
+const BOUNDARY = '\u0001'
+const TABLE_ROW = /^\s*\|/
+const ALIGNMENT_ROW = /^\s*\|[\s:|-]*\|\s*$/
+const NUMBERING_ROW = /^\s*\|\s*\(1\)\s*\|/
+const EMPTY_ROW = /^\s*\|(?:\s*\|)+\s*$/
+const LIST_MARKER = /^\s*(?:[-*+]|\d{1,9}[.)])\s+/
+const ENTITIES: [RegExp, string][] = [
+  [/&nbsp;/g, '\u00A0'], [/&lt;/g, '<'], [/&gt;/g, '>'], [/&quot;/g, '"'], [/&#0*39;|&apos;/g, '\''], [/&amp;/g, '&'],
+]
+
+/**
+ * A source line as the reader sees it on the page: markup removed, and a
+ * boundary wherever the rendered text is split into separate text nodes (a tag,
+ * bold, a table cell). The viewer's highlighter never matches across such a
+ * split, so the server must not either — otherwise the counter would promise a
+ * hit the page cannot show.
+ *
+ * Null for lines that are structure, not text: headings, and table header,
+ * alignment, numbering and filler rows. Header rows also repeat at every page
+ * break of Table A and the slicer drops those repeats, so a hit on one would be
+ * unreachable.
+ */
+function visibleText(lines: string[], i: number): string | null {
+  const line = lines[i]!
+  if (line.startsWith('#')) return null
+  const isRow = TABLE_ROW.test(line)
+  if (isRow && (ALIGNMENT_ROW.test(line) || NUMBERING_ROW.test(line) || EMPTY_ROW.test(line))) return null
+  if (isRow && ALIGNMENT_ROW.test(lines[i + 1] ?? '')) return null
+
+  let text = isRow ? line.replace(/\|/g, BOUNDARY) : line.replace(LIST_MARKER, '')
+  text = text
+    // an image becomes a placeholder the highlighter skips; a link shows its text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, BOUNDARY)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, `${BOUNDARY}$1${BOUNDARY}`)
+    .replace(/<[^>]*>/g, BOUNDARY)
+    .replace(/\*\*|__/g, BOUNDARY)
+  for (const [pattern, replacement] of ENTITIES) text = text.replace(pattern, replacement)
+  return text
+}
+
 /**
  * Free-text search over the source lines.
  *
  * Scans the line array rather than rendered HTML, so a search for `table` cannot
  * match `<table>`. The term is used as a literal: no regular expression is built
  * from user input, so neither metacharacters nor catastrophic backtracking apply.
+ *
+ * One hit per occurrence, numbered within its line (`ordinal`), found the way the
+ * viewer's highlighter finds matches — so "Treffer k von n" counts exactly the
+ * highlighted, reachable matches, including a term that appears twice on a line.
  */
 export function searchText(index: BookIndex, term: string, limit = HIT_LIMIT): HitListResult {
   const trimmed = term.trim()
@@ -173,24 +218,27 @@ export function searchText(index: BookIndex, term: string, limit = HIT_LIMIT): H
   let total = 0
 
   for (let i = 0; i < index.lines.length; i++) {
-    const line = index.lines[i]!
     // headings are structure, not content: a hit there scrolls to a caption
-    if (line.startsWith('#')) continue
+    const visible = visibleText(index.lines, i)
+    if (visible === null) continue
 
-    const at = loosely(line).indexOf(needle)
-    if (at === -1) continue
-
-    total++
-    if (hits.length < limit) {
-      hits.push({
-        kind: 'un',
-        code: trimmed,
-        line: i + 1,
-        rank: 3,
-        role: 'crossReference',
-        context: contextAround(line, at),
-        heading: headingFor(index, i + 1),
-      })
+    const haystack = loosely(visible)
+    let ordinal = 0
+    for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + needle.length)) {
+      total++
+      if (hits.length < limit) {
+        hits.push({
+          kind: 'un',
+          code: trimmed,
+          line: i + 1,
+          rank: 3,
+          role: 'crossReference',
+          context: contextAround(visible.replaceAll(BOUNDARY, ' '), at),
+          heading: headingFor(index, i + 1),
+          ordinal,
+        })
+      }
+      ordinal++
     }
   }
 
@@ -240,9 +288,14 @@ export function windowAt(
     .map(({ level, text, sectionNo, slug, line: at }) => ({ level, text, sectionNo, slug, line: at }))
 
   const rendered: RenderedWindow = {
-    // the slug registry is the document's own, so anchors stay unique and stable
-    // across windows rather than being renumbered per slice
-    html: renderSlice(slice.lines.join('\n'), { slugRegistry: new Set(), sourceLines: sourceLinesOf(index, slice) }),
+    // every heading takes the index's slug, which is unique across the whole
+    // document, so an anchor never depends on which window rendered it; the
+    // per-window registry only de-duplicates headings the index does not know
+    html: renderSlice(slice.lines.join('\n'), {
+      slugRegistry: new Set(),
+      sourceLines: sourceLinesOf(index, slice),
+      headingSlugs: headingSlugsOf(index),
+    }),
     lineStart: slice.lineStart,
     lineEnd: slice.lineEnd,
     headings,
@@ -255,6 +308,18 @@ export function windowAt(
   }
 
   return rendered
+}
+
+/** Book line → heading slug, built once per index. */
+const headingSlugMaps = new WeakMap<BookIndex, Map<number, string>>()
+
+function headingSlugsOf(index: BookIndex): Map<number, string> {
+  let map = headingSlugMaps.get(index)
+  if (!map) {
+    map = new Map(index.headings.map(h => [h.line, h.slug]))
+    headingSlugMaps.set(index, map)
+  }
+  return map
 }
 
 /**

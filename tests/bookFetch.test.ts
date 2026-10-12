@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createBookFetchers } from '$lib/regulations/bookFetch'
 
 function fakeFetch(status = 200, body: unknown = { ok: true }) {
-  return vi.fn(async () => new Response(JSON.stringify(body), { status }))
+  return vi.fn(async () => Response.json(body, { status }))
 }
 
 describe('createBookFetchers', () => {
@@ -26,5 +26,18 @@ describe('createBookFetchers', () => {
   it('rejects on a non-2xx answer such as the 403 lock', async () => {
     const deps = createBookFetchers('/regelwerk/adr', fakeFetch(403, { error: 'locked' }) as never)
     await expect(deps.fetchWindow({ line: 1 })).rejects.toThrow('403')
+  })
+
+  it('rejects a redirected answer — an expired session lands on /login as HTML', async () => {
+    const html = new Response('<html>Login</html>', { status: 200, headers: { 'content-type': 'text/html' } })
+    Object.defineProperty(html, 'redirected', { value: true })
+    const deps = createBookFetchers('/regelwerk/adr', vi.fn(async () => html) as never)
+    await expect(deps.searchText('Tank')).rejects.toThrow('redirected')
+  })
+
+  it('rejects a 200 answer that is not JSON', async () => {
+    const html = new Response('<html>Login</html>', { status: 200, headers: { 'content-type': 'text/html' } })
+    const deps = createBookFetchers('/regelwerk/adr', vi.fn(async () => html) as never)
+    await expect(deps.searchText('Tank')).rejects.toThrow('not JSON')
   })
 })

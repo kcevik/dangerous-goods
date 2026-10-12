@@ -247,6 +247,35 @@ function buildContext(text: string, code: string): string {
   return out
 }
 
+// ── Occurrence ordinals ──────────────────────────────────────
+
+/** What the viewer's whole-token highlighter treats as part of a code. */
+const TOKEN_CHAR = /^[\p{L}\p{N}]$/u
+
+/**
+ * How many whole-token matches of `code` start in `text` before `before`,
+ * counted exactly as the viewer's highlighter scans a rendered line: case-
+ * insensitive, non-overlapping, and a match counts only when no letter or digit
+ * touches it. A hit carries this number so the viewer highlights the very
+ * occurrence the hit list names — not an incidental one earlier in the row.
+ */
+function tokenOrdinal(text: string, code: string, before = Number.POSITIVE_INFINITY): number {
+  const haystack = text.toLowerCase()
+  const needle = code.toLowerCase()
+  let count = 0
+  for (let at = haystack.indexOf(needle); at !== -1 && at < before; at = haystack.indexOf(needle, at + needle.length)) {
+    if (!TOKEN_CHAR.test(text[at - 1] ?? '') && !TOKEN_CHAR.test(text[at + needle.length] ?? '')) count++
+  }
+  return count
+}
+
+/** Matches of `code` in the cells before `cell`, i.e. the ordinal of a match inside `cell`. */
+function ordinalOfCell(cells: string[], cell: number, code: string): number {
+  let count = 0
+  for (let i = 0; i < cell; i++) count += tokenOrdinal(normalize(cells[i] ?? ''), code)
+  return count
+}
+
 // ── Token classification ─────────────────────────────────────
 
 /** True when the number is really a measurement: "50 °C", "60 %", "10 kg". */
@@ -278,12 +307,12 @@ interface TableContext {
 class LineHits {
   private readonly best = new Map<string, BookHit>()
 
-  add(kind: 'sv' | 'un', code: string, role: HitRole, line: number, text: string, heading: BookHeading | null): void {
+  add(kind: 'sv' | 'un', code: string, role: HitRole, line: number, text: string, heading: BookHeading | null, ordinal: number): void {
     const key = `${kind}:${code}`
     const rank = RANK_BY_ROLE[role]
     const existing = this.best.get(key)
     if (existing && existing.rank <= rank) return
-    this.best.set(key, { kind, code, line, rank, role, context: buildContext(text, code), heading })
+    this.best.set(key, { kind, code, line, rank, role, context: buildContext(text, code), heading, ordinal })
   }
 
   values(): BookHit[] {
@@ -305,7 +334,7 @@ function scanProse(
     const at = match.index
     if (followedByUnit(text, at + match[0].length)) continue
     const left = leftContext(text, at, SV_CONTEXT_WINDOW)
-    out.add('sv', code, SV_MARKER_RE.test(left) ? 'crossReference' : 'incidental', line, text, heading)
+    out.add('sv', code, SV_MARKER_RE.test(left) ? 'crossReference' : 'incidental', line, text, heading, tokenOrdinal(text, code, at))
   }
 
   for (const match of text.matchAll(UN_TOKEN_RE)) {
@@ -317,7 +346,7 @@ function scanProse(
     if (!isYearish && followedByUnit(text, at + match[0].length)) continue
     const left = leftContext(text, at, UN_CONTEXT_WINDOW)
     const role: HitRole = !isYearish && UN_MARKER_RE.test(left) ? 'crossReference' : 'incidental'
-    out.add('un', code, role, line, text, heading)
+    out.add('un', code, role, line, text, heading, tokenOrdinal(text, code, at))
   }
 }
 
@@ -435,8 +464,16 @@ function readNumberingRow(cells: string[]): TableContext | null {
 
 /** Provision codes in column 6, split on `<br>` and on spaces alike. */
 function tableACodes(cells: string[], table: TableContext): string[] {
+  return tableACodesAt(cells, table).codes
+}
+
+function tableACodesAt(cells: string[], table: TableContext): { codes: string[], at: number } {
   const at = table.columns.get('6')
-  if (at === undefined) return []
+  if (at === undefined) return { codes: [], at: -1 }
+  return { codes: tableACodesIn(cells, at), at }
+}
+
+function tableACodesIn(cells: string[], at: number): string[] {
   const cell = cells[at]
   if (!cell) return []
   return normalize(cell)
@@ -483,11 +520,13 @@ export function indexBook(lines: string[], opts: { unNumbers: Set<string> }): In
     if (entry.shape === 'tableRow') {
       const { cells, table } = entry
       if (table?.isTableA) {
-        const firstColumn = normalize(cells[table.columns.get('1') ?? 0] ?? '')
+        const unColumn = table.columns.get('1') ?? 0
+        const firstColumn = normalize(cells[unColumn] ?? '')
         const un = /^(\d{4})$/.exec(firstColumn)?.[1]
-        if (un && opts.unNumbers.has(un)) out.add('un', un, 'tableARow', lineNo, text, heading)
-        for (const code of tableACodes(cells, table)) {
-          out.add('sv', code, 'tableASvCell', lineNo, text, heading)
+        if (un && opts.unNumbers.has(un)) out.add('un', un, 'tableARow', lineNo, text, heading, ordinalOfCell(cells, unColumn, un))
+        const column6 = tableACodesAt(cells, table)
+        for (const code of column6.codes) {
+          out.add('sv', code, 'tableASvCell', lineNo, text, heading, ordinalOfCell(cells, column6.at, code))
         }
         // Every other column is deliberately left unread. Columns 9a, 11, 13 and
         // 15–19 are full of codes and quantities that look exactly like provision
@@ -495,16 +534,17 @@ export function indexBook(lines: string[], opts: { unNumbers: Set<string> }): In
       } else {
         // Table B and the Teil-4 substance tables: a cell that is nothing but a
         // UN number is that substance's row in an alphabetical list.
-        for (const cell of cells) {
+        cells.forEach((cell, i) => {
           const un = /^(\d{4})$/.exec(normalize(cell))?.[1]
-          if (un && opts.unNumbers.has(un)) out.add('un', un, 'tableB', lineNo, text, heading)
-        }
+          if (un && opts.unNumbers.has(un)) out.add('un', un, 'tableB', lineNo, text, heading, ordinalOfCell(cells, i, un))
+        })
         scanProse(text, lineNo, heading, known, opts.unNumbers, out)
       }
     } else {
       if (range && lineNo >= range.start && lineNo <= range.end) {
         const code = readDefinition(line)
-        if (code && defined.has(code)) out.add('sv', code, 'definition', lineNo, text, heading)
+        // the definition opens the line, so it is the line's first match
+        if (code && defined.has(code)) out.add('sv', code, 'definition', lineNo, text, heading, 0)
       }
       scanProse(text, lineNo, heading, known, opts.unNumbers, out)
     }

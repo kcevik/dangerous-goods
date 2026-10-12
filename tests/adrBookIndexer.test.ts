@@ -207,6 +207,35 @@ describe('indexBook – Table B', () => {
   })
 })
 
+describe('indexBook – ordinal of the listed occurrence within its line', () => {
+  // The viewer highlights "the n-th match on line L", so a hit must say which
+  // match it is when the same number stands in the row more than once.
+  const small = [
+    '### Tabelle B',
+    '',
+    '| Benennung | UN-Nummer |',
+    '| --- | --- |',
+    '| BENZIN, siehe auch 1203 | 1203 |',
+    '',
+    'Die Eintragung UN 1203 gilt, ebenso UN 1202 und UN 1203 in Tanks.',
+  ]
+  const indexed = indexBook(small, { unNumbers: new Set(['1202', '1203']) })
+  const hitOn = (line: number) => indexed.hits.get('un:1203')!.find(h => h.line === line)!
+
+  it('counts an incidental match earlier in the same row', () => {
+    expect(hitOn(5)).toMatchObject({ role: 'tableB', ordinal: 1 })
+  })
+
+  it('names the first match on a prose line when that one ranks best', () => {
+    expect(hitOn(7)).toMatchObject({ role: 'crossReference', ordinal: 0 })
+  })
+
+  it('gives the fixture Table A row its first-column match', () => {
+    const row = lineOf('| 1203 | BENZIN oder OTTOKRAFTSTOFF |')
+    expect(hitsFor('un', '1203').find(h => h.line === row)).toMatchObject({ role: 'tableARow', ordinal: 0 })
+  })
+})
+
 describe('indexBook – traps', () => {
   it('does not index "bei 50 °C" or "mehr als 60 %" as provisions 50 / 60', () => {
     const trap = lineOf('Obwohl Benzin bei 50 °C')

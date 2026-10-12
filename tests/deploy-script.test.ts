@@ -15,10 +15,16 @@ describe('scripts/deploy.sh', () => {
     expect(script).toMatch(/^set -euo pipefail$/m)
   })
 
-  it('health-checks and rolls back automatically', () => {
-    expect(script).toContain('http://127.0.0.1:3000/healthz')
+  it('hands the switch, health check and rollback to scripts/remote-switch.sh', () => {
+    // behaviour is tested in deploy-remote-switch.test.ts
+    expect(script.match(/< scripts\/remote-switch\.sh/g)).toHaveLength(2)
     expect(script).toContain('.previous-tag')
-    expect(script).toMatch(/rolled back/)
+    execFileSync('bash', ['-n', 'scripts/remote-switch.sh'])
+  })
+
+  it('refuses to build with missing or quoted Supabase values', () => {
+    expect(script).toMatch(/missing in \.env/)
+    expect(script).toMatch(/Remove the quotes/)
   })
 
   it('never ships secrets: only the two public values become build args', () => {

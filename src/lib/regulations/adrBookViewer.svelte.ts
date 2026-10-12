@@ -70,6 +70,12 @@ export class AdrBookViewerState {
   wrapped = $state(false)
   /** the last window fetch failed; position is unchanged */
   loadFailed = $state(false)
+  /**
+   * The last hit-list request failed. The previous list is kept and the counter
+   * stays blank: for a safety adviser "Keine Treffer" is a statement about the
+   * regulation, so a failed request must never read as one.
+   */
+  searchFailed = $state(false)
 
   readonly totalLines: number
   readonly lang: Lang
@@ -107,7 +113,7 @@ export class AdrBookViewerState {
   )
 
   readonly counterLabel = $derived.by(() => {
-    if (!this.#searching) return ''
+    if (!this.#searching || this.searchFailed) return ''
     if (this.hits.length === 0) return getBookLabel(this.lang, 'noHits')
     const total = this.isCapped
       ? formatBookLabel(this.lang, 'cappedTotal', { shown: this.hits.length, total: this.totalHits })
@@ -240,6 +246,7 @@ export class AdrBookViewerState {
   setTerm(value: string): void {
     this.term = value
     this.target = null
+    this.searchFailed = false
     if (this.#debounceTimer) clearTimeout(this.#debounceTimer)
     // invalidate any reply still in flight for an older term
     this.#requestId++
@@ -261,16 +268,19 @@ export class AdrBookViewerState {
     try {
       const result = await this.#deps.searchText(term)
       if (id !== this.#requestId) return
+      this.searchFailed = false
       this.#replaceHits(result)
       if (result.hits[0]) await this.ensureLineLoaded(result.hits[0].line)
     }
     catch {
-      if (id === this.#requestId) this.#replaceHits({ hits: [], total: 0, capped: false })
+      // keep the previous list; the find bar says the search failed
+      if (id === this.#requestId) this.searchFailed = true
     }
   }
 
   /** Only meaningful for a code target; free text has no ranks to filter. */
   async setIncludeIncidental(value: boolean): Promise<void> {
+    const previous = this.includeIncidental
     this.includeIncidental = value
     const target = this.target
     if (target?.kind !== 'sv' && target?.kind !== 'un') return
@@ -279,10 +289,14 @@ export class AdrBookViewerState {
     try {
       const result = await this.#deps.fetchCodeHits(target, value)
       if (id !== this.#requestId) return
+      this.searchFailed = false
       this.#replaceHits(result)
     }
     catch {
-      // keep the current list; the checkbox state still reflects the request
+      if (id !== this.#requestId) return
+      // keep the current list and put the checkbox back to what that list shows
+      this.includeIncidental = previous
+      this.searchFailed = true
     }
   }
 

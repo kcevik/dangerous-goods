@@ -314,3 +314,26 @@ describe('sliceAround — the conversion misspells the repeated header', () => {
     expect(s.lines.some(l => l.trim() === '')).toBe(true)
   })
 })
+
+describe('sliceAround — fenced code blocks', () => {
+  // prose, then a fenced block with a blank line inside it, then more prose
+  const lines = [
+    'Absatz eins.', '',
+    '```', 'flowchart', '', 'D1 --> D2', '```', '',
+    ...Array.from({ length: 20 }, (_, i) => (i % 2 === 1 ? '' : `Absatz ${i + 2}.`)),
+    '### 2.2.9.1.3 Begriffsbestimmungen', '', 'Text danach.',
+  ]
+  const fences = (s: { lines: string[] }) => s.lines.filter(l => l.trim().startsWith('```')).length
+
+  it('never opens a window inside a fenced block, where its closing fence would open a new one', () => {
+    // centre + before lands on the blank line inside the fence (line 5)
+    const s = sliceAround(lines, 10, 5, 30)
+    expect(s.lineStart).toBeLessThanOrEqual(3)
+    expect(fences(s) % 2).toBe(0)
+  })
+
+  it('never ends a window inside a fenced block', () => {
+    const s = sliceAround(lines, 1, 0, 4)
+    expect(fences(s) % 2).toBe(0)
+  })
+})

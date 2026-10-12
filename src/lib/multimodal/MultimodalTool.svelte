@@ -86,7 +86,18 @@
     </div>
 
     <!-- Results -->
-    {#if tool.hasData}
+    {#if tool.loadError}
+      <!-- a failed load must never look like "no data for this UN number" -->
+      <div role="alert" class="bg-red-50 border border-red-200 p-8 text-center text-red-800">
+        <p class="text-sm mb-4">UN {tool.currentUnNumber}: {tool.L('loadError')}</p>
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-semibold border border-red-300 bg-white hover:bg-red-100 transition-colors"
+          disabled={tool.isLoading}
+          onclick={() => tool.loadCompare(tool.currentUnNumber)}
+        >{tool.L('retry')}</button>
+      </div>
+    {:else if tool.hasData}
 
       <!-- Compare overview -->
       <div class="px-4 py-3.5 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8] border-t-[3px] border-t-orange-500">

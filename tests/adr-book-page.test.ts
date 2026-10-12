@@ -90,10 +90,12 @@ describe('/regelwerk/adr page — active', () => {
     expect(live).toHaveTextContent('Treffer 1 von 7')
   })
 
-  it('marks the matches and flags the active one', () => {
+  it('marks the listed matches and flags the active one', () => {
     const { container } = renderPage(activeData())
     const marks = container.querySelectorAll('#book-content mark.book-hit')
-    expect(marks.length).toBe(8)
+    // seven listed hits → seven marks; the Table A row (line 20) is not in the list
+    expect(marks.length).toBe(7)
+    expect(container.querySelector('tr.book-ln-20 mark')).toBeNull()
     const active = container.querySelectorAll('mark[aria-current="location"]')
     expect(active).toHaveLength(1)
     expect(active[0]!.closest('p')).toHaveTextContent('Absatz 10')
@@ -211,6 +213,28 @@ describe('/regelwerk/adr page — focus and scrolling', () => {
     expect(document.activeElement).toBe(input)
   })
 
+  it('scrolls to a ?section= heading below level 3, which the TOC does not list', async () => {
+    const scrolled: Element[] = []
+    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this) }
+    const deep: TocEntry = { level: 5, text: '1.1.3.6.3 Tiefer Abschnitt', sectionNo: '1.1.3.6.3', slug: 'h-1-1-3-6-3', line: 30 }
+    const sectionWindow: RenderedWindow = {
+      html: '<h3 id="h-3-3-1">3.3.1 Sondervorschriften</h3><p class="book-ln-10">Text.</p><h5 id="h-1-1-3-6-3">1.1.3.6.3 Tiefer Abschnitt</h5><p class="book-ln-31">Mehr.</p>',
+      lineStart: 1,
+      lineEnd: 40,
+      headings: [TOC[2]!, deep],
+    }
+    renderPage(activeData({
+      target: { kind: 'section', sectionNo: '1.1.3.6.3' },
+      term: '',
+      hits: [],
+      totalHits: 0,
+      windows: [sectionWindow],
+      focusLine: 30,
+    }))
+    await tick()
+    expect(scrolled.map(el => el.id)).toContain('h-1-1-3-6-3')
+  })
+
   it('scrolls to the first hit of a search once its window has loaded', async () => {
     vi.useFakeTimers()
     const scrolled: Element[] = []
@@ -220,7 +244,7 @@ describe('/regelwerk/adr page — focus and scrolling', () => {
       const body = url.includes('/search')
         ? { hits: [{ ...hit(3000), kind: 'un', code: 'Tankfahrzeug' }], total: 1, capped: false }
         : { html: '<p class="book-ln-3000">Das Tankfahrzeug hier.</p>', lineStart: 2990, lineEnd: 3010, headings: [] }
-      return new Response(JSON.stringify(body), { status: 200 })
+      return Response.json(body)
     })
 
     renderPage(activeData({ target: null, term: '', hits: [], totalHits: 0, focusLine: null }))
@@ -232,5 +256,129 @@ describe('/regelwerk/adr page — focus and scrolling', () => {
     }
 
     expect(scrolled.some(el => el.tagName === 'MARK' && el.textContent === 'Tankfahrzeug')).toBe(true)
+  })
+})
+
+describe('/regelwerk/adr page — failed requests', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  async function settle() {
+    for (let i = 0; i < 5; i++) {
+      await vi.advanceTimersByTimeAsync(0)
+      await tick()
+    }
+  }
+
+  it('says the search failed — never "Keine Treffer" — when the session expired mid-search', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      const login = new Response('<html>Anmelden</html>', { status: 200, headers: { 'content-type': 'text/html' } })
+      Object.defineProperty(login, 'redirected', { value: true })
+      return login
+    })
+
+    const { container } = renderPage(activeData({ target: null, term: '', hits: [], totalHits: 0, focusLine: null }))
+    await fireEvent.input(screen.getByLabelText('Suchbegriff'), { target: { value: 'Tankfahrzeug' } })
+    await vi.advanceTimersByTimeAsync(300)
+    await settle()
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Die Suche ist fehlgeschlagen. Bitte versuche es erneut.')
+    expect(container).not.toHaveTextContent('Keine Treffer')
+  })
+
+  it('puts the incidental checkbox back when re-requesting the hits fails', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ error: 'rateLimited' }, { status: 429 }))
+
+    const { container } = renderPage(activeData())
+    const checkbox = screen.getByRole('checkbox', { name: 'Auch beiläufige Treffer' }) as HTMLInputElement
+    await fireEvent.click(checkbox)
+    await settle()
+
+    expect(checkbox.checked).toBe(false)
+    expect(screen.getByRole('alert')).toHaveTextContent('Die Suche ist fehlgeschlagen.')
+    expect(container.querySelector('[aria-live="polite"]')).not.toHaveTextContent('Keine Treffer')
+  })
+})
+
+describe('/regelwerk/adr page — layout invalidation', () => {
+  it('keeps the viewer when only the layout data changes (token refresh → invalidate supabase:auth)', async () => {
+    const data = activeData()
+    const { container, rerender } = renderPage(data)
+    await fireEvent.click(screen.getByRole('button', { name: 'Nächster Treffer' }))
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 2 von 7')
+
+    // the root layout load reruns: a new merged data object with the same page-load output
+    await rerender({ data: { ...data, session: { access_token: 'refreshed' }, user: { id: 'u1', email: 'k@example.de' } } as never })
+    await tick()
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 2 von 7')
+  })
+
+  it('starts a fresh viewer when a link opens a different target', async () => {
+    const { container, rerender } = renderPage(activeData())
+    await fireEvent.click(screen.getByRole('button', { name: 'Nächster Treffer' }))
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 2 von 7')
+
+    await rerender({ data: activeData({ target: { kind: 'sv', code: '640' }, term: '640' }) as never })
+    await tick()
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 1 von 7')
+    expect(container).toHaveTextContent('Sondervorschrift 640')
+  })
+})
+
+describe('/regelwerk/adr page — counter and highlights agree', () => {
+  const twiceWindow: RenderedWindow = {
+    html: '<h3 id="h-pruefzeichen">Prüfzeichen</h3><p class="book-ln-10">Das Prüfzeichen steht am Behälter, ein zweites Prüfzeichen am Deckel.</p>',
+    lineStart: 1,
+    lineEnd: 40,
+    headings: [],
+  }
+  const occurrence = (ordinal: number): BookHit => ({ ...hit(10), kind: 'un', code: 'Prüfzeichen', rank: 3, role: 'crossReference', ordinal })
+
+  function renderTwice() {
+    return renderPage(activeData({
+      target: { kind: 'q', term: 'Prüfzeichen' },
+      term: 'Prüfzeichen',
+      hits: [occurrence(0), occurrence(1)],
+      totalHits: 2,
+      windows: [twiceWindow],
+      toc: [],
+    }))
+  }
+
+  const activeMark = (container: HTMLElement) => container.querySelector('mark[aria-current="location"]')!
+  const allMarks = (container: HTMLElement) => [...container.querySelectorAll('#book-content mark.book-hit')]
+
+  it('a line with the term twice: two hits, two marks, none in the heading', () => {
+    const { container } = renderTwice()
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 1 von 2')
+    expect(allMarks(container)).toHaveLength(2)
+    expect(container.querySelector('h3 mark')).toBeNull()
+    expect(activeMark(container)).toBe(allMarks(container)[0])
+  })
+
+  it('next and previous visit each occurrence on the line in order', async () => {
+    const { container } = renderTwice()
+    await fireEvent.click(screen.getByRole('button', { name: 'Nächster Treffer' }))
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 2 von 2')
+    expect(activeMark(container)).toBe(allMarks(container)[1])
+    await fireEvent.click(screen.getByRole('button', { name: 'Vorheriger Treffer' }))
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 1 von 2')
+    expect(activeMark(container)).toBe(allMarks(container)[0])
+  })
+
+  it('for a code target, an incidental match earlier in the row does not take the active mark', () => {
+    const row: RenderedWindow = {
+      html: '<table><tbody><tr class="book-ln-20"><td>siehe 243 unten</td><td>243</td></tr></tbody></table>',
+      lineStart: 1,
+      lineEnd: 40,
+      headings: [],
+    }
+    const { container } = renderPage(activeData({ hits: [{ ...hit(20), role: 'tableASvCell', rank: 4, ordinal: 1 }], totalHits: 1, windows: [row] }))
+    expect(allMarks(container)).toHaveLength(1)
+    expect(activeMark(container).parentElement!.textContent).toBe('243')
   })
 })

@@ -2,7 +2,8 @@
 
 > Gefahrgut-Datenbank und Arbeitsplattform für Gefahrgutbeauftragte (dangerous goods
 > safety advisers). Multimodaler Vergleich der Regelwerke ADR (Straße), RID (Schiene),
-> IMDG-Code (See) und ICAO (Luft) je UN-Nummer. Aktuell im Aufbau — Registrierung ist offen.
+> IMDG-Code (See) und ICAO (Luft) je UN-Nummer. Aktuell im Aufbau — Benachrichtigung zum Start
+> über die Registrierungsseite.
 
 ## Datenbasis
 
@@ -22,12 +23,12 @@
 
 ## Preise und Zugang
 
-Ein Tarif mit vollem Funktionsumfang; der Preis wird zuerst registrierten Nutzern bekannt
-gegeben. Registrierung ist offen; bis zur Freischaltung steht eine Demo mit UN 1203 zur
-Verfügung. Suche und Regelwerksvergleich erfordern ein freigeschaltetes Konto.
+Ein Tarif mit vollem Funktionsumfang; der Preis steht noch nicht fest. Vor dem Start ist keine
+Registrierung möglich: Unter /registrieren kann man sich per E-Mail zur Benachrichtigung zum
+Start eintragen. Suche und Regelwerksvergleich erfordern ein freigeschaltetes Konto.
 
 ## Links
 
 - Startseite: https://gefahrgut.org/
-- Registrierung: https://gefahrgut.org/registrieren
+- Benachrichtigung zum Start: https://gefahrgut.org/registrieren
 - Blog (Fachartikel zu Gefahrstofflagerung, TRGS 510, ADR): https://gefahrgut.org/blog/

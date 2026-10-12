@@ -73,6 +73,13 @@ export interface BookHit {
   context: string
   /** nearest enclosing heading, for grouping the hit list by chapter */
   heading: BookHeading | null
+  /**
+   * Which match on `line` this hit is, 0-based, counted the way the viewer's
+   * highlighter finds matches on the rendered line. Absent means 0. The viewer
+   * highlights exactly the matches the hit list names this way, so the counter
+   * and the marks agree (see `keepListedMarks`).
+   */
+  ordinal?: number
 }
 
 /** What the reader asked to see. */
@@ -193,6 +200,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     loadNext: 'Weiterlesen',
     findLabel: 'Suchbegriff',
     loadFailed: 'Der Abschnitt konnte nicht geladen werden. Bitte erneut versuchen.',
+    searchFailed: 'Die Suche ist fehlgeschlagen. Bitte versuche es erneut.',
     attributionSource: 'Quelle: amtlicher Text des ADR 2025 (genaue Fundstelle wird ergänzt). Maschinell nach HTML konvertiert; die Gliederung wurde für die Anzeige in Abschnitte zerlegt.',
     attributionBam: 'Stoffdaten separat: BAM GEFAHRGUT, Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2-0).',
   },
@@ -231,6 +239,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     loadNext: 'Continue reading',
     findLabel: 'Search term',
     loadFailed: 'The section could not be loaded. Please try again.',
+    searchFailed: 'The search failed. Please try again.',
     attributionSource: 'Source: official text of ADR 2025 (exact reference to follow). Machine-converted to HTML; split into sections for display.',
     attributionBam: 'Substance data separately: BAM GEFAHRGUT, Data licence Germany – attribution – version 2.0 (dl-de/by-2-0).',
   },
@@ -269,6 +278,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     loadNext: 'Continuer la lecture',
     findLabel: 'Terme recherché',
     loadFailed: 'La section n’a pas pu être chargée. Veuillez réessayer.',
+    searchFailed: 'La recherche a échoué. Veuillez réessayer.',
     attributionSource: 'Source : texte officiel de l’ADR 2025 (référence exacte à compléter). Converti automatiquement en HTML ; découpé en sections pour l’affichage.',
     attributionBam: 'Données sur les matières séparément : BAM GEFAHRGUT, licence de données Allemagne – attribution – version 2.0 (dl-de/by-2-0).',
   },
@@ -307,6 +317,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     loadNext: 'Okumaya devam et',
     findLabel: 'Arama terimi',
     loadFailed: 'Bölüm yüklenemedi. Lütfen tekrar deneyin.',
+    searchFailed: 'Arama başarısız oldu. Lütfen tekrar deneyin.',
     attributionSource: 'Kaynak: ADR 2025 resmî metni (tam künye eklenecek). Otomatik olarak HTML’e dönüştürülmüş; görüntüleme için bölümlere ayrılmıştır.',
     attributionBam: 'Madde verileri ayrıca: BAM GEFAHRGUT, Almanya Veri Lisansı – Atıf – Sürüm 2.0 (dl-de/by-2-0).',
   },

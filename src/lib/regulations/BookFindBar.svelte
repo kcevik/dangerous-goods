@@ -88,6 +88,9 @@
     {#if viewer.loadFailed}
       <p class="text-sm text-red-700" role="alert">{t('loadFailed')}</p>
     {/if}
+    {#if viewer.searchFailed}
+      <p class="text-sm text-red-700" role="alert">{t('searchFailed')}</p>
+    {/if}
 
     <div class="flex flex-wrap items-start gap-x-4 gap-y-1 text-xs text-[#5a7a99]">
       {#if viewer.hits.length > 0}

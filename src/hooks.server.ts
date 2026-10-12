@@ -1,6 +1,14 @@
 import { PUBLIC_SUPABASE_PUBLISHABLE_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public'
 import { createServerClient } from '@supabase/ssr'
-import { type Handle, redirect } from '@sveltejs/kit'
+import { type Handle, redirect, type ServerInit } from '@sveltejs/kit'
+import { bookStatus } from '$lib/server/adrBook/index'
+
+/** Index the ADR book at boot, so a bad ADR_BOOK_PATH is visible in the logs right away. */
+export const init: ServerInit = () => {
+  const status = bookStatus()
+  if (status.state === 'failed') console.error(`[adr-book] ${status.error}`)
+  else if (status.state === 'ready') console.info(`[adr-book] indexed ${status.lines} lines`)
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
@@ -20,7 +28,7 @@ export const handle: Handle = async ({ event, resolve }) => {
    * Supabase Auth. Never trust the session alone on the server.
    * isActive = the user's profile has activated_at set (manual activation).
    */
-  event.locals.safeGetSession = async () => {
+  const resolveSession = async (): ReturnType<App.Locals['safeGetSession']> => {
     const { data: { session } } = await event.locals.supabase.auth.getSession()
     if (!session) return { session: null, user: null, isActive: false }
 
@@ -35,6 +43,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     return { session, user, isActive: !!profile?.activated_at }
   }
+
+  // Resolved once per request: the guard, the root layout and the book endpoints all
+  // ask, and each call would otherwise be a getUser round trip plus a profile query.
+  // Rule: an action that signs in or out must redirect (all of ours do) — within the
+  // same request this memo would still report the old session.
+  let sessionPromise: ReturnType<typeof resolveSession> | null = null
+  event.locals.safeGetSession = () => (sessionPromise ??= resolveSession())
 
   await authGuard(event)
 

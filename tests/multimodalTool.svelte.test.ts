@@ -170,8 +170,33 @@ describe('MultimodalToolState', () => {
     it('clears the loading flag even when the fetch fails', async () => {
       const { client } = stubSupabase({ adr_entries: { data: null, error: new Error('boom') } })
       const tool = new MultimodalToolState({ supabase: client })
-      await expect(tool.loadCompare('1203')).rejects.toThrow('boom')
+      // the failure is reported through loadError (nobody awaited the old rejection)
+      await expect(tool.loadCompare('1203')).resolves.toBeUndefined()
       expect(tool.isLoading).toBe(false)
+      expect(tool.loadError).toBe(true)
     })
+  })
+})
+
+describe('MultimodalToolState — failed loads (code review 2026-09-29)', () => {
+  it('reports a failed load instead of looking like "no data", and clears the old UN', async () => {
+    const { client } = stubSupabase({ rid_entries: { data: null, error: { message: 'network down' } } })
+    const tool = demoTool(client)
+    await expect(tool.loadCompare('1090')).resolves.toBeUndefined()
+    expect(tool.loadError).toBe(true)
+    expect(tool.isLoading).toBe(false)
+    expect(tool.hasData).toBe(false)
+    expect(tool.currentUnNumber).toBe('1090')
+  })
+
+  it('clears the error on the next successful load', async () => {
+    const responses: Record<string, { data: unknown[] | null, error: unknown }> = { adr_entries: { data: null, error: { message: 'x' } } }
+    const { client } = stubSupabase(responses)
+    const tool = demoTool(client)
+    await tool.loadCompare('1090')
+    expect(tool.loadError).toBe(true)
+    delete responses.adr_entries
+    await tool.loadCompare('1090')
+    expect(tool.loadError).toBe(false)
   })
 })

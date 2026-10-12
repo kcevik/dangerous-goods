@@ -160,12 +160,23 @@ function uniqueSlug(base: string, registry: Set<string>): string {
   return slug
 }
 
-function addHeadingIds(html: string, registry: Set<string>): string {
+/** `book-hl-<line>`: the book line of a heading, set by `parseWithLineTags`. */
+const HEADING_LINE_CLASS = / class="book-hl-(\d+)"/
+
+function addHeadingIds(html: string, registry: Set<string>, headingSlugs?: ReadonlyMap<number, string>): string {
   return html.replace(HEADING, (_whole, level: string, attributes: string, inner: string) => {
     // An id in the source is ignored: anchors are ours, and a stray duplicate
     // from the conversion would break deep links.
-    const cleaned = attributes.replace(ID_ATTRIBUTE, '')
-    const slug = uniqueSlug(slugify(toPlainText(inner)), registry)
+    let cleaned = attributes.replace(ID_ATTRIBUTE, '')
+    const line = HEADING_LINE_CLASS.exec(cleaned)?.[1]
+    cleaned = cleaned.replace(HEADING_LINE_CLASS, '')
+    // The index's slug wins: it is what the TOC, `?section=` and the window's
+    // `headings` link to, and it is unique across the whole document. Slugifying
+    // here a second time drifted from it (bold headings, entities, duplicates in
+    // another window), leaving anchors nothing could scroll to.
+    const indexed = line !== undefined ? headingSlugs?.get(Number(line)) : undefined
+    const slug = indexed ?? uniqueSlug(slugify(toPlainText(inner)), registry)
+    if (indexed) registry.add(indexed)
     return `<h${level} id="${slug}"${cleaned}>${inner}</h${level}>`
   })
 }
@@ -182,11 +193,53 @@ function tagFirst(html: string, cls: string | null): string {
   return html.replace(/^(\s*<[a-z][a-z0-9]*)/i, `$1 class="${cls}"`)
 }
 
+// ── 3e. Line markers inside multi-line blocks ────────────────
+
+/**
+ * A block is tagged with the line it starts on, but a list (the whole of chapter
+ * 3.3) or a wrapped paragraph spans many lines. The find bar maps each hit to
+ * "the n-th match on book line L", so every further line of such a block gets an
+ * empty `<span class="book-ln-L">` where it begins.
+ *
+ * The marker travels through marked and sanitize-html as private-use characters
+ * (which never occur in the source), and becomes the span only afterwards, in
+ * text — never inside a tag.
+ */
+const MARKER_OPEN = '\uE000'
+const MARKER_CLOSE = '\uE001'
+const MARKER_OR_TAG = /(<[^>]*>)|\uE000(\d+)\uE001/g
+const MARKER = /\uE000\d+\uE001/g
+/** Bullet or ordered list marker at the start of a line inside a list token. */
+const LIST_ITEM_PREFIX = /^[ \t]*(?:[-*+]|\d{1,9}[.)])(?:[ \t]+|$)/
+const LEADING_SPACE = /^[ \t]*/
+const FENCE = /^[ \t]{0,3}(?:```|~~~)/
+
+function withLineMarkers(token: { type: string, raw: string }, startLine: number, sourceLines: (number | null)[]): string | null {
+  const lines = token.raw.split('\n')
+  if (lines.filter(line => line.trim() !== '').length < 2) return null
+  return lines.map((line, j) => {
+    const bookLine = sourceLines[startLine + j]
+    if (j === 0 || line.trim() === '' || typeof bookLine !== 'number') return line
+    // a fence line must stay a fence
+    if (token.type === 'code' && FENCE.test(line)) return line
+    // after a list marker, so the line still opens an item; else after the indent
+    const item = token.type === 'list' ? LIST_ITEM_PREFIX.exec(line) : null
+    const at = (item ?? LEADING_SPACE.exec(line))?.[0].length ?? 0
+    return `${line.slice(0, at)}${MARKER_OPEN}${bookLine}${MARKER_CLOSE}${line.slice(at)}`
+  }).join('\n')
+}
+
+/** Private-use markers → empty line spans; any that ended up inside a tag are dropped. */
+function restoreLineMarkers(html: string): string {
+  return html.replace(MARKER_OR_TAG, (_whole, tag: string | undefined, line: string | undefined) =>
+    tag !== undefined ? tag.replace(MARKER, '') : `<span class="book-ln-${line}"></span>`)
+}
+
 /**
  * Renders block by block so each block knows the markdown line it starts on.
  * Pipe tables map one row to one line (header, alignment row, then the body),
- * which lets every `<tr>` carry its own line. Headings are left alone: they
- * already get stable anchors from `addHeadingIds`.
+ * which lets every `<tr>` carry its own line. Headings carry their line only
+ * until `addHeadingIds` has turned it into the index's anchor.
  */
 function parseWithLineTags(markdown: string, sourceLines: (number | null)[]): string {
   const tokens = marked.lexer(markdown, { gfm: true, breaks: false })
@@ -198,7 +251,18 @@ function parseWithLineTags(markdown: string, sourceLines: (number | null)[]): st
     cursor += (token.raw.match(/\n/g) ?? []).length
     if (token.type === 'space') continue
 
-    const single = Object.assign([token], { links: tokens.links })
+    let block = token
+    if (token.type === 'paragraph' || token.type === 'list' || token.type === 'code') {
+      const withMarkers = withLineMarkers(token, startLine, sourceLines)
+      // re-lexed on its own; used only if the markers left the structure as it was
+      const relexed = withMarkers === null ? [] : marked.lexer(withMarkers, { gfm: true, breaks: false }).filter(t => t.type !== 'space')
+      if (relexed.length === 1 && relexed[0]!.type === token.type
+        && (token.type !== 'list' || (relexed[0] as typeof token).items.length === token.items.length)) {
+        block = relexed[0]!
+      }
+    }
+
+    const single = Object.assign([block], { links: tokens.links })
     let rendered = marked.parser(single, { gfm: true, breaks: false })
 
     if (token.type === 'table') {
@@ -210,8 +274,16 @@ function parseWithLineTags(markdown: string, sourceLines: (number | null)[]): st
         return cls ? `<tr class="${cls}">` : '<tr>'
       })
     }
-    else if (token.type !== 'heading') {
-      rendered = tagFirst(rendered, lineClass(sourceLines[startLine]))
+    else if (token.type === 'heading') {
+      // not a `book-ln-` class: a heading is no hit block. `addHeadingIds` reads
+      // this to find the heading's index slug, then removes it.
+      const line = sourceLines[startLine]
+      rendered = tagFirst(rendered, typeof line === 'number' ? `book-hl-${line}` : null)
+    }
+    else {
+      // a block opening on a re-emitted line still needs a class, so the viewer
+      // knows where the block ends and its line markers begin
+      rendered = tagFirst(rendered, lineClass(sourceLines[startLine]) ?? 'book-blk')
     }
 
     html += rendered
@@ -234,6 +306,12 @@ export interface RenderOptions {
    * belongs to which hit.
    */
   sourceLines?: (number | null)[]
+  /**
+   * Book line → the index's anchor slug for that heading (needs `sourceLines`).
+   * A heading found here gets exactly that id; any other falls back to a slug
+   * derived from its text, de-duplicated through `slugRegistry`.
+   */
+  headingSlugs?: ReadonlyMap<number, string>
 }
 
 /** Markdown slice → sanitised HTML with `book-*` classes and stable anchors. */
@@ -244,9 +322,9 @@ export function renderSlice(markdown: string, opts?: RenderOptions): string {
   const parsed = opts?.sourceLines
     ? parseWithLineTags(markdown, opts.sourceLines)
     : marked.parse(markdown, { gfm: true, breaks: false }) as string
-  const sanitised = sanitizeHtml(parsed, SANITIZE_OPTIONS)
+  const sanitised = restoreLineMarkers(sanitizeHtml(parsed, SANITIZE_OPTIONS))
   const registry = opts?.slugRegistry ?? new Set<string>()
-  return wrapTables(replaceImages(addHeadingIds(sanitised, registry)))
+  return wrapTables(replaceImages(addHeadingIds(sanitised, registry, opts?.headingSlugs)))
 }
 
 const SCRIPTED_ELEMENT = /<(script|style|textarea|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi

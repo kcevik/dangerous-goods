@@ -119,3 +119,24 @@ export function getBookIndex(): BookIndex {
 export function resetBookIndex(): void {
   cached = null
 }
+
+export type BookStatus =
+  | { state: 'ready', lines: number }
+  | { state: 'unconfigured' }
+  | { state: 'failed', error: string }
+
+/**
+ * Whether the book can be served. Called once at server start (hooks.server.ts
+ * `init`) so a missing or truncated file shows up in the logs immediately instead
+ * of as a 500 for the first reader, and by /healthz so a deploy with a broken book
+ * is rolled back. Cheap after the first successful build (memoised index).
+ */
+export function bookStatus(): BookStatus {
+  if (!env.ADR_BOOK_PATH) return { state: 'unconfigured' }
+  try {
+    return { state: 'ready', lines: getBookIndex().lines.length }
+  }
+  catch (error) {
+    return { state: 'failed', error: error instanceof Error ? error.message : String(error) }
+  }
+}

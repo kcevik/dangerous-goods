@@ -363,7 +363,40 @@ describe('renderSlice source-line tags', () => {
     expect(html).toMatch(/<tr class="book-ln-107">/)
   })
 
+  it('tags a block that opens on a line without a source line as a block, so its line markers still count', () => {
+    const md = ['|---|---|', '| Am-243 | Np-239 |'].join('\n')
+    const html = renderSlice(md, { sourceLines: [null, 7262] })
+    expect(html).toMatch(/^<p class="book-blk">/)
+    expect(html).toContain('<span class="book-ln-7262"></span>')
+  })
+
   it('adds no tags when no source lines are given', () => {
     expect(renderSlice(md)).not.toContain('book-ln-')
+  })
+  it('marks where each further line of a multi-line block begins, so a match knows its exact line', () => {
+    const html = renderSlice(md, { sourceLines })
+    expect(html).toMatch(/Erster Absatz\s*<span class="book-ln-101"><\/span>geht weiter\./)
+    expect(html).not.toMatch(/[\uE000\uE001]/)
+  })
+
+  it('marks the lines of a fenced code block but leaves its fences intact', () => {
+    const code = ['```', 'A --> B[Verpackung]', 'B --> C[Verpackung]', '```'].join('\n')
+    const html = renderSlice(code, { sourceLines: [70, 71, 72, 73] })
+    expect(html).toMatch(/^<pre class="book-ln-70"><code>/)
+    expect(html).toMatch(/<span class="book-ln-71"><\/span>A --&gt; B\[Verpackung\]/)
+    expect(html).toMatch(/<span class="book-ln-72"><\/span>B --&gt; C\[Verpackung\]/)
+    expect(html).not.toContain('```')
+  })
+
+  it('marks every list item and lazy continuation line of a list without changing its structure', () => {
+    const list = ['- 163 Erster Punkt', '- 243 Zweiter Punkt', ' 363 Fortsetzung', '**654** Fett', '- 534 Letzter'].join('\n')
+    const html = renderSlice(list, { sourceLines: [50, 51, 52, 53, 54] })
+    expect(html).toMatch(/^<ul class="book-ln-50">/)
+    expect(html.match(/<li>/g)).toHaveLength(3)
+    expect(html).toMatch(/<li><span class="book-ln-51"><\/span>243 Zweiter Punkt/)
+    expect(html).toMatch(/<span class="book-ln-52"><\/span>363 Fortsetzung/)
+    expect(html).toMatch(/<span class="book-ln-53"><\/span><strong>654<\/strong> Fett/)
+    expect(html).toMatch(/<li><span class="book-ln-54"><\/span>534 Letzter/)
+    expect(html).not.toMatch(/[\uE000\uE001]/)
   })
 })

@@ -28,7 +28,7 @@ Note: Vite loads `.env.local` with priority over `.env`. Do not keep a placehold
 
 ## Deployment
 
-The app runs as a Docker container behind nginx + certbot on a Netcup VPS:
+The app runs as a Docker container behind Caddy (automatic HTTPS) on a Strato VPS:
 
 ```bash
 cp .deploy.env.example .deploy.env   # DEPLOY_HOST, DEPLOY_USER
@@ -36,8 +36,8 @@ pnpm deploy:test                     # build image → ship over SSH → switch 
 pnpm deploy:rollback                 # back to the previous image
 ```
 
-Server setup, nginx and certificates: `docs/deploy/` (runbook) and `deploy/` (compose file,
-env template, nginx configs). Runtime settings live in `/etc/gefahrgut/app.env` on the server —
+Server setup, Caddy and certificates: `docs/deploy/` (runbook) and `deploy/` (compose file,
+env template, Caddyfile). Runtime settings live in `/etc/gefahrgut/app.env` on the server —
 see `deploy/app.env.example`. `REGISTRATION_MODE` decides whether `/registrieren` creates
 accounts (`open`) or collects launch notifications (anything else).
 

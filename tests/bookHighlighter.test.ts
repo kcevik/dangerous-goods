@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { clearMarks, markMatches, pickActiveMark, setActiveMark, sourceLineOf } from '$lib/regulations/bookHighlighter'
+import { clearMarks, keepListedMarks, markMatches, setActiveMark, sourceLineOf } from '$lib/regulations/bookHighlighter'
 
 let root: HTMLElement
 
@@ -238,38 +238,64 @@ describe('markMatches — whole tokens', () => {
   })
 })
 
-describe('sourceLineOf / pickActiveMark', () => {
+describe('sourceLineOf / keepListedMarks', () => {
+  // a list block starting at line 10 whose second line (11) carries a line marker,
+  // two table rows, and a heading (no line)
   const html = `
-    <p class="book-ln-10">SV 163 steht hier. Und nochmal 163.</p>
+    <ul class="book-ln-10"><li>SV 163 steht hier. Und nochmal 163.</li><li><span class="book-ln-11"></span>Zeile 11 mit 163.</li></ul>
     <table><tbody>
       <tr class="book-ln-20"><td>1203</td><td>163</td></tr>
-      <tr class="book-ln-21"><td>1204</td><td>163</td></tr>
+      <tr class="book-ln-21"><td>Absatz 1.1.3 nennt 163 nebenbei</td><td>163</td></tr>
     </tbody></table>
     <h4 id="h-x">Kopf 163</h4>`
 
-  const hit = (line: number) => ({ kind: 'sv' as const, code: '163', line, rank: 1 as const, role: 'definition' as const, context: '', heading: null })
+  const hit = (line: number, ordinal?: number) => ({ line, ...(ordinal === undefined ? {} : { ordinal }) })
 
-  it('reads the book line from the nearest tagged ancestor', () => {
+  it('reads the exact book line: the block tag, refined by the last line marker before the match', () => {
     mount(html)
     const marks = markMatches(root, '163', { wholeToken: true })
-    expect(marks.map(sourceLineOf)).toEqual([10, 10, 20, 21, null])
+    expect(marks.map(sourceLineOf)).toEqual([10, 10, 11, 20, 21, 21, null])
   })
 
-  it('picks the mark on the hit line, counting earlier hits in the same block', () => {
-    mount(html)
-    const marks = markMatches(root, '163', { wholeToken: true })
-    const hits = [hit(21), hit(10), hit(11), hit(20)]
-    expect(pickActiveMark(marks, hits, 0)).toBe(3)
-    expect(pickActiveMark(marks, hits, 1)).toBe(0)
-    // line 11 sits in the paragraph that starts at 10: its second occurrence
-    expect(pickActiveMark(marks, hits, 2)).toBe(1)
-    expect(pickActiveMark(marks, hits, 3)).toBe(2)
+  it('reads marker lines inside a block that starts on a line the book does not have', () => {
+    // a paragraph opened by a re-emitted table header carries `book-blk`, not a line
+    mount('<p class="book-blk">|---|---|\n<span class="book-ln-7262"></span>| Am-243 | Np-239 |</p>')
+    const marks = markMatches(root, '243', { wholeToken: true })
+    expect(marks.map(sourceLineOf)).toEqual([7262])
   })
 
-  it('returns -1 when nothing loaded precedes the hit', () => {
+  it('maps each hit to the n-th match on its line, in list order', () => {
     mount(html)
     const marks = markMatches(root, '163', { wholeToken: true })
-    expect(pickActiveMark(marks, [hit(5)], 0)).toBe(-1)
-    expect(pickActiveMark([], [hit(10)], 0)).toBe(-1)
+    const { marks: kept, markOfHit } = keepListedMarks(marks, [hit(21, 1), hit(10, 0), hit(10, 1), hit(11), hit(20)])
+    expect(kept).toHaveLength(5)
+    expect(markOfHit.map(i => sourceLineOf(kept[i]!))).toEqual([21, 10, 10, 11, 20])
+    expect(new Set(markOfHit).size).toBe(5)
+  })
+
+  it('an incidental match earlier in the same row does not shift the listed one', () => {
+    mount(html)
+    const marks = markMatches(root, '163', { wholeToken: true })
+    // line 21 lists only the column-6 code, the second match on that row
+    const { marks: kept, markOfHit } = keepListedMarks(marks, [hit(21, 1)])
+    expect(kept).toHaveLength(1)
+    expect(kept[markOfHit[0]!]!.closest('td')!.textContent).toBe('163')
+  })
+
+  it('removes every match no hit names — headings and unlisted rows are not highlighted', () => {
+    mount(html)
+    const marks = markMatches(root, '163', { wholeToken: true })
+    const { marks: kept } = keepListedMarks(marks, [hit(20)])
+    expect(root.querySelectorAll('mark.book-hit')).toHaveLength(1)
+    expect(kept).toHaveLength(1)
+    expect(root.querySelector('h4')!.innerHTML).toBe('Kopf 163')
+    expect(root.querySelector('mark')!.closest('tr')!.className).toBe('book-ln-20')
+  })
+
+  it('gives -1 for a hit whose match is not loaded', () => {
+    mount(html)
+    const marks = markMatches(root, '163', { wholeToken: true })
+    expect(keepListedMarks(marks, [hit(5), hit(10, 7)]).markOfHit).toEqual([-1, -1])
+    expect(keepListedMarks([], [hit(10)]).markOfHit).toEqual([-1])
   })
 })

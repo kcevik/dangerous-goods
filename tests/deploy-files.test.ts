@@ -65,6 +65,42 @@ describe('deploy/app.env.example', () => {
     expect(env).toMatch(/^REGISTRATION_MODE=waitlist$/m)
     expect(env).toMatch(/^ADDRESS_HEADER=X-Forwarded-For$/m)
     expect(env).toMatch(/^XFF_DEPTH=1$/m)
-    expect(env).toMatch(/^ORIGIN=https:\/\/neu\.gefahrgut\.org$/m)
+    expect(env).toMatch(/^ORIGIN=https:\/\/app\.gefahrgut\.org$/m)
+  })
+})
+
+describe('deploy/Caddyfile', () => {
+  const caddy = read('deploy/Caddyfile')
+
+  it('serves exactly the app host (Caddy gets the certificate itself)', () => {
+    expect(caddy).toMatch(/^app\.gefahrgut\.org \{$/m)
+    expect(caddy).not.toContain('neu.gefahrgut.org')
+  })
+
+  it('puts the whole test site behind basic auth', () => {
+    expect(caddy).toMatch(/^\tbasic_auth \{$/m)
+  })
+
+  it('never commits a real password hash', () => {
+    expect(caddy).not.toMatch(/\$2[aby]\$/)
+  })
+
+  it('proxies to the loopback app', () => {
+    expect(caddy).toMatch(/^\treverse_proxy 127\.0\.0\.1:3000$/m)
+  })
+
+  it('does not trust client-sent X-Forwarded-For (the rate limits rely on it)', () => {
+    expect(caddy).not.toContain('trusted_proxies')
+  })
+
+  it('keeps the test site out of search engines and limits request bodies', () => {
+    expect(caddy).toContain('header X-Robots-Tag "noindex, nofollow"')
+    expect(caddy).toMatch(/request_body \{\s*max_size 1MB\s*\}/)
+  })
+})
+
+describe('.deploy.env.example', () => {
+  it('targets the app host', () => {
+    expect(read('.deploy.env.example')).toMatch(/^DEPLOY_HOST=app\.gefahrgut\.org$/m)
   })
 })

@@ -10,7 +10,7 @@ A web platform for **Gefahrgutbeauftragte** (dangerous goods officers): the regu
 IMDG, ICAO, ADN, UN) as a working tool, not a static reference.
 
 - **Brand & domain:** **gefahrgut.org** (never "GefahrgutProfi" — old name). The apex still serves
-  WordPress (blog, ~219 URLs, legal pages); rollout plan: test at `neu.gefahrgut.org`, blog to
+  WordPress (blog, ~219 URLs, legal pages); rollout plan: test at `app.gefahrgut.org` (behind basic auth), blog to
   `blog.gefahrgut.org`, then the apex to the app (spec `2026-09-29-prelaunch-deployment`).
 - **Core differentiator:** cross-mode comparison (ADR vs RID vs IMDG vs ICAO vs ADN) — Phase 1.
 - **Data source:** BAM GEFAHRGUT database, licence dl-de/by-2-0 (attribution required,
@@ -36,7 +36,7 @@ Meilisearch, ERP/TMS API. Status per feature: `docs/STATUS.md`.
 - **UI:** hand-written Tailwind CSS v4 via `@tailwindcss/vite` — no component library
 - **Database / Auth:** Supabase (Postgres, Auth via `@supabase/ssr`)
 - **Package manager:** pnpm (never npm/npx)
-- **Hosting:** Netcup VPS — the app in Docker (compose, bound to `127.0.0.1:3000`) behind nginx + certbot on the host (`deploy/`, `docs/deploy/`)
+- **Hosting:** Strato VPS — the app in Docker (compose, bound to `127.0.0.1:3000`) behind Caddy on the host (automatic HTTPS) (`deploy/`, `docs/deploy/`)
 - **Testing:** Vitest 5 + jsdom + `@testing-library/svelte`
 - **Runtime dependencies for the book viewer:** `marked` + `sanitize-html` (rendered per request)
 - **Planned:** Puppeteer (PDF), Meilisearch (Phase 3)
@@ -73,7 +73,8 @@ src/
     +layout.ts            # browser/server Supabase client; passes the server data through
     +page.svelte          # landing: SEO head (meta + 4 JSON-LD graphs) + sections
     (auth)/               # login, registrieren (sign-up | launch list), passwort-vergessen, passwort-neu
-    auth/confirm, auth/fehler, logout, healthz
+    +error.svelte         # German error page; 5xx details are never shown
+    auth/confirm, auth/fehler, logout, healthz (liveness + book readiness)
     (app)/                # login required; app shell + lock banner
       dashboard, suche, un/[nummer], regelwerk/[mode=bookMode] (+ window/ and search/ endpoints)
   lib/
@@ -95,8 +96,8 @@ tests/                    # vitest (flat); helpers/, fixtures/, stubs/
 supabase/migrations/      # schema, SV languages, (retired waitlist), auth_and_entitlement,
                           # harden_grants, launch_signups
 supabase/templates/       # auth email templates (pasted into the dashboard)
-deploy/                   # compose.yaml, app.env.example, nginx/ (Task 8)
-scripts/                  # import-regulations.ts, deploy.sh
+deploy/                   # compose.yaml, app.env.example, Caddyfile
+scripts/                  # import-regulations.ts, deploy.sh, remote-switch.sh (runs on the server)
 csvbase/                  # BAM TSV sources + the ADR book markdown — gitignored
 docs/                     # STATUS.md, README.md (index), schema doc, specs + plans
 ```
@@ -137,9 +138,9 @@ docs/                     # STATUS.md, README.md (index), schema doc, specs + pl
 | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `$env/static/public` | baked in at build (Docker build args) |
 | `SUPABASE_SERVICE_ROLE_KEY` | `.env` only | import script — **the app never uses it** |
 | `REGISTRATION_MODE` | `$env/dynamic/private` | only exactly `open` opens sign-up; anything else = launch list |
-| `ADR_BOOK_PATH` | `$env/dynamic/private` | the ADR markdown on the server; not in the repo; the viewer refuses to start if unset or < 1 MB |
+| `ADR_BOOK_PATH` | `$env/dynamic/private` | the ADR markdown on the server; not in the repo. Indexed at server start (`init` in `hooks.server.ts`); unset = the book page answers with the error page (links stay visible); a missing or < 1 MB file is logged at boot and makes `/healthz` answer 503 |
 | `ORIGIN` | adapter-node | public URL — required or form actions reject POSTs |
-| `ADDRESS_HEADER` / `XFF_DEPTH` | adapter-node | `X-Forwarded-For` / `1` — nginx appends the real client as the right-most hop |
+| `ADDRESS_HEADER` / `XFF_DEPTH` | adapter-node | `X-Forwarded-For` / `1` — Caddy sets the real client as the right-most hop (no trusted proxies) |
 | `PORT` | adapter-node | 3000 |
 | `DEPLOY_HOST`, `DEPLOY_USER` | `.deploy.env` (gitignored) | target of `scripts/deploy.sh` |
 
@@ -172,6 +173,9 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 
 - **i18n:** de/en/fr/tr via `LABELS` (`lib/multimodal/types.ts`) and `BOOK_LABELS` (`lib/regulations/bookTypes.ts`); no i18n module. `pickSvText()` is the single home of the SV language fallback (tr reads en first).
 - **Demo constants:** `DEMO_DATA`/`DEMO_SVS` are generated from the live BAM tables for UN 1203 sequence 1 — never hand-edit. `DEMO_SVS` is keyed `MODE:code`; `DEMO_DATA.ADN` is empty on purpose.
+- **Session per request:** `locals.safeGetSession()` is memoised per request (one `getUser` + one profile query). An action that signs in or out must redirect.
+- **Redirect targets:** only through `safeNext()` — it rejects control characters, backslashes and anything the URL parser resolves off-site.
+- **Failures are never "no data":** a failed load must show an error state, not an empty result — in this domain "nothing found" is a statement about the regulation.
 - **Auth flow:** confirmation and recovery go through `/auth/confirm?token_hash=…&type=…&next=…` (server-side `verifyOtp`); templates in `supabase/templates/` extend `{{ .RedirectTo }}`. Rate limits: login 10/IP/15 min; register, launch list and reset 5/IP/hour. Registration, the launch list and reset never reveal whether an address exists.
 - **Launch list:** `CONSENT_VERSION` is stored with every address and must change whenever `LAUNCH_CONSENT_TEXT` changes (a test pins both). The first mail these addresses ever get is the double-opt-in confirmation.
 - **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` (`lib/landing/faq.ts`). Site facts (16.730 entries, 1.354 SVs) stay consistent across meta description, FAQ, SeoContent and `static/llms.txt`.

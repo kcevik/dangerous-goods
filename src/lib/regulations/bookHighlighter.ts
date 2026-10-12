@@ -173,19 +173,7 @@ export function markMatches(root: Element, term: string, opts: { wholeToken?: bo
  * cannot fragment the document without bound.
  */
 export function clearMarks(root: Element): void {
-  const marks = Array.from(root.querySelectorAll('mark.book-hit'))
-  const touched = new Set<Node>()
-
-  for (const mark of marks) {
-    const parent = mark.parentNode
-    if (!parent) continue
-    parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark)
-    touched.add(parent)
-  }
-
-  for (const parent of touched) {
-    (parent as Element).normalize?.()
-  }
+  unmark(Array.from(root.querySelectorAll<HTMLElement>('mark.book-hit')))
 }
 
 /**
@@ -208,43 +196,99 @@ export function setActiveMark(marks: HTMLElement[], index: number): void {
 
 const LINE_CLASS = /^book-ln-(\d+)$/
 
-/**
- * Book line of the block or table row holding `el`, from the `book-ln-<n>`
- * class the renderer puts on every block and row. Null inside a heading or a
- * re-emitted table header, which carry no line.
- */
-export function sourceLineOf(el: Element): number | null {
-  for (let node: Element | null = el; node; node = node.parentElement) {
-    for (const cls of node.classList) {
-      const match = LINE_CLASS.exec(cls)
-      if (match) return Number(match[1])
-    }
+function lineClassOf(el: Element): number | null {
+  for (const cls of el.classList) {
+    const match = LINE_CLASS.exec(cls)
+    if (match) return Number(match[1])
   }
   return null
 }
 
 /**
- * Which of `marks` is the hit at `hits[index]`.
+ * Book line of the text holding `el`.
  *
- * A block is tagged with the line it starts on, so a hit on line L sits in the
- * last tagged block starting at or before L. Inside that block the marks come in
- * document order, and so do the listed hits that fall in it: the active mark is
- * the one whose position matches the number of listed hits before this one.
- * Returns -1 when no loaded block precedes the hit.
+ * The renderer tags every block and table row with `book-ln-<n>` for the line it
+ * starts on, and puts an empty `<span class="book-ln-<n>">` where each further
+ * line of a multi-line block (a list, a wrapped paragraph) begins. So the line is
+ * the nearest tagged ancestor's, refined by the last marker inside it that comes
+ * before `el`. Null inside a heading or a re-emitted table header, which carry
+ * no line (a block opened by such a header is `book-blk`, lines only from its
+ * markers).
  */
-export function pickActiveMark(marks: HTMLElement[], hits: { line: number }[], index: number): number {
-  const target = hits[index]
-  if (!target) return -1
-  const lines = marks.map(sourceLineOf)
-
-  let blockLine = -1
-  for (const line of lines) {
-    if (line !== null && line <= target.line && line > blockLine) blockLine = line
+export function sourceLineOf(el: Element): number | null {
+  let block: Element | null = null
+  let line: number | null = null
+  for (let node: Element | null = el.parentElement ?? null; node; node = node.parentElement) {
+    line = lineClassOf(node)
+    // `book-blk`: a block opening on a line the book does not have (a
+    // re-emitted table header); only its markers carry lines
+    if (line !== null || node.classList.contains('book-blk')) {
+      block = node
+      break
+    }
   }
-  if (blockLine === -1) return -1
+  if (!block) return null
 
-  const inBlock = lines.flatMap((line, i) => (line === blockLine ? [i] : []))
-  const before = hits.filter((hit, j) =>
-    (hit.line >= blockLine && hit.line < target.line) || (hit.line === target.line && j < index)).length
-  return inBlock[Math.min(before, inBlock.length - 1)]!
+  for (const marker of block.querySelectorAll('span[class^="book-ln-"]')) {
+    if (!(marker.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)) break
+    line = lineClassOf(marker) ?? line
+  }
+  return line
+}
+
+/** Where a listed hit sits: its book line and which match on that line (0-based). */
+export interface HitPosition {
+  line: number
+  ordinal?: number
+}
+
+/**
+ * Keeps only the marks the hit list names and removes the rest.
+ *
+ * ONE RULE for the counter and the highlights: a hit is "the `ordinal`-th match
+ * on book line `line`" (the server counts matches per line the way `markMatches`
+ * does), and only those matches stay highlighted. So "Treffer k von n" always
+ * counts exactly the reachable, highlighted hits: a match in a heading, in an
+ * unlisted (incidental) cell of a listed row, or beyond the capped list is not
+ * highlighted at all, rather than lit up but unreachable.
+ *
+ * Returns the kept marks in document order and, per hit, the index of its mark
+ * among them (-1 when that part of the book is not loaded).
+ */
+export function keepListedMarks(marks: HTMLElement[], hits: HitPosition[]): { marks: HTMLElement[], markOfHit: number[] } {
+  const byLine = new Map<number, HTMLElement[]>()
+  for (const mark of marks) {
+    const line = sourceLineOf(mark)
+    if (line === null) continue
+    const list = byLine.get(line)
+    if (list) list.push(mark)
+    else byLine.set(line, [mark])
+  }
+
+  const named = hits.map(hit => byLine.get(hit.line)?.[hit.ordinal ?? 0] ?? null)
+  const listed = new Set(named.filter(mark => mark !== null))
+
+  const unlisted = marks.filter(mark => !listed.has(mark))
+  if (unlisted.length > 0) unmark(unlisted)
+
+  const kept = marks.filter(mark => listed.has(mark))
+  kept.forEach((mark, i) => {
+    mark.dataset.nth = String(i)
+  })
+  const position = new Map(kept.map((mark, i) => [mark, i]))
+  return { marks: kept, markOfHit: named.map(mark => (mark ? position.get(mark)! : -1)) }
+}
+
+/** Unwraps the given marks back into text, rejoining split text nodes. */
+function unmark(marks: HTMLElement[]): void {
+  const touched = new Set<Node>()
+  for (const mark of marks) {
+    const parent = mark.parentNode
+    if (!parent) continue
+    parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark)
+    touched.add(parent)
+  }
+  for (const parent of touched) {
+    (parent as Element).normalize?.()
+  }
 }

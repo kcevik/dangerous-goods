@@ -19,30 +19,6 @@ APP_DIR=/opt/gefahrgut
 
 env_value() { grep -E "^$1=" .env | tail -n 1 | cut -d= -f2-; }
 
-# Runs on the server: point compose at $1, wait for /healthz, fall back to $2 on failure.
-REMOTE_SWITCH='
-set -euo pipefail
-cd '"$APP_DIR"'
-NEW="$1"; FALLBACK="${2:-}"
-echo "IMAGE_TAG=$NEW" > .env
-docker compose up -d
-for _ in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
-    echo "healthy: $NEW"
-    exit 0
-  fi
-  sleep 1
-done
-echo "UNHEALTHY: $NEW — last log lines:" >&2
-docker compose logs --tail 60 app >&2 || true
-if [ -n "$FALLBACK" ]; then
-  echo "IMAGE_TAG=$FALLBACK" > .env
-  docker compose up -d
-  echo "rolled back to $FALLBACK" >&2
-fi
-exit 1
-'
-
 deploy() {
   local sha tag current
   sha="$(git rev-parse --short HEAD)"
@@ -50,20 +26,22 @@ deploy() {
   echo "Shipping commit $sha as gefahrgut-app:$tag"
   echo "Uncommitted changes that ship too:"; git status --short || true
 
+  local url key
+  url="$(env_value PUBLIC_SUPABASE_URL)"; key="$(env_value PUBLIC_SUPABASE_PUBLISHABLE_KEY)"
+  case "$url$key" in *\"*|*\'*) echo "Remove the quotes around the Supabase values in .env." >&2; exit 1 ;; esac
+  [ -n "$url" ] && [ -n "$key" ] || { echo "PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_PUBLISHABLE_KEY missing in .env." >&2; exit 1; }
+
   docker build \
-    --build-arg PUBLIC_SUPABASE_URL="$(env_value PUBLIC_SUPABASE_URL)" \
-    --build-arg PUBLIC_SUPABASE_PUBLISHABLE_KEY="$(env_value PUBLIC_SUPABASE_PUBLISHABLE_KEY)" \
+    --build-arg PUBLIC_SUPABASE_URL="$url" \
+    --build-arg PUBLIC_SUPABASE_PUBLISHABLE_KEY="$key" \
     -t "gefahrgut-app:$tag" .
 
   echo "Uploading image (this takes a moment)…"
   docker save "gefahrgut-app:$tag" | gzip | ssh "$REMOTE" 'gunzip | docker load'
 
   current="$(ssh "$REMOTE" "grep -s '^IMAGE_TAG=' $APP_DIR/.env | cut -d= -f2" || true)"
-  if [ -n "$current" ]; then
-    ssh "$REMOTE" "echo '$current' > $APP_DIR/.previous-tag"
-  fi
-
-  ssh "$REMOTE" "bash -s -- '$tag' '$current'" <<<"$REMOTE_SWITCH"
+  # health check + automatic rollback run on the server (scripts/remote-switch.sh)
+  ssh "$REMOTE" "bash -s -- '$tag' '$current'" < scripts/remote-switch.sh
 
   # keep the newest three images (tags start with a timestamp, so they sort by age)
   ssh "$REMOTE" "docker image ls gefahrgut-app --format '{{.Tag}}' | sort -r | tail -n +4 | xargs -r -I{} docker image rm gefahrgut-app:{}" || true
@@ -75,8 +53,8 @@ rollback() {
   [ -n "$previous" ] || { echo "No previous image recorded — nothing to roll back to." >&2; exit 1; }
   current="$(ssh "$REMOTE" "grep -s '^IMAGE_TAG=' $APP_DIR/.env | cut -d= -f2" || true)"
   echo "Rolling back from $current to $previous"
-  ssh "$REMOTE" "bash -s -- '$previous' ''" <<<"$REMOTE_SWITCH"
-  ssh "$REMOTE" "echo '$current' > $APP_DIR/.previous-tag"
+  # if $previous is unhealthy, remote-switch falls back to $current again
+  ssh "$REMOTE" "bash -s -- '$previous' '$current'" < scripts/remote-switch.sh
 }
 
 case "${1:-}" in

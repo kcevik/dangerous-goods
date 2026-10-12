@@ -237,6 +237,47 @@ describe('AdrBookViewerState', () => {
     expect(viewer.currentIndex).toBe(0)
   })
 
+  it('keeps the previous hits and flags a failed search instead of saying "Keine Treffer"', async () => {
+    const deps = makeDeps({ searchText: vi.fn(async () => { throw new Error('/search → 429') }) })
+    const viewer = new AdrBookViewerState(makeInit(), deps)
+
+    viewer.setTerm('Tank')
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(viewer.searchFailed).toBe(true)
+    expect(viewer.hits).toHaveLength(7)
+    expect(viewer.counterLabel).not.toContain('Keine Treffer')
+    expect(viewer.counterLabel).toBe('')
+  })
+
+  it('clears the failure once a later search succeeds', async () => {
+    const deps = makeDeps({
+      searchText: vi.fn()
+        .mockRejectedValueOnce(new Error('network'))
+        .mockResolvedValueOnce({ hits: [hit(70)], total: 1, capped: false }),
+    })
+    const viewer = new AdrBookViewerState(makeInit(), deps)
+    viewer.setTerm('Tank')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(viewer.searchFailed).toBe(true)
+
+    viewer.setTerm('Tanks')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(viewer.searchFailed).toBe(false)
+    expect(viewer.counterLabel).toBe('Treffer 1 von 1')
+  })
+
+  it('reverts the incidental checkbox and flags the failure when re-requesting code hits fails', async () => {
+    const deps = makeDeps({ fetchCodeHits: vi.fn(async () => { throw new Error('/search → 429') }) })
+    const viewer = new AdrBookViewerState(makeInit({ currentIndex: 2 }), deps)
+
+    await viewer.setIncludeIncidental(true)
+    expect(viewer.includeIncidental).toBe(false)
+    expect(viewer.searchFailed).toBe(true)
+    expect(viewer.hits).toHaveLength(7)
+    expect(viewer.currentIndex).toBe(2)
+  })
+
   it('loadAdjacent appends the next window and stops at the end of the document', async () => {
     const deps = makeDeps({ fetchWindow: vi.fn(async () => win(401, 700)) })
     const viewer = new AdrBookViewerState(makeInit(), deps)

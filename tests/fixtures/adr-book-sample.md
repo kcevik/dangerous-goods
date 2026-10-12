@@ -108,3 +108,17 @@ Gleichlautende Überschrift, damit die Slug-Vergabe einen Zähler anhängen muss
 ### Schlussabschnitt
 
 Dieser Abschnitt steht am Ende des Dokuments, damit das Klemmen des Fensters am Dateiende geprüft werden kann.
+
+## Kapitel 9.11
+
+### **2.2.62 Klasse 6.2 Ansteckungsgefährliche Stoffe**
+
+Fettgedruckte Überschrift, deren Abschnittsnummer die Anker-Vergabe erkennen muss.
+
+### Übergangsvorschriften &amp; Ausnahmen
+
+Überschrift mit Umlaut und HTML-Entität.
+
+### Prüfzeichen
+
+Das Prüfzeichen steht am Behälter, ein zweites Prüfzeichen am Deckel.
