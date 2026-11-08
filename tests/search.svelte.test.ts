@@ -320,6 +320,28 @@ describe('SearchState', () => {
     expect(mock.calls[0]!.orFilter).toContain('name.ilike.%ab%')
   })
 
+  it('reports answered only once a successful search for the current query has finished', async () => {
+    const s = new SearchState(mock.client)
+    s.query = 'Benzin'
+    expect(s.answered).toBe(false) // debouncing
+    await runSearchTimer()
+    expect(s.answered).toBe(false) // in flight
+    resolveBatch(mock.calls, 0, {})
+    await settle()
+    expect(s.answered).toBe(true)
+    s.query = 'Benzi'
+    expect(s.answered).toBe(false)
+  })
+
+  it('never reports a failed search as answered', async () => {
+    const s = new SearchState(mock.client)
+    s.query = 'Benzin'
+    await runSearchTimer()
+    resolveBatch(mock.calls, 0, {}, { adr_entries: { message: 'down' } })
+    await settle()
+    expect(s.answered).toBe(false)
+  })
+
   it('select() opens a UN and clears the result list', async () => {
     const s = new SearchState(mock.client)
     s.query = 'Be'

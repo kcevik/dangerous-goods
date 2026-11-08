@@ -4,6 +4,8 @@ import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
 import { DEMO_DATA } from '$lib/multimodal/types'
 import UnPage from '../src/routes/(app)/un/[nummer]/+page.svelte'
 
+vi.mock('$app/navigation', () => ({ goto: vi.fn() }))
+
 vi.mock('$lib/multimodal/MultimodalTool.svelte', async () => ({
   default: (await import('./stubs/ToolStub.svelte')).default,
 }))
@@ -75,5 +77,17 @@ describe('/un/[nummer] page — comparison link', () => {
     demo.unmount()
     const other = renderPage({ unNumber: '1090', locked: true, compareData: null })
     expect(other.container.querySelector('a[href$="/vergleich"]')).toBeNull()
+  })
+})
+
+describe('/un/[nummer] page — search', () => {
+  it('offers a search to open another UN number for an active account', () => {
+    const { container } = renderPage({ unNumber: '1090', locked: false, compareData: EMPTY })
+    expect(container.querySelector('input[type="search"]')).toHaveAttribute('aria-label', 'Andere UN-Nummer öffnen')
+  })
+
+  it('has no search for a locked account', () => {
+    const { container } = renderPage({ unNumber: '1203', locked: true, compareData: DEMO_DATA })
+    expect(container.querySelector('input[type="search"]')).toBeNull()
   })
 })

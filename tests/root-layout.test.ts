@@ -25,11 +25,27 @@ describe('root +layout.server load', () => {
     } as never)
     expect(result).toEqual({
       cookies: [{ name: 'a', value: 'b' }],
-      session,
+      session: { expires_at: 123 },
       user: { id: 'u1', email: 'k@example.de' },
       isActive: true,
       registrationOpen: false,
     })
+  })
+
+  it('never reads the unverified session.user (Supabase warns) and ships only expires_at', async () => {
+    const reads: string[] = []
+    const session = new Proxy({ access_token: 't', refresh_token: 'r', expires_at: 456, user: { id: 'cookie-user' } }, {
+      get: (target, prop, receiver) => {
+        reads.push(String(prop))
+        return Reflect.get(target, prop, receiver)
+      },
+    })
+    const result = await load({
+      cookies: { getAll: () => [] },
+      locals: { safeGetSession: async () => ({ session, user: { id: 'u1', email: 'k@example.de' }, isActive: true }) },
+    } as never) as { session: unknown }
+    expect(result.session).toEqual({ expires_at: 456 })
+    expect(reads).not.toContain('user')
   })
 
   it('reports registrationOpen from REGISTRATION_MODE', async () => {

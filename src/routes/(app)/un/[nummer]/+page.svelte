@@ -2,6 +2,7 @@
   import { resolve } from '$app/paths'
   import LockNotice from '$lib/auth/LockNotice.svelte'
   import MultimodalTool from '$lib/multimodal/MultimodalTool.svelte'
+  import QuickSearch from '$lib/search/QuickSearch.svelte'
   import { MODALS } from '$lib/multimodal/types'
   import { SITE_URL } from '$lib/seo/structuredData'
 
@@ -33,6 +34,15 @@
         href={resolve('/(app)/un/[nummer]/vergleich', { nummer: data.unNumber })}
         class="inline-block mb-4 ml-4 text-sm font-semibold text-orange-600 hover:text-orange-500"
       >Alle Modi vergleichen →</a>
+    {/if}
+    {#if !data.locked}
+      <div class="mb-4 max-w-md">
+        <QuickSearch
+          supabase={data.supabase}
+          label="Andere UN-Nummer öffnen"
+          hrefFor={un => resolve('/(app)/un/[nummer]', { nummer: un })}
+        />
+      </div>
     {/if}
     {#key data.unNumber}
       {#if data.locked && data.compareData}

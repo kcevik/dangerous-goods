@@ -133,7 +133,7 @@
           </button>
         {/each}
       </div>
-    {:else if !search.isLoading && !search.selectedUn}
+    {:else if search.answered && !search.selectedUn}
       <!-- No results: only after every table answered successfully -->
       <div class="text-center py-16">
         <p class="text-[#5a7a99] text-sm">Keine Ergebnisse für „{search.query}"</p>

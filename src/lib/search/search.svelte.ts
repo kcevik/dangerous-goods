@@ -139,6 +139,8 @@ export class SearchState {
   selectedUn = $state<string | null>(null)
   isLoading = $state(false)
   searchError = $state(false)
+  /** a successful search for the current query has finished — only then is "no results" true */
+  answered = $state(false)
   /** too short to search once stripped characters are removed — the page shows its empty state */
   readonly belowMinimum: boolean = $derived(sanitize(this.#query).length < MIN_QUERY_LENGTH)
 
@@ -165,6 +167,7 @@ export class SearchState {
     this.#requestId++
     this.isLoading = false
     this.searchError = false
+    this.answered = false
     const trimmed = value.trim()
     if (this.#debounceTimer) clearTimeout(this.#debounceTimer)
 
@@ -226,6 +229,7 @@ export class SearchState {
       })
       this.results = mergeSearchRows(trimmed, rowsByMode)
       this.searchError = false
+      this.answered = true
     }
     catch {
       if (currentRequest === this.#requestId) {

@@ -1,5 +1,7 @@
 import { render } from '@testing-library/svelte'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('$app/navigation', () => ({ goto: vi.fn() }))
 import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
 import { DEMO_DATA } from '$lib/multimodal/types'
 import ComparisonPage from '../src/routes/(app)/un/[nummer]/vergleich/+page.svelte'
@@ -33,5 +35,17 @@ describe('/un/[nummer]/vergleich page', () => {
     expect(container).toHaveTextContent(LOCK_MESSAGE)
     expect(container.querySelector('table')).toBeNull()
     expect(container.querySelector('a[href="/un/1203/vergleich"]')).not.toBeNull()
+  })
+})
+
+describe('/un/[nummer]/vergleich page — search', () => {
+  it('offers a search to switch the UN number for an active account', () => {
+    renderPage({ unNumber: '1203', locked: false, compareData: DEMO_DATA, reference: [] })
+    expect(document.body.querySelector('input[type="search"]')).toHaveAttribute('aria-label', 'Andere UN-Nummer vergleichen')
+  })
+
+  it('has no search for a locked account', () => {
+    const { container } = renderPage({ unNumber: '1203', locked: true, compareData: DEMO_DATA, reference: null })
+    expect(container.querySelector('input[type="search"]')).toBeNull()
   })
 })

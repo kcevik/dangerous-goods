@@ -21,14 +21,13 @@ async function flush() {
 }
 
 describe('MultimodalTool', () => {
-  it('renders the demo data for UN 1203 with a DEMO badge and read-only search box', () => {
+  it('renders the demo data for UN 1203 with a DEMO badge and the substance as text, not a search box', () => {
     const { container } = render(MultimodalTool, { props: { demo: true } })
     expect(container).toHaveTextContent('DEMO')
     expect(container).toHaveTextContent('UN 1203 · Verfügbarkeit in allen Modi')
-    expect(container).toHaveTextContent('BENZIN')
-    const input = container.querySelector('input')!
-    expect(input).toHaveValue('UN 1203 – BENZIN')
-    expect(input).toHaveAttribute('readonly')
+    expect(screen.getByTestId('tool-subject')).toHaveTextContent('UN 1203 – BENZIN')
+    // the pages own the search; a second, inert field here confused users (owner, 2026-11-08)
+    expect(container.querySelector('input')).toBeNull()
   })
 
   it('switches labels when a language button is clicked', async () => {

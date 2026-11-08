@@ -27,7 +27,6 @@
     supabase,
   }))
 
-  let showDemoNotice = $state(false)
 
   // client-side load when the prop changes and nothing was preloaded for it
   $effect(() => {
@@ -70,24 +69,10 @@
       {/if}
     </div>
 
-    <!-- Search bar -->
+    <!-- Toolbar: subject + language -->
     <div class="flex flex-wrap items-center gap-2.5 px-4 py-3.5 mb-4 bg-[#f4f7fa] border border-[#c8d6e5] border-t-[3px] border-t-orange-500">
-      <div class="relative flex-1 min-w-[200px]">
-        <input
-          value={tool.searchDisplay}
-          placeholder={tool.L('searchPlaceholder')}
-          readonly={demo}
-          class={['w-full px-3.5 py-2.5 font-mono text-sm border-[1.5px] border-[#b0c4d8] bg-[#dce8f2] text-[#0f2744] outline-none focus:border-orange-500 transition-colors', demo ? 'cursor-default' : 'cursor-text']}
-          autocomplete="off"
-          onfocus={() => { if (demo) showDemoNotice = true }}
-          onblur={() => { showDemoNotice = false }}
-        />
-        {#if showDemoNotice}
-          <div class="absolute top-full left-0 right-0 mt-1 px-3 py-2 text-xs bg-[#f4f7fa] border-[1.5px] border-orange-500 text-[#2d5070] z-10 shadow-md">
-            🔍 {tool.L('demoNotice')}
-          </div>
-        {/if}
-      </div>
+      <!-- the page owns the search; this only names what is shown (owner, 2026-11-08) -->
+      <p data-testid="tool-subject" class="flex-1 min-w-[200px] font-mono text-sm font-semibold text-[#0f2744] truncate">{tool.searchDisplay}</p>
 
       <!-- Language toggle -->
       <div class="flex overflow-hidden border-[1.5px] border-[#b0c4d8]">
