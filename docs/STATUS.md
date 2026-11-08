@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-10-12 · **Tests:** 706 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
+**Last updated:** 2026-11-08 · **Tests:** 766 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -14,7 +14,7 @@ every working session.
 |---|---|---|---|
 | F-04 | Login, accounts, manual activation | ✅ done | Signup verified end-to-end on 2026-09-29 (built-in mail sender) |
 | F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed |
-| F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | 🟡 works, gaps | `/suche` searches `adr_entries` names only and shows errors as "Keine Ergebnisse"; `un_entries` is never queried |
+| F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | 🟡 code complete | Not public until the source document is named (go-live blocker 1) |
 | — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
 | F-10 | Regulatory comparison (side by side) | ⚪ planned | Open question #1 (row alignment across modes) must be answered first |
@@ -30,8 +30,8 @@ section carry a grayed "Demnächst verfügbar" badge. Un-gray a card when its to
 
 1. **Test deployment** — owner follows `docs/deploy/README.md` on the Strato VPS (Caddy, basic auth for the whole site). Task 8 is done for Caddy; the plan's nginx text and `concepts.md` page are superseded / not written.
 2. **Commit before the first deploy** — the image tag carries the HEAD hash.
-3. **Stoffsuche gaps** (F-01): search all modes, surface errors, decide what `un_entries` is for.
-4. **F-10 regulatory comparison** once open question #1 is answered.
+3. **Owner: browser check of the variant picker** — `/un/1993` (5 variants), `/un/1203` (no picker, all names), `/suche` → "petrol".
+4. **F-10 regulatory comparison** — open question #1 answered 2026-11-08 (variants, `src/lib/multimodal/variants.ts`); `un_entries` becomes a grey reference column (spec §4a). Open: #2 (critical fields), #3 (landing Phase 2 claims). The 2026-09-28 plan must be refreshed on top of `variants.ts`.
 5. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
 
 ## Go-live blockers (not needed for the test phase)
@@ -73,6 +73,10 @@ comparison loads shown as "no results"; German error page; session resolved once
 book indexed at startup and checked by `/healthz`.
 
 ## Known issues and debt
+
+- Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
+- Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
+- Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
 - `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.
 - 57 of 9,124 real-book search hits (0.6 %) get no highlight: table cells containing raw block HTML (`<p>`, nested tables) that the browser rearranges. Source quirk.

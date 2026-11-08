@@ -3,7 +3,7 @@
   import { untrack } from 'svelte'
   import LockNotice from '$lib/auth/LockNotice.svelte'
   import MultimodalTool from '$lib/multimodal/MultimodalTool.svelte'
-  import { MIN_QUERY_LENGTH, type SearchResult, SearchState } from '$lib/search/search.svelte'
+  import { SearchState } from '$lib/search/search.svelte'
 
   let { data } = $props()
 
@@ -17,11 +17,6 @@
     { un: '1017', label: 'Chlor' },
   ]
 
-  function displayName(r: SearchResult): string {
-    return r.name ?? r.nameEn ?? r.nameFr ?? ''
-  }
-
-  const belowMinimum = $derived(search.query.trim().length < MIN_QUERY_LENGTH)
 </script>
 
 <svelte:head>
@@ -68,7 +63,7 @@
       <!-- Locked preview: no live queries, only the hardcoded demo -->
       <div class="mb-6"><LockNotice /></div>
       <MultimodalTool demo />
-    {:else if belowMinimum}
+    {:else if search.belowMinimum}
       <!-- Empty state -->
       <div class="text-center py-16">
         <p class="text-[#5a7a99] text-sm mb-4">Gib eine UN-Nummer oder einen Stoffnamen ein</p>
@@ -84,10 +79,23 @@
           {/each}
         </div>
       </div>
+    {:else if search.searchError}
+      <!-- a failed search must never read as "no results" -->
+      <div role="alert" class="bg-red-50 border border-red-200 rounded-xl p-8 text-center text-red-800">
+        <p class="text-sm mb-4">Die Suche ist fehlgeschlagen. Bitte versuche es erneut.</p>
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-semibold rounded-lg border border-red-300 bg-white hover:bg-red-100 transition-colors"
+          disabled={search.isLoading}
+          onclick={() => search.retry()}
+        >Erneut versuchen</button>
+      </div>
     {:else if search.results.length > 0}
-      <!-- Results list -->
+      <!-- Results list: one card per UN number -->
       <div class="space-y-2">
-        <p class="text-xs text-[#5a7a99] mb-3">{search.results.length} Ergebnisse (ADR)</p>
+        <p class="text-xs text-[#5a7a99] mb-3">
+          {search.results.length} {search.results.length === 1 ? 'UN-Nummer' : 'UN-Nummern'}
+        </p>
         {#each search.results as r (r.unNumber)}
           <button
             type="button"
@@ -99,7 +107,15 @@
                 <span class="font-mono font-bold text-[#0f2744] text-sm group-hover:text-orange-600 transition-colors">
                   UN {r.unNumber}
                 </span>
-                <p class="text-sm text-[#0f2744] mt-0.5 truncate">{displayName(r)}</p>
+                <p class="text-sm text-[#0f2744] mt-0.5 truncate">{r.primaryName}</p>
+                {#if r.otherNames.length > 0}
+                  <p class="text-xs text-[#5a7a99] mt-0.5 line-clamp-2">{r.otherNames.join(' · ')}</p>
+                {/if}
+                <div class="flex flex-wrap gap-1 mt-2">
+                  {#each r.modes as mode (mode)}
+                    <span data-testid="mode-badge" class="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold bg-[#e8eef5] text-[#5a7a99]">{mode}</span>
+                  {/each}
+                </div>
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 {#if r.hazardClass}
@@ -107,9 +123,9 @@
                     Kl. {r.hazardClass}
                   </span>
                 {/if}
-                {#if r.packingGroup}
+                {#if r.packingGroups.length > 0}
                   <span class="px-2 py-0.5 rounded text-xs font-semibold bg-[#e8eef5] text-[#5a7a99]">
-                    VG {r.packingGroup}
+                    VG {r.packingGroups.join(' · ')}
                   </span>
                 {/if}
               </div>
@@ -118,7 +134,7 @@
         {/each}
       </div>
     {:else if !search.isLoading && !search.selectedUn}
-      <!-- No results -->
+      <!-- No results: only after every table answered successfully -->
       <div class="text-center py-16">
         <p class="text-[#5a7a99] text-sm">Keine Ergebnisse für „{search.query}"</p>
       </div>

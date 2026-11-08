@@ -108,7 +108,7 @@ export interface CompareRow {
 
 export function buildComparison(
   data: Record<string, Entry[]>,
-  selection?: Partial<Record<Modal, number>>,   // sequence index per mode, default 0
+  selection: Partial<Record<Modal, Variant | null>>,   // chosen variant per mode (§4, revised)
 ): CompareRow[]
 ```
 
@@ -137,24 +137,32 @@ disagree. No severity scores, no traffic lights beyond same/differs, no recommen
 
 ## 4. Multiple entries per UN number
 
-A UN number usually has several rows per mode. UN 1203 has three in road, rail and sea
-(BENZIN, OTTOKRAFTSTOFF, PETROL as separate sequence numbers). The current tool silently
-shows `[0]` and hides the rest, which is already a small correctness problem on
-`/un/:nummer`.
+> **Revised 2026-11-08** — open question #1 answered. Built on the variant model of
+> `2026-11-08-stoffsuche-variants-design.md`.
 
-For the comparison this cannot be hidden, because comparing road sequence 1 against sea
-sequence 3 would be meaningless. Design:
+A UN number often has several rows per mode, but most are **name variants** with identical
+regulatory data (UN 1203: BENZIN / OTTOKRAFTSTOFF / PETROL). 82 % of UN numbers have exactly one
+regulatory variant in every mode. Row position is unreliable across modes for the rest.
 
-- Default selection is sequence index 0 for every mode.
-- When any mode has more than one row, the page shows a per-mode selector above the
-  table listing the rows by name and sequence number.
-- Changing a selector recomputes the comparison client-side. No refetch, all rows for
-  the UN number are already loaded.
+The comparison therefore compares **variants, not rows**, using `groupVariants` and
+`matchVariant` from `src/lib/multimodal/variants.ts`:
 
-**Open question for the owner:** should the app try to align rows across modes by name
-(road BENZIN against sea BENZIN) instead of by position? The names do not always match
-across modes, so automatic alignment can be wrong. Default-by-position plus a visible
-selector is the safe starting point. Confirm before adding cleverness.
+- The anchor mode's variants feed one variant picker (shown only when there is more than one).
+- Every other mode shows `matchVariant(chosen, …)`: same packing group + same normalised English
+  specification, else the single candidate with the same packing group, else **no match**.
+- A mode without a match shows its cells as "keine eindeutige Entsprechung" with its own small
+  picker; it never contributes a `differs` status until the user picks.
+- `buildComparison` takes the chosen `Variant` per mode instead of a sequence index.
+
+## 4a. UN Model Regulations reference column
+
+> **Added 2026-11-08** (owner decision).
+
+`un_entries` (UN Model Regulations, 23rd rev. ed.) is shown as a grey reference column after the
+four modes, labelled "UN-Modellvorschriften". It covers the shared fields only (class, packing
+group, special provisions, limited and excepted quantities, packing instructions). It is
+**never** part of the status computation: it cannot make a row `differs`, `same` or `onlyOne`.
+The load fetches it alongside the four modes; its variant is matched like any other mode.
 
 ## 5. State and UI
 
@@ -242,13 +250,13 @@ Every feature ships with tests; the owner requires it.
 - PDF export (Phase 2, Puppeteer).
 - Transport assistant F-11.
 - Comparing two different UN numbers against each other.
-- Aligning rows across modes by name (see §4 open question).
 - Deep links into the ADR book from provision codes. That is a separate spec,
   `2026-09-28-adr-book-viewer-design.md`.
 
 ## Open questions for the owner
 
-1. Row alignment across modes: position plus selector, or attempt name matching? (§4)
+1. ~~Row alignment across modes~~ — answered 2026-11-08: variants matched by packing group +
+   specification (§4).
 2. Is the critical-field set in §3 the right one for a Gefahrgutbeauftragter, or should
    tunnel code and transport category join it? They are road-only, so they can never
    disagree *across* modes, which is why they are excluded, but confirm that matches

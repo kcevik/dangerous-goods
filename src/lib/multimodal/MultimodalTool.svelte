@@ -5,7 +5,7 @@
   import { formatBookLabel } from '$lib/regulations/bookTypes'
   import MultimodalSvsAccordion from './MultimodalSvsAccordion.svelte'
   import { MultimodalToolState } from './multimodalTool.svelte'
-  import { DEMO_DATA, type Entry, LANGS } from './types'
+  import { DEMO_DATA, type Entry, LANGS, type Modal } from './types'
 
   interface Props {
     /** Use hardcoded UN 1203 demo data (no API needed) */
@@ -35,6 +35,24 @@
     if (unNumber !== tool.currentUnNumber) tool.loadCompare(unNumber)
   })
 </script>
+
+<!-- a mode's own variant buttons: where matching found nothing, and to revise a manual pick -->
+{#snippet modePicker(mode: Modal)}
+  <div role="group" aria-label={`${tool.L('variant')} (${mode})`} class="flex flex-wrap gap-2">
+    {#each tool.variantsByMode[mode] ?? [] as variant, i (variant.key)}
+      {@const label = tool.labelOf(variant, mode)}
+      <button
+        type="button"
+        aria-pressed={tool.overrides[mode] === i}
+        title={label}
+        class={['max-w-full sm:max-w-xs truncate px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.overrides[mode] === i
+          ? 'bg-amber-400 border-amber-500 text-black'
+          : 'bg-white border-amber-400 text-[#0f2744] hover:border-orange-500']}
+        onclick={() => tool.overrideVariant(mode, i)}
+      >{label}</button>
+    {/each}
+  </div>
+{/snippet}
 
 <div class="bg-[#e8eef5] font-sans">
   <div class="max-w-5xl mx-auto">
@@ -99,6 +117,32 @@
       </div>
     {:else if tool.hasData}
 
+      <!-- Variant picker: one choice for all tabs (spec 2026-11-08) -->
+      {#if tool.anchorMode && tool.anchorVariants.length > 1}
+        {@const anchor = tool.anchorMode}
+        <div
+          role="group"
+          aria-label={tool.L('variant')}
+          class="flex flex-wrap items-center gap-2 px-4 py-3 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8]"
+        >
+          <span class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mr-1">
+            {tool.L('variant')} · {anchor}
+          </span>
+          {#each tool.anchorVariants as variant, i (variant.key)}
+            {@const label = tool.labelOf(variant, anchor)}
+            <button
+              type="button"
+              aria-pressed={tool.selectedVariantIndex === i}
+              title={label}
+              class={['max-w-full sm:max-w-xs truncate px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.selectedVariantIndex === i
+                ? 'bg-orange-500 border-orange-500 text-black'
+                : 'bg-[#dce8f2] border-[#b0c4d8] text-[#0f2744] hover:border-orange-400']}
+              onclick={() => tool.selectVariant(i)}
+            >{label}</button>
+          {/each}
+        </div>
+      {/if}
+
       <!-- Compare overview -->
       <div class="px-4 py-3.5 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8] border-t-[3px] border-t-orange-500">
         <div class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mb-2.5">
@@ -107,17 +151,19 @@
         <div class="grid grid-cols-5 gap-2 max-sm:grid-cols-3">
           {#each tool.MODALS as modal (modal)}
             {@const entry = tool.getEntry(modal)}
+            {@const rows = tool.hasRows(modal)}
             <div
-              class={['p-2.5 border bg-[#f4f7fa] transition-all', entry
+              data-testid={`overview-${modal}`}
+              class={['p-2.5 border bg-[#f4f7fa] transition-all', rows
                 ? ['cursor-pointer', 'hover:border-orange-400',
                    modal === tool.currentModal
                      ? 'border-orange-500 border-t-[3px]'
                      : 'border-[#c8d6e5]']
                 : ['border-[#c8d6e5]', 'opacity-40']]}
               role="button"
-              tabindex={entry ? 0 : -1}
-              onclick={() => { if (entry) tool.switchModal(modal) }}
-              onkeydown={(e) => { if (entry && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tool.switchModal(modal) } }}
+              tabindex={rows ? 0 : -1}
+              onclick={() => { if (rows) tool.switchModal(modal) }}
+              onkeydown={(e) => { if (rows && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tool.switchModal(modal) } }}
             >
               <div class="font-mono text-[10px] font-bold tracking-[1px] uppercase text-[#5a7a99] mb-1">{modal}</div>
               {#if entry}
@@ -144,6 +190,8 @@
                     {tool.L('cones')}: {entry.cones}
                   </div>
                 {/if}
+              {:else if tool.isUnmatched(modal)}
+                <div class="font-mono text-base font-bold text-amber-600" title={tool.L('noVariantMatch').replace('{mode}', modal)}>?</div>
               {:else}
                 <div class="text-xs italic text-[#b0c4d8]">–</div>
               {/if}
@@ -157,19 +205,20 @@
       <div class="flex overflow-x-auto border-b-2 border-[#b0c4d8]" role="tablist">
         {#each tool.MODALS as modal (modal)}
           {@const entry = tool.getEntry(modal)}
+          {@const rows = tool.hasRows(modal)}
           <button
             type="button"
             class={['flex items-center gap-1.5 px-4 py-2.5 font-mono text-[11px] font-bold tracking-[0.5px] whitespace-nowrap mr-0.5 relative top-px border border-b-0 transition-all', modal === tool.currentModal
               ? 'bg-[#f4f7fa] text-[#0f2744] border-[#b0c4d8] border-b-2 border-b-[#f4f7fa]'
-              : entry
+              : rows
                 ? 'bg-[#dce8f2] text-[#0f2744] border-[#b0c4d8] hover:bg-[#d4e2ef] cursor-pointer'
                 : 'bg-[#dce8f2] text-[#5a7a99] border-[#b0c4d8] opacity-40 cursor-default']}
             role="tab"
             aria-selected={modal === tool.currentModal}
-            disabled={!entry}
-            onclick={() => { if (entry) tool.switchModal(modal) }}
+            disabled={!rows}
+            onclick={() => { if (rows) tool.switchModal(modal) }}
           >
-            <span class={['w-1.5 h-1.5 rounded-full', entry ? 'bg-orange-500' : 'bg-[#b0c4d8]']}></span>
+            <span class={['w-1.5 h-1.5 rounded-full', entry ? 'bg-orange-500' : rows ? 'bg-amber-500' : 'bg-[#b0c4d8]']}></span>
             {modal}
           </button>
         {/each}
@@ -179,6 +228,8 @@
       <div class="bg-[#f4f7fa] border border-[#b0c4d8] border-t-0 p-5" role="tabpanel">
         {#if tool.currentEntry}
           {@const currentEntry = tool.currentEntry}
+          {@const names = tool.variantNames(tool.currentModal)}
+          {@const specs = tool.variantSpecs(tool.currentModal)}
 
           <!-- UN header -->
           <div class="flex flex-wrap items-start gap-3.5 pb-4 mb-4 border-b border-[#c8d6e5]">
@@ -196,19 +247,27 @@
               </div>
             {/if}
             <div>
-              <div class="text-base font-semibold text-[#0f2744]">{tool.getName(currentEntry)}</div>
-              {#if tool.getNameSub(currentEntry)}
+              <div class="text-base font-semibold text-[#0f2744]">{names.primary}</div>
+              {#if names.others.length > 0}
                 <div class="text-sm text-[#5a7a99] mt-0.5">
-                  {tool.getNameSub(currentEntry)}
+                  {names.others.join(' · ')}
                 </div>
               {/if}
-              {#if tool.getSpez(currentEntry)}
+              {#if specs.length > 0}
                 <div class="text-sm italic text-[#2d5070] mt-0.5">
-                  {tool.getSpez(currentEntry)}
+                  {specs.join(' / ')}
                 </div>
               {/if}
             </div>
           </div>
+
+          {#if tool.overrides[tool.currentModal] != null}
+            <!-- a manual pick stays visible and revisable (review fix) -->
+            <div class="border border-amber-300 bg-amber-50 p-3 mb-4 text-sm text-amber-900">
+              <p class="mb-2">{tool.L('manualVariant').replace('{mode}', tool.currentModal)}</p>
+              {@render modePicker(tool.currentModal)}
+            </div>
+          {/if}
 
           <!-- Fields table -->
           <table class="w-full text-sm border-collapse">
@@ -372,6 +431,13 @@
               {supabase}
             />
           {/if}
+        {:else if tool.isUnmatched(tool.currentModal)}
+          {@const mode = tool.currentModal}
+          <!-- rows exist, but none corresponds unambiguously: ask, never guess -->
+          <div class="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            <p class="mb-3">{tool.L('noVariantMatch').replace('{mode}', mode)}</p>
+            {@render modePicker(mode)}
+          </div>
         {:else}
           <!-- Empty state (no data for current modal) -->
           <div class="text-center py-12 text-[#5a7a99]">

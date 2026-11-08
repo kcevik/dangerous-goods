@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import { MultimodalToolState } from '$lib/multimodal/multimodalTool.svelte'
-import { DEMO_DATA } from '$lib/multimodal/types'
+import { DEMO_DATA, type Entry } from '$lib/multimodal/types'
+import { UN_1203, UN_1993 } from './fixtures/variant-rows'
 
 function stubSupabase(responses: Partial<Record<string, { data: unknown[] | null, error: unknown }>>) {
   const from = vi.fn((table: string) => ({
@@ -198,5 +199,157 @@ describe('MultimodalToolState — failed loads (code review 2026-09-29)', () => 
     delete responses.adr_entries
     await tool.loadCompare('1090')
     expect(tool.loadError).toBe(false)
+  })
+})
+
+describe('MultimodalToolState — variants', () => {
+  function tool1993() {
+    return new MultimodalToolState({ initialData: UN_1993 as Record<string, Entry[]>, initialUnNumber: '1993' })
+  }
+
+  const e = (partial: Partial<Entry>): Entry => ({ unNumber: '9999', sequenceNumber: 1, ...partial })
+  /** ADR one variant VG II; IMDG two VG II variants with unrelated specifications → no match */
+  const AMBIGUOUS: Record<string, Entry[]> = {
+    ADR: [e({ name: 'STOFF', packingGroup: 'II', limitedQty: '1 L' })],
+    IMDG: [
+      e({ sequenceNumber: 1, name: 'STOFF', packingGroup: 'II', specificationEn: 'A', limitedQty: '1 L' }),
+      e({ sequenceNumber: 2, name: 'STOFF', packingGroup: 'II', specificationEn: 'B', limitedQty: '5 L' }),
+    ],
+  }
+
+  it('lists the anchor mode variants and starts on the first', () => {
+    const tool = tool1993()
+    expect(tool.anchorMode).toBe('ADR')
+    expect(tool.anchorVariants).toHaveLength(5)
+    expect(tool.selectedVariantIndex).toBe(0)
+    expect(tool.getEntry('ADR')?.packingGroup).toBe('I')
+    expect(tool.getEntry('IMDG')?.packingGroup).toBe('I')
+  })
+
+  it('applies the chosen variant to every mode', () => {
+    const tool = tool1993()
+    tool.selectVariant(3) // ADR row 4: VG III, tunnel code D/E
+    expect(tool.getEntry('ADR')?.tunnelCode).toBe('D/E')
+    expect(tool.getEntry('RID')?.packingGroup).toBe('III')
+    expect(tool.getEntry('IMDG')?.limitedQty).toBe('5 L')
+    expect(tool.getEntry('ICAO')?.packingGroup).toBe('III')
+
+    tool.selectVariant(4) // viscous VG III, tunnel code E
+    expect(tool.getEntry('ADR')?.tunnelCode).toBe('E')
+    expect(tool.getEntry('IMDG')?.packingGroup).toBe('III')
+  })
+
+  it('shows no picker material for a UN number with one variant', () => {
+    const tool = new MultimodalToolState({ initialData: UN_1203 as Record<string, Entry[]>, initialUnNumber: '1203' })
+    expect(tool.anchorVariants).toHaveLength(1)
+  })
+
+  it('names every row of the current variant, current language first', () => {
+    const tool = new MultimodalToolState({ initialData: UN_1203 as Record<string, Entry[]>, initialUnNumber: '1203' })
+    expect(tool.variantNames('ADR')).toEqual({
+      primary: 'BENZIN',
+      others: ['OTTOKRAFTSTOFF', 'MOTOR SPIRIT', 'GASOLINE', 'PETROL', 'ESSENCE'],
+    })
+    tool.setLang('en')
+    expect(tool.variantNames('ADR').primary).toBe('MOTOR SPIRIT')
+    expect(tool.variantNames('ADN')).toEqual({ primary: '', others: [] })
+  })
+
+  it('labels variants with the localised packing-group prefix', () => {
+    const tool = tool1993()
+    expect(tool.labelOf(tool.anchorVariants[0]!, 'ADR')).toBe('VP-Gr. I')
+    tool.setLang('en')
+    expect(tool.labelOf(tool.anchorVariants[0]!, 'ADR')).toBe('PG I')
+  })
+
+  it('reports a mode without an unambiguous match instead of guessing', () => {
+    const tool = new MultimodalToolState({ initialData: AMBIGUOUS, initialUnNumber: '9999' })
+    expect(tool.isUnmatched('IMDG')).toBe(true)
+    expect(tool.getEntry('IMDG')).toBeNull()
+    expect(tool.hasRows('IMDG')).toBe(true)
+  })
+
+  it('lets the user pick for an unmatched mode, and resets that pick on a new main choice', () => {
+    const tool = new MultimodalToolState({ initialData: AMBIGUOUS, initialUnNumber: '9999' })
+    tool.overrideVariant('IMDG', 1)
+    expect(tool.getEntry('IMDG')?.limitedQty).toBe('5 L')
+    expect(tool.isUnmatched('IMDG')).toBe(false)
+    tool.selectVariant(0)
+    expect(tool.getEntry('IMDG')).toBeNull()
+  })
+
+  it('treats a mode without rows as not available, not as unmatched', () => {
+    const tool = tool1993()
+    expect(tool.hasRows('ADN')).toBe(false)
+    expect(tool.isUnmatched('ADN')).toBe(false)
+    expect(tool.getEntry('ADN')).toBeNull()
+  })
+
+  it('allows switching to an unmatched mode', () => {
+    const tool = new MultimodalToolState({ initialData: AMBIGUOUS, initialUnNumber: '9999' })
+    tool.switchModal('IMDG')
+    expect(tool.currentModal).toBe('IMDG')
+  })
+
+  it('refuses to switch to a mode whose row list is empty', () => {
+    // fetchCompareForUn always returns ADN: []
+    const tool = new MultimodalToolState({ initialData: { ...UN_1993, ADN: [] } as Record<string, Entry[]>, initialUnNumber: '1993' })
+    tool.switchModal('ADN')
+    expect(tool.currentModal).toBe('ADR')
+  })
+
+  it('applies no variant picked during a load to the next UN number (review fix)', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    const rows = UN_1203.ADR!.map(r => ({ un_number: r.unNumber, sequence_number: r.sequenceNumber, name: r.name, packing_group: r.packingGroup }))
+    const from = vi.fn((table: string) => ({
+      select: () => ({
+        eq: () => ({
+          order: async () => {
+            await gate
+            return { data: table === 'adr_entries' ? rows : [], error: null }
+          },
+        }),
+      }),
+    }))
+    const tool = new MultimodalToolState({ initialData: UN_1993 as Record<string, Entry[]>, initialUnNumber: '1993', supabase: { from } as unknown as SupabaseClient })
+    const pending = tool.loadCompare('1203')
+    tool.selectVariant(3) // clicked on the old UN while the new one loads
+    tool.overrideVariant('IMDG', 1)
+    release()
+    await pending
+    expect(tool.selectedVariantIndex).toBe(0)
+    expect(tool.overrides).toEqual({})
+  })
+
+  it('shows nothing rather than silently falling back to the first variant for an out-of-range index (review fix)', () => {
+    const tool = tool1993()
+    tool.selectVariant(9)
+    expect(tool.getEntry('ADR')).toBeNull()
+    expect(tool.getEntry('IMDG')).toBeNull()
+  })
+
+  it('lists every specification of a merged variant (review fix)', () => {
+    const tool = tool1993()
+    tool.selectVariant(4) // ADR rows 5 + 6, differing vapour pressure
+    const specs = tool.variantSpecs('ADR')
+    expect(specs).toHaveLength(2)
+    expect(specs[0]).toContain('größer als 110 kPa')
+    expect(specs[1]).toContain('höchstens 110 kPa')
+    tool.setLang('en')
+    expect(tool.variantSpecs('ADR')[1]).toContain('not more than 110 kPa')
+    expect(tool.variantSpecs('ADN')).toEqual([])
+  })
+
+  it('resets the selection and overrides when a new UN number loads', async () => {
+    const rows = UN_1203.ADR!.map(r => ({ un_number: r.unNumber, sequence_number: r.sequenceNumber, name: r.name, packing_group: r.packingGroup }))
+    const { client } = stubSupabase({ adr_entries: { data: rows, error: null } })
+    const tool = new MultimodalToolState({ initialData: UN_1993 as Record<string, Entry[]>, initialUnNumber: '1993', supabase: client })
+    tool.selectVariant(4)
+    tool.overrideVariant('IMDG', 2)
+    await tool.loadCompare('1203')
+    expect(tool.selectedVariantIndex).toBe(0)
+    expect(tool.overrides).toEqual({})
+    expect(tool.getEntry('ADR')?.sequenceNumber).toBe(1)
   })
 })

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { fireEvent, render } from '@testing-library/svelte'
+import { fireEvent, render, screen } from '@testing-library/svelte'
 import { tick } from 'svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
@@ -18,14 +18,17 @@ const ROW = {
   packing_group: 'II',
 }
 
-function stubSearch(data: Record<string, unknown>[]) {
-  const builder = {
-    select: () => builder,
-    or: () => builder,
-    order: () => builder,
-    limit: () => Promise.resolve({ data, error: null }),
-  }
-  const from = vi.fn(() => builder)
+function stubSearch(data: Record<string, unknown>[] | Record<string, Record<string, unknown>[]>, errors: Record<string, unknown> = {}) {
+  const from = vi.fn((table: string) => {
+    const rows = Array.isArray(data) ? data : (data[table] ?? [])
+    const builder = {
+      select: () => builder,
+      or: () => builder,
+      order: () => builder,
+      limit: () => Promise.resolve(errors[table] ? { data: null, error: errors[table] } : { data: rows, error: null }),
+    }
+    return builder
+  })
   return { client: { from } as unknown as SupabaseClient, from }
 }
 
@@ -66,16 +69,45 @@ describe('/suche page (active account)', () => {
     expect(container).toHaveTextContent('Gib eine UN-Nummer')
   })
 
-  it('renders result cards for a text query after the debounce', async () => {
-    const { client } = stubSearch([ROW])
+  it('renders one card per UN number with names, packing groups and modes', async () => {
+    const { client } = stubSearch({
+      adr_entries: [ROW, { ...ROW, name: 'OTTOKRAFTSTOFF', name_en: 'GASOLINE', name_fr: null }],
+      icao_entries: [{ un_number: '1203', name: 'Petrol', hazard_class: '3', packing_group: 'II' }],
+    })
     const { container } = renderPage(client)
     await typeAndDebounce(container, 'Benzin')
 
-    expect(container).toHaveTextContent('1 Ergebnisse (ADR)')
+    expect(container).toHaveTextContent('1 UN-Nummer')
+    expect(container.querySelectorAll('.space-y-2 > button')).toHaveLength(1)
     expect(container).toHaveTextContent('UN 1203')
     expect(container).toHaveTextContent('BENZIN')
+    expect(container).toHaveTextContent('OTTOKRAFTSTOFF')
     expect(container).toHaveTextContent('Kl. 3')
     expect(container).toHaveTextContent('VG II')
+    const badges = [...container.querySelectorAll('[data-testid="mode-badge"]')].map(b => b.textContent?.trim())
+    expect(badges).toEqual(['ADR', 'ICAO'])
+  })
+
+  it('lists every packing group of a UN number', async () => {
+    const rows = ['I', 'II', 'III'].map(pg => ({ ...ROW, un_number: '1993', name: 'ENTZÜNDBARER FLÜSSIGER STOFF, N.A.G.', packing_group: pg }))
+    const { client } = stubSearch({ adr_entries: rows })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'entzünd')
+    expect(container).toHaveTextContent('VG I · II · III')
+  })
+
+  it('shows an error with a retry button instead of "Keine Ergebnisse" when a table fails', async () => {
+    const { client, from } = stubSearch([], { rid_entries: { message: 'down' } })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Benzin')
+
+    expect(container.querySelector('[role="alert"]')).toHaveTextContent('Die Suche ist fehlgeschlagen. Bitte versuche es erneut.')
+    expect(container).not.toHaveTextContent('Keine Ergebnisse')
+
+    const before = from.mock.calls.length
+    await fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(from.mock.calls.length).toBe(before + 4)
   })
 
   it('opens the tool when a result card is clicked', async () => {
@@ -85,7 +117,7 @@ describe('/suche page (active account)', () => {
 
     await fireEvent.click(container.querySelector('.space-y-2 button')!)
     expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
-    expect(container).not.toHaveTextContent('Ergebnisse (ADR)')
+    expect(container.querySelector('.space-y-2')).toBeNull()
   })
 
   it('loads the tool directly for a 4-digit UN number without querying', async () => {
@@ -95,6 +127,15 @@ describe('/suche page (active account)', () => {
 
     expect(from).not.toHaveBeenCalled()
     expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
+  })
+
+  it('keeps the empty state for a query made only of stripped characters (review fix)', async () => {
+    const { client, from } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, '%%')
+    expect(from).not.toHaveBeenCalled()
+    expect(container).toHaveTextContent('Gib eine UN-Nummer')
+    expect(container).not.toHaveTextContent('Keine Ergebnisse')
   })
 
   it('shows the no-results message for an unmatched query', async () => {
@@ -144,7 +185,7 @@ describe('/suche page (locked account)', () => {
     await typeAndDebounce(container, 'Benzin')
     await typeAndDebounce(container, '1090')
     expect(from).not.toHaveBeenCalled()
-    expect(container).not.toHaveTextContent('Ergebnisse (ADR)')
+    expect(container.querySelector('.space-y-2')).toBeNull()
     expect(container).not.toHaveTextContent('TOOL:1090')
     expect(container).toHaveTextContent(LOCK_MESSAGE)
   })
