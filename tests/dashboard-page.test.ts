@@ -16,13 +16,12 @@ describe('dashboard page', () => {
   })
 
   // F-10 is not built: the tile must not link to the plain search view it used to duplicate.
-  it('shows the regulatory comparison as a disabled coming-soon tile', () => {
+  it('links the regulatory comparison tile to the UN 1203 comparison', () => {
     const { container } = renderDashboard(true)
-    const tile = container.querySelector('[aria-disabled="true"]')
+    const tile = container.querySelector('a[href="/un/1203/vergleich"]')
     expect(tile).toHaveTextContent('Regelwerksvergleich')
-    expect(tile).toHaveTextContent('Demnächst verfügbar')
-    expect(tile?.closest('a')).toBeNull()
-    expect(container.querySelector('a[href^="/un/"]')).toBeNull()
+    expect(container.querySelector('[aria-disabled="true"]')).toBeNull()
+    expect(container).not.toHaveTextContent('Demnächst verfügbar')
   })
 
   it('shows the activation status', () => {

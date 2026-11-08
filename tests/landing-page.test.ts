@@ -46,12 +46,19 @@ describe('landing page', () => {
     for (const card of soon) expect(card).toHaveTextContent('Demnächst verfügbar')
   })
 
-  it('does not advertise the regulatory comparison as available', () => {
+  it('presents the regulatory comparison truthfully, from the demo data', () => {
     const { container } = render(LandingPage, { props: PROPS })
-    expect(container).not.toHaveTextContent('Neu: Regelwerksvergleich')
-    expect(container).toHaveTextContent('Demnächst: Regelwerksvergleich')
-    expect(container.querySelector('#comparison')).toHaveTextContent('Demnächst verfügbar')
-    expect(container.querySelector('#comparison a[href="#demo"]')).toHaveTextContent('Stoffsuche ausprobieren')
+    const section = container.querySelector('#comparison')!
+    expect(container).toHaveTextContent('Neu: Regelwerksvergleich ADR · RID · IMDG · ICAO')
+    expect(section).not.toHaveTextContent('Demnächst verfügbar')
+    expect(section).not.toHaveTextContent(/PDF/)
+    expect(section).not.toHaveTextContent(/Transportassistent/)
+    expect(container).not.toHaveTextContent('ICAO und ADN')
+    const modes = [...section.querySelectorAll('tbody tr td:first-child')].map(td => td.textContent?.trim())
+    expect(modes).toEqual(['ADR', 'RID', 'IMDG', 'ICAO'])
+    expect(section.querySelector('tbody tr td:nth-child(4)')).toHaveTextContent('1 L') // ADR limited quantity from DEMO_DATA
+    expect(section).toHaveTextContent('Keine kritischen Abweichungen für UN 1203')
+    expect(section.querySelector('a[href="/un/1203/vergleich"]')).toHaveTextContent('Vergleich ansehen')
   })
 
   it('renders the embedded demo tool with UN 1203', () => {

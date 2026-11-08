@@ -62,3 +62,18 @@ describe('/un/[nummer] page (locked)', () => {
     expect(container.querySelector('a[href="/un/1203"]')).not.toBeNull()
   })
 })
+
+describe('/un/[nummer] page — comparison link', () => {
+  it('links an active account to the comparison of this UN number', () => {
+    const { container } = renderPage({ unNumber: '1090', locked: false, compareData: EMPTY })
+    expect(container.querySelector('a[href="/un/1090/vergleich"]')).toHaveTextContent('Alle Modi vergleichen')
+  })
+
+  it('links the locked demo, but nothing for other locked UN numbers', () => {
+    const demo = renderPage({ unNumber: '1203', locked: true, compareData: DEMO_DATA })
+    expect(demo.container.querySelector('a[href="/un/1203/vergleich"]')).not.toBeNull()
+    demo.unmount()
+    const other = renderPage({ unNumber: '1090', locked: true, compareData: null })
+    expect(other.container.querySelector('a[href$="/vergleich"]')).toBeNull()
+  })
+})

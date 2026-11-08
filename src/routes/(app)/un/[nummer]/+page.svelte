@@ -28,6 +28,12 @@
     <a href={resolve('/(app)/dashboard')} class="inline-block mb-4 text-sm text-[#5a7a99] hover:text-orange-500 font-mono">
       ← zurück
     </a>
+    {#if data.compareData}
+      <a
+        href={resolve('/(app)/un/[nummer]/vergleich', { nummer: data.unNumber })}
+        class="inline-block mb-4 ml-4 text-sm font-semibold text-orange-600 hover:text-orange-500"
+      >Alle Modi vergleichen →</a>
+    {/if}
     {#key data.unNumber}
       {#if data.locked && data.compareData}
         <MultimodalTool demo />

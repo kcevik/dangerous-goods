@@ -110,6 +110,35 @@ function mapIcao(r: RawIcao): Entry {
   }
 }
 
+type RawUn = Record<string, unknown>
+
+/** UN Model Regulations: the shared fields only (spec §4a); subsidiary risks stand in for labels */
+function mapUn(r: RawUn): Entry {
+  return {
+    unNumber: String(r.un_number),
+    sequenceNumber: Number(r.sequence_number),
+    name: str(r.name),
+    specification: str(r.specification),
+    hazardClass: str(r.hazard_class),
+    packingGroup: str(r.packing_group),
+    hazardLabels: joinArr(r.subsidiary_risks),
+    exceptedQty: str(r.excepted_qty),
+    limitedQty: str(r.limited_qty),
+    packingInstructions: joinArr(r.packing_instructions),
+    specialProvisions: joinArr(r.special_provision_codes),
+    remark: str(r.remark),
+  }
+}
+
+/** rows of the UN Model Regulations for the grey reference column; throws on failure */
+export async function fetchUnReference(supabase: SupabaseClient, unNumber: string): Promise<Entry[]> {
+  const cleaned = unNumber.trim()
+  if (!cleaned) return []
+  const { data, error } = await supabase.from('un_entries').select('*').eq('un_number', cleaned).order('sequence_number')
+  if (error) throw error
+  return (data ?? []).map(mapUn)
+}
+
 export async function fetchCompareForUn(
   supabase: SupabaseClient,
   unNumber: string,

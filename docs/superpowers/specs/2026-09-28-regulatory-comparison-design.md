@@ -257,9 +257,44 @@ Every feature ships with tests; the owner requires it.
 
 1. ~~Row alignment across modes~~ — answered 2026-11-08: variants matched by packing group +
    specification (§4).
-2. Is the critical-field set in §3 the right one for a Gefahrgutbeauftragter, or should
-   tunnel code and transport category join it? They are road-only, so they can never
-   disagree *across* modes, which is why they are excluded, but confirm that matches
-   professional expectation.
-3. How should the landing page's Phase 2 claims be handled: delete, or relabel as
-   planned? (§7)
+2. ~~Critical-field set~~ — answered 2026-11-08: as in §3.
+3. ~~Landing Phase 2 claims~~ — answered 2026-11-08: **remove** the PDF export and transport
+   assistant bullets; they will not be built (owner).
+
+## Revision 2026-11-08 — comparability, measured on the BAM source
+
+> Applies on top of §1–§3 and §5–§7. Measured over all 2,347 UN numbers in `csvbase/`
+> (first row per mode). The owner's decisions on open questions 2 and 3 are recorded above.
+
+A naive field-by-field comparison flags format, not content:
+
+| Field | UN numbers "differing" naively | Cause | After the rules below |
+|---|---|---|---|
+| `hazardClass` | 614 | ADR/RID write `1` / `2`, IMDG/ICAO `1.1D` / `2.3` | 0 |
+| `hazardLabels` | 2,227 of 2,326 | ICAO uses words ("Toxic"), RID adds `(13)`, IMDG lists only subsidiary risks | ADR↔RID only |
+| `packingInstructions` | 1,189 (ADR↔IMDG) | IMDG keeps IBC codes in another column; `R001` is ADR/RID only; `P112(b)` vs `P112b` | ADR↔RID only (0 differ) |
+| `specialProvisions` | 343 (ADR↔IMDG) | ADR/RID-specific 6xx provisions; ICAO uses A-numbers | ADR↔RID only (19 real) |
+| `limitedQty` / `exceptedQty` | 12 / 5 | mostly real; `See SP251` vs `siehe SV 251` is language only | 11 / 5, all real (e.g. UN 1286 ADR 5 L vs IMDG 1 L) |
+| `packingGroup`, `classificationCode`, `transportCategory` | 0 | — | 0 |
+
+**Rules (replace the `modes`-only model of §1):**
+
+1. Every registry field gets `compareModes` ⊆ `modes`: the modes whose values share one notation.
+   Values in other modes are **shown but not compared** (cell marked "nicht verglichen:
+   abweichende Systematik"). `hazardLabels`, `packingInstructions` and `specialProvisions`
+   compare ADR↔RID only. The critical set of §3 is unchanged; `hazardLabels` stays critical
+   within ADR↔RID.
+2. Normalisation per kind: *text* (trim, collapse spaces, upper case); *quantity* (`siehe SV n`
+   ≡ `See SP n`, spaces removed, upper case); *set* (comma list, parentheses and spaces removed,
+   upper case, sorted); *labels* (parenthesised markers such as `(13)` removed, then *set*);
+   *class* (a value without a division — `1`, `2` — is compatible with exactly one division of
+   the same class shown by another mode).
+3. A value that normalises to empty counts as absent (decision 2 of this spec).
+4. In a `differs` row the cells that disagree with the majority value are marked; on a tie all
+   compared cells are marked.
+5. `buildComparison` takes the displayed row per mode (the chosen variant's representative,
+   §4) and the UN reference row; a mode whose variant is unresolved is passed as `unresolved`
+   and its cells read "?" instead of a dash.
+6. The landing mockup (§7) is built from `DEMO_DATA` with the same functions; the ADN row
+   disappears because `DEMO_DATA.ADN` is empty, and the false "IMDG und ICAO weichen ab"
+   warning is replaced by the computed summary.

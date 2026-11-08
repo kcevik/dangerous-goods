@@ -1,5 +1,12 @@
 import type { Entry, Lang, Modal } from './types'
 
+/** a transport mode, or the UN Model Regulations (reference only, English like ICAO) */
+export type Source = Modal | 'UN'
+
+function englishOnly(mode: Source): boolean {
+  return mode === 'ICAO' || mode === 'UN'
+}
+
 /**
  * Regulatory variants of one UN number within one mode.
  *
@@ -55,15 +62,15 @@ export function normalizeSpec(s: string | null | undefined): string {
 }
 
 /** ICAO publishes English only: its `specification` column is the English one */
-function englishSpec(entry: Entry, mode: Modal): string | undefined {
-  return mode === 'ICAO' ? entry.specification : entry.specificationEn
+function englishSpec(entry: Entry, mode: Source): string | undefined {
+  return englishOnly(mode) ? entry.specification : entry.specificationEn
 }
 
 function pushUnique(list: string[], value: string | undefined): void {
   if (value && !list.includes(value)) list.push(value)
 }
 
-export function groupVariants(entries: readonly Entry[], mode: Modal): Variant[] {
+export function groupVariants(entries: readonly Entry[], mode: Source): Variant[] {
   const byKey = new Map<string, Variant>()
   for (const entry of entries) {
     const key = regulatoryKey(entry)
@@ -80,7 +87,7 @@ export function groupVariants(entries: readonly Entry[], mode: Modal): Variant[]
       byKey.set(key, variant)
     }
     variant.entries.push(entry)
-    if (mode === 'ICAO') {
+    if (englishOnly(mode)) {
       pushUnique(variant.names.en, entry.name)
     }
     else {
@@ -125,21 +132,21 @@ export function orderedNames(names: VariantNames, lang: Lang): string[] {
 }
 
 /** same fallback chain as MultimodalToolState.getSpez */
-function localSpec(entry: Entry, lang: Lang, mode: Modal): string | undefined {
-  if (mode === 'ICAO') return entry.specification
+function localSpec(entry: Entry, lang: Lang, mode: Source): string | undefined {
+  if (englishOnly(mode)) return entry.specification
   if (lang === 'en' || lang === 'tr') return entry.specificationEn ?? entry.specification
   if (lang === 'fr') return entry.specificationFr ?? entry.specificationEn ?? entry.specification
   return entry.specification ?? entry.specificationEn
 }
 
 /** distinct specifications of all rows of the variant, in the current language */
-export function variantSpecs(variant: Variant, lang: Lang, mode: Modal): string[] {
+export function variantSpecs(variant: Variant, lang: Lang, mode: Source): string[] {
   const specs: string[] = []
   for (const entry of variant.entries) pushUnique(specs, localSpec(entry, lang, mode)?.trim())
   return specs
 }
 
-export function variantLabel(variant: Variant, lang: Lang, mode: Modal, pgShort: string): string {
+export function variantLabel(variant: Variant, lang: Lang, mode: Source, pgShort: string): string {
   const spec = variantSpecs(variant, lang, mode).join(' / ')
   if (variant.packingGroup) {
     const pg = `${pgShort} ${variant.packingGroup}`

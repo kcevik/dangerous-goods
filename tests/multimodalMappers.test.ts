@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { fetchCompareForUn } from '$lib/multimodal/mappers'
+import { fetchCompareForUn, fetchUnReference } from '$lib/multimodal/mappers'
 
 type TableResponse = { data: Record<string, unknown>[] | null, error: unknown }
 
@@ -148,5 +148,41 @@ describe('fetchCompareForUn', () => {
       rid_entries: { data: null, error: new Error('rid down') },
     })
     await expect(fetchCompareForUn(client, '1203')).rejects.toThrow('rid down')
+  })
+})
+
+describe('fetchUnReference', () => {
+  it('reads un_entries for the trimmed UN number and maps the shared fields', async () => {
+    const { client, from, eqCalls } = createClient({
+      un_entries: {
+        data: [{
+          un_number: '1203', sequence_number: 1, name: 'MOTOR SPIRIT', specification: null,
+          hazard_class: '3', subsidiary_risks: null, packing_group: 'II',
+          special_provision_codes: ['243', '534'], limited_qty: '1 L', excepted_qty: 'E2',
+          packing_instructions: ['P001', 'IBC02'], remark: null,
+        }],
+        error: null,
+      },
+    })
+    const rows = await fetchUnReference(client, ' 1203 ')
+    expect(from).toHaveBeenCalledWith('un_entries')
+    expect(eqCalls.un_entries).toBe('1203')
+    expect(rows).toEqual([{
+      unNumber: '1203', sequenceNumber: 1, name: 'MOTOR SPIRIT', specification: undefined,
+      hazardClass: '3', packingGroup: 'II', hazardLabels: undefined,
+      exceptedQty: 'E2', limitedQty: '1 L', packingInstructions: 'P001, IBC02',
+      specialProvisions: '243, 534', remark: undefined,
+    }])
+  })
+
+  it('throws on a query error instead of returning no rows', async () => {
+    const { client } = createClient({ un_entries: { data: null, error: { message: 'down' } } })
+    await expect(fetchUnReference(client, '1203')).rejects.toEqual({ message: 'down' })
+  })
+
+  it('returns no rows for a blank UN number without querying', async () => {
+    const { client, from } = createClient({})
+    expect(await fetchUnReference(client, '  ')).toEqual([])
+    expect(from).not.toHaveBeenCalled()
   })
 })

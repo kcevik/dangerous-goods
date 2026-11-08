@@ -156,3 +156,12 @@ describe('variantLabel', () => {
     expect(variantLabel(bare!, 'de', 'ADR', 'VP-Gr.')).toBe('STOFF')
   })
 })
+
+describe('UN Model Regulations source', () => {
+  it('treats UN names and specifications as English, like ICAO', () => {
+    const [v] = groupVariants([e({ name: 'MOTOR SPIRIT', specification: 'or PETROL', packingGroup: 'II' })], 'UN')
+    expect(v!.names).toEqual({ de: [], en: ['MOTOR SPIRIT'], fr: [] })
+    expect(v!.matchSpecs).toEqual(['ORPETROL'])
+    expect(variantLabel(v!, 'de', 'UN', 'VP-Gr.')).toBe('VP-Gr. II · or PETROL')
+  })
+})

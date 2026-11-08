@@ -160,6 +160,13 @@ describe('/suche page (active account)', () => {
     expect(container).not.toHaveTextContent(LOCK_MESSAGE)
     expect(container.querySelector('[data-testid="tool-stub"]')).toBeNull()
   })
+
+  it('links the selected UN number to its comparison', async () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, '1203')
+    expect(container.querySelector('a[href="/un/1203/vergleich"]')).toHaveTextContent('Alle Modi vergleichen')
+  })
 })
 
 describe('/suche page (locked account)', () => {
@@ -188,5 +195,6 @@ describe('/suche page (locked account)', () => {
     expect(container.querySelector('.space-y-2')).toBeNull()
     expect(container).not.toHaveTextContent('TOOL:1090')
     expect(container).toHaveTextContent(LOCK_MESSAGE)
+    expect(container.querySelector('a[href$="/vergleich"]')).toBeNull()
   })
 })

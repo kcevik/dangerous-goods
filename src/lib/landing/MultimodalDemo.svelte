@@ -17,7 +17,7 @@
         Alle Transportmodi auf einen Blick
       </h2>
       <p class="text-lg max-w-2xl mx-auto" style="color: #5a7a99;">
-        UN 1203 · Benzin — ADR, RID, IMDG, ICAO und ADN automatisch verglichen.
+        UN 1203 · Benzin — ADR, RID, IMDG und ICAO auf einen Blick.
       </p>
     </div>
 

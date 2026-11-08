@@ -45,7 +45,7 @@ Meilisearch, ERP/TMS API. Status per feature: `docs/STATUS.md`.
 
 Public: `/`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`,
 `/auth/fehler`, `/logout`, `/healthz`. Login required (guard in `hooks.server.ts` →
-`/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/regelwerk/:mode` (only `adr`).
+`/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/un/:nummer/vergleich`, `/regelwerk/:mode` (only `adr`).
 Planned (German, like the live ones): tools under `/tools/…`, `/documents`, `/changes`, `/settings`.
 
 ## Commands
@@ -76,10 +76,13 @@ src/
     +error.svelte         # German error page; 5xx details are never shown
     auth/confirm, auth/fehler, logout, healthz (liveness + book readiness)
     (app)/                # login required; app shell + lock banner
-      dashboard, suche, un/[nummer], regelwerk/[mode=bookMode] (+ window/ and search/ endpoints)
+      dashboard, suche, un/[nummer] (+ vergleich/), regelwerk/[mode=bookMode] (+ window/ and search/ endpoints)
   lib/
-    multimodal/           # comparison tool: types.ts (LABELS, DEMO_DATA, pickSvText), mappers.ts,
-                          # multimodalTool.svelte.ts, specialProvisions.svelte.ts, MultimodalTool.svelte
+    multimodal/           # comparison tool: types.ts (LABELS, DEMO_DATA, pickSvText), mappers.ts
+                          # (+ fetchUnReference), variants.ts, multimodalTool.svelte.ts,
+                          # specialProvisions.svelte.ts, MultimodalTool.svelte; F-10 side by side:
+                          # compare.ts (COMPARE_FIELDS, buildComparison), comparisonView.svelte.ts,
+                          # ComparisonView/ComparisonTable/ComparisonLegend/VariantPicker.svelte
     auth/                 # safeNext, messages (German), AuthFormState, LockNotice
     prelaunch/            # consent.ts (CONSENT_VERSION), copy.ts, LaunchNotifyForm.svelte
     landing/              # landing sections; faq.ts
@@ -180,6 +183,10 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **Launch list:** `CONSENT_VERSION` is stored with every address and must change whenever `LAUNCH_CONSENT_TEXT` changes (a test pins both). The first mail these addresses ever get is the double-opt-in confirmation.
 - **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` (`lib/landing/faq.ts`). Site facts (16.730 entries, 1.354 SVs) stay consistent across meta description, FAQ, SeoContent and `static/llms.txt`.
 - **ADR book viewer:** the book is a **file** (`ADR_BOOK_PATH`), never in Postgres, `static/` or an image. No RLS stands behind it — the `isActive` check in the page load and both endpoints (`bookAccessDenied`) **is** the gate; any new reader must repeat it. Generated HTML carries only `book-*` classes (Tailwind cannot see runtime classes). The renderer tags blocks and table rows with `book-ln-<line>` so `pickActiveMark` finds the right `<mark>`. ~25–30 MB index per worker. No keyboard shortcuts except Enter in the search field (owner decision).
+- **Regulatory comparison (F-10):** `COMPARE_FIELDS` must list exactly the fields each mapper writes (a test pins it).
+  Only modes in a field's `compareModes` are compared — labels, packing instructions and SVs ADR↔RID only (other
+  notations differ in the BAM feed); absence is never a deviation; an unresolved variant shows "?"; the UN column
+  is reference only and never changes a status. The landing mockup is computed from `DEMO_DATA`.
 - **The ADR source is OCR-corrupted** (e.g. eleven spellings of Table A's header in 300 lines). Treat its text as untrusted, keep the "kein rechtsverbindlicher Text" disclaimer prominent, and never judge the database against it.
 - **Known no-op kept for parity:** `Features.svelte` builds `hover:border-[${color}]` at runtime; Tailwind can't see it.
 

@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-08 · **Tests:** 766 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
+**Last updated:** 2026-11-08 · **Tests:** 825 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -17,21 +17,22 @@ every working session.
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | 🟡 code complete | Not public until the source document is named (go-live blocker 1) |
 | — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
-| F-10 | Regulatory comparison (side by side) | ⚪ planned | Open question #1 (row alignment across modes) must be answered first |
-| F-05 | Dashboard | ⚪ shell | One live tile (Stoffsuche); Regelwerksvergleich grayed "Demnächst verfügbar" |
+| F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column; one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Not yet checked in a real browser |
+| F-05 | Dashboard | ⚪ shell | Two live tiles (Stoffsuche, Regelwerksvergleich → UN 1203) |
 | F-02 | 1000-Punkte-Rechner | ⚪ not started | |
 | F-03 | Document generator | ⚪ not started | |
 | F-06–08 | Duty checker, SV browser, packaging browser | ⚪ not started | |
 
-Landing page: only the Stoffsuche card is live; the other five feature cards and the comparison
-section carry a grayed "Demnächst verfügbar" badge. Un-gray a card when its tool ships.
+Landing page: the comparison section is live and computed from `DEMO_DATA` (no PDF/assistant claims,
+ADN no longer advertised as compared, hero "Neu: Regelwerksvergleich"). The five feature cards other
+than Stoffsuche still carry "Demnächst verfügbar". Un-gray a card when its tool ships.
 
 ## Next steps (recommended order)
 
 1. **Test deployment** — owner follows `docs/deploy/README.md` on the Strato VPS (Caddy, basic auth for the whole site). Task 8 is done for Caddy; the plan's nginx text and `concepts.md` page are superseded / not written.
 2. **Commit before the first deploy** — the image tag carries the HEAD hash.
-3. **Owner: browser check of the variant picker** — `/un/1993` (5 variants), `/un/1203` (no picker, all names), `/suche` → "petrol".
-4. **F-10 regulatory comparison** — open question #1 answered 2026-11-08 (variants, `src/lib/multimodal/variants.ts`); `un_entries` becomes a grey reference column (spec §4a). Open: #2 (critical fields), #3 (landing Phase 2 claims). The 2026-09-28 plan must be refreshed on top of `variants.ts`.
+3. **Owner: browser check** — variant picker: `/un/1993` (5 variants), `/un/1203`, `/suche` → "petrol"; comparison: `/un/1203/vergleich`, `/un/1993/vergleich`, `/un/1950/vergleich` (gases, manual pick), at 375 px width; landing `#comparison`.
+4. **Owner decision:** drop "Transportmodus-Assistent" from the dashboard's upcoming list and F-11 from CLAUDE.md too? (Removed from the landing page only.)
 5. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
 
 ## Go-live blockers (not needed for the test phase)
@@ -50,7 +51,6 @@ section carry a grayed "Demnächst verfügbar" badge. Un-gray a card when its to
 - Name the ADR source document (blocker 1).
 - Book the Strato VPS; DNS `app` → VPS (apex only in Phase C; never touch MX).
 - WordPress: move the blog to `blog.gefahrgut.org` and put Impressum/Datenschutz online (rollout Phase B).
-- Answer F-10 open question #1.
 
 ## Parked (do not start without being asked — owner, 2026-09-29)
 
@@ -76,6 +76,7 @@ book indexed at startup and checked by `/healthz`.
 
 - Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
+- F-10 minors (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation; "Nur Abweichungen zeigen" with none leaves an empty table; cell hints only in `title` (no screen-reader text); no visible focus style on variant buttons.
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
 - `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.
@@ -85,7 +86,6 @@ book indexed at startup and checked by `/healthz`.
 - Without `ADR_BOOK_PATH` the book links stay visible and the page shows the error page.
 
 - FAQ "Was kostet…" says "zuerst registrierten Nutzern" — reads oddly while registration is closed.
-- The landing comparison mockup shows a deviation warning that is factually false (section is grayed "Demnächst verfügbar").
 - Book viewer measured over budget: index build 245 ms (budget 100 ms, once per worker) and `?sv=274` page payload 390 KB raw / 41 KB gzip (budget 350 KB raw).
 - "Tunnelcode" finds nothing in the book — the ADR says "Tunnelbeschränkungscode"; synonyms would help.
 - Book TOC has no marker for the section in view.

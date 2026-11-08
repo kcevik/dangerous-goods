@@ -142,6 +142,10 @@
 
     <!-- Tool -->
     {#if !search.locked && search.selectedUn}
+      <a
+        href={resolve('/(app)/un/[nummer]/vergleich', { nummer: search.selectedUn })}
+        class="inline-block mt-6 text-sm font-semibold text-orange-600 hover:text-orange-500"
+      >Alle Modi vergleichen →</a>
       <div class="mt-6">
         <MultimodalTool unNumber={search.selectedUn} supabase={data.supabase} />
       </div>
