@@ -46,6 +46,15 @@ describe('landing page', () => {
     for (const card of soon) expect(card).toHaveTextContent('Demnächst verfügbar')
   })
 
+  it('links the in-app legal pages from the footer', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const footer = container.querySelector('footer')!
+    for (const href of ['/impressum', '/datenschutz', '/agb', '/widerruf']) {
+      expect(footer.querySelector(`a[href="${href}"]`), href).not.toBeNull()
+    }
+    expect(footer.querySelector('a[href="#"]')?.textContent).not.toBe('AGB')
+  })
+
   it('presents the regulatory comparison truthfully, from the demo data', () => {
     const { container } = render(LandingPage, { props: PROPS })
     const section = container.querySelector('#comparison')!

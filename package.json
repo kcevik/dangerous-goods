@@ -15,6 +15,7 @@
     "deploy:rollback": "bash scripts/deploy.sh rollback"
   },
   "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.115.0",
     "marked": "^18.0.14",

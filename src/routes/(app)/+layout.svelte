@@ -1,6 +1,7 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
   import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
+  import LegalLinks from '$lib/legalPages/LegalLinks.svelte'
 
   let { data, children } = $props()
 </script>
@@ -9,7 +10,7 @@
   <meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="min-h-screen bg-[#e8eef5]">
+<div class="min-h-screen flex flex-col bg-[#e8eef5]">
   <header class="bg-[#0f2744] text-white">
     <div class="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
       <a href={resolve('/(app)/dashboard')} class="font-bold text-base shrink-0">gefahrgut<span style="color: #f97316;">.org</span></a>
@@ -36,5 +37,11 @@
     </div>
   {/if}
 
-  {@render children()}
+  <div class="flex-1">
+    {@render children()}
+  </div>
+
+  <footer class="border-t border-[#c8d6e5] py-5 px-4">
+    <LegalLinks />
+  </footer>
 </div>

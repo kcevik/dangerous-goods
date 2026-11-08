@@ -120,3 +120,15 @@ describe('shared constants', () => {
     expect(HIT_LIMIT).toBeGreaterThan(0)
   })
 })
+
+describe('ADR book source attribution', () => {
+  it('names the official BMIMI edition in every language and no longer promises a reference', () => {
+    for (const lang of ['de', 'en', 'fr', 'tr'] as const) {
+      const source = getBookLabel(lang, 'attributionSource')
+      expect(source, lang).toContain('BMIMI')
+      expect(source, lang).toContain('2026-01')
+      expect(source, lang).toContain('02.01.2026')
+    }
+    expect(getBookLabel('de', 'attributionSource')).not.toContain('ergänzt')
+  })
+})

@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-08 · **Tests:** 825 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
+**Last updated:** 2026-11-08 · **Tests:** 850 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -15,11 +15,12 @@ every working session.
 | F-04 | Login, accounts, manual activation | ✅ done | Signup verified end-to-end on 2026-09-29 (built-in mail sender) |
 | F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed |
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
-| F-13 | ADR book viewer (`/regelwerk/adr`) | 🟡 code complete | Not public until the source document is named (go-live blocker 1) |
+| F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
 | — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
 | F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column; one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Not yet checked in a real browser |
 | F-05 | Dashboard | ⚪ shell | Two live tiles (Stoffsuche, Regelwerksvergleich → UN 1203) |
 | F-02 | 1000-Punkte-Rechner | ⚪ not started | |
+| F-11 | Transport mode assistant | ❌ dropped | Owner decision 2026-11-08; removed from landing page, dashboard and CLAUDE.md |
 | F-03 | Document generator | ⚪ not started | |
 | F-06–08 | Duty checker, SV browser, packaging browser | ⚪ not started | |
 
@@ -32,32 +33,32 @@ than Stoffsuche still carry "Demnächst verfügbar". Un-gray a card when its too
 1. **Test deployment** — owner follows `docs/deploy/README.md` on the Strato VPS (Caddy, basic auth for the whole site). Task 8 is done for Caddy; the plan's nginx text and `concepts.md` page are superseded / not written.
 2. **Commit before the first deploy** — the image tag carries the HEAD hash.
 3. **Owner: browser check** — variant picker: `/un/1993` (5 variants), `/un/1203`, `/suche` → "petrol"; comparison: `/un/1203/vergleich`, `/un/1993/vergleich`, `/un/1950/vergleich` (gases, manual pick), at 375 px width; landing `#comparison`.
-4. **Owner decision:** drop "Transportmodus-Assistent" from the dashboard's upcoming list and F-11 from CLAUDE.md too? (Removed from the landing page only.)
-5. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
+4. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
 
 ## Go-live blockers (not needed for the test phase)
 
-1. **ADR book source** — the owner says it is the official public text but has not named the document (the «» quotes suggest the Swiss Fedlex publication, SR 0.741.621). Otherwise the file comes off the server before launch.
+1. ~~ADR book source~~ — named 2026-11-08 (BMIMI edition 2026-01, updated 02.01.2026). Official texts are free works under § 7 öUrhG / § 5 UrhG; a lawyer should confirm before launch.
 2. **SMTP + double opt-in** — a real sender (SPF/DKIM at Strato); the DOI mail goes to every address in `launch_signups`; only confirmed ones get the launch mail.
 3. **Open registration** — `REGISTRATION_MODE=open` and Supabase signups re-enabled.
-4. **Legal** — Impressum and Datenschutzerklärung (still the WordPress "Under Construction" splash; the privacy page must cover the launch list); AGB before any payment.
+4. **Legal** — drafts live in the app since 2026-11-08 (`/impressum`, `/datenschutz`, `/agb`, `/widerruf`, linked from every layout). They show "Entwurf – noch nicht gültig" and `noindex` until every fact in `src/lib/legalPages/facts.ts` is set. Open: the company (not founded yet) and its facts; a lawyer's review; before payments: AGB acceptance + the request to start during the withdrawal period in the checkout, a cancellation button (§ 312k BGB), and a completed Stripe section; the WordPress blog needs its own privacy policy; Caddy log retention must match the stated period; the launch list must be deleted after the launch mail (as the privacy policy promises).
 5. **Rollout Phase C** — apex to the VPS, blog redirects, certificates (deployment plan Task 11).
 6. **Backups** — the Supabase org is on the free plan (no backups).
 7. **Leaked-password protection** — Supabase advisor finding; enable if the plan offers it.
-8. **Self-host Google Fonts** — loaded from Google without consent today.
+8. ~~Self-host Google Fonts~~ — done 2026-11-08 (`@fontsource-variable/plus-jakarta-sans`, guarded by `tests/self-hosted-fonts.test.ts`).
 
 ## Owner to-dos
 
-- Name the ADR source document (blocker 1).
 - Book the Strato VPS; DNS `app` → VPS (apex only in Phase C; never touch MX).
-- WordPress: move the blog to `blog.gefahrgut.org` and put Impressum/Datenschutz online (rollout Phase B).
+- WordPress: move the blog to `blog.gefahrgut.org` (rollout Phase B); link the app's `/impressum` and give the blog its own privacy policy.
+- Legal: found the company, fill in `src/lib/legalPages/facts.ts` (address, contact, register, VAT ID, § 18 MStV person, mail sender, log retention, price, billing period, minimum term), then have all four texts checked by a lawyer.
+- Pick the analytics tool, if any — it needs a consent banner and a new privacy section before it goes live.
 
 ## Parked (do not start without being asked — owner, 2026-09-29)
 
 1. Live test of the password-reset mail flow.
 2. Admin notification on new signups (DB webhook → mail); activation is manual and nobody is told.
-3. Self-host Google Fonts (also listed as blocker 8).
-4. Impressum/Datenschutz links in the `(app)` and `(auth)` layouts.
+3. ~~Self-host Google Fonts~~ (done 2026-11-08).
+4. ~~Impressum/Datenschutz links in the `(app)` and `(auth)` layouts~~ (done 2026-11-08).
 5. Impressum + Datenschutz on WordPress (owner side).
 6. Real SMTP sender (also blocker 2).
 

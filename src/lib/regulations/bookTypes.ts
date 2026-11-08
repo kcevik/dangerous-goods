@@ -201,7 +201,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     findLabel: 'Suchbegriff',
     loadFailed: 'Der Abschnitt konnte nicht geladen werden. Bitte erneut versuchen.',
     searchFailed: 'Die Suche ist fehlgeschlagen. Bitte versuche es erneut.',
-    attributionSource: 'Quelle: amtlicher Text des ADR 2025 (genaue Fundstelle wird ergänzt). Maschinell nach HTML konvertiert; die Gliederung wurde für die Anzeige in Abschnitte zerlegt.',
+    attributionSource: 'Quelle: ADR, amtliche deutschsprachige Fassung des Bundesministeriums für Innovation, Mobilität und Infrastruktur (BMIMI), Ausgabe 2026-01, aktualisiert am 02.01.2026. Maschinell nach HTML konvertiert; die Gliederung wurde für die Anzeige in Abschnitte zerlegt.',
     attributionBam: 'Stoffdaten separat: BAM GEFAHRGUT, Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2-0).',
   },
   en: {
@@ -240,7 +240,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     findLabel: 'Search term',
     loadFailed: 'The section could not be loaded. Please try again.',
     searchFailed: 'The search failed. Please try again.',
-    attributionSource: 'Source: official text of ADR 2025 (exact reference to follow). Machine-converted to HTML; split into sections for display.',
+    attributionSource: 'Source: ADR, official German-language version of the Austrian Federal Ministry for Innovation, Mobility and Infrastructure (BMIMI), edition 2026-01, updated 02.01.2026. Machine-converted to HTML; split into sections for display.',
     attributionBam: 'Substance data separately: BAM GEFAHRGUT, Data licence Germany – attribution – version 2.0 (dl-de/by-2-0).',
   },
   fr: {
@@ -279,7 +279,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     findLabel: 'Terme recherché',
     loadFailed: 'La section n’a pas pu être chargée. Veuillez réessayer.',
     searchFailed: 'La recherche a échoué. Veuillez réessayer.',
-    attributionSource: 'Source : texte officiel de l’ADR 2025 (référence exacte à compléter). Converti automatiquement en HTML ; découpé en sections pour l’affichage.',
+    attributionSource: 'Source : ADR, version officielle en langue allemande du ministère fédéral autrichien de l’Innovation, de la Mobilité et des Infrastructures (BMIMI), édition 2026-01, mise à jour le 02.01.2026. Converti automatiquement en HTML ; découpé en sections pour l’affichage.',
     attributionBam: 'Données sur les matières séparément : BAM GEFAHRGUT, licence de données Allemagne – attribution – version 2.0 (dl-de/by-2-0).',
   },
   tr: {
@@ -318,7 +318,7 @@ export const BOOK_LABELS: Record<Lang, Record<string, string>> = {
     findLabel: 'Arama terimi',
     loadFailed: 'Bölüm yüklenemedi. Lütfen tekrar deneyin.',
     searchFailed: 'Arama başarısız oldu. Lütfen tekrar deneyin.',
-    attributionSource: 'Kaynak: ADR 2025 resmî metni (tam künye eklenecek). Otomatik olarak HTML’e dönüştürülmüş; görüntüleme için bölümlere ayrılmıştır.',
+    attributionSource: 'Kaynak: ADR, Avusturya Federal İnovasyon, Mobilite ve Altyapı Bakanlığı’nın (BMIMI) resmî Almanca sürümü, 2026-01 baskısı, 02.01.2026 tarihinde güncellendi. Otomatik olarak HTML’e dönüştürülmüş; görüntüleme için bölümlere ayrılmıştır.',
     attributionBam: 'Madde verileri ayrıca: BAM GEFAHRGUT, Almanya Veri Lisansı – Atıf – Sürüm 2.0 (dl-de/by-2-0).',
   },
 }

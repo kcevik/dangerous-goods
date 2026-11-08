@@ -13,6 +13,7 @@ describe('dashboard page', () => {
     expect(container).toHaveTextContent('1000-Punkte-Rechner')
     expect(container).toHaveTextContent('Dokumentengenerator')
     expect(container).toHaveTextContent('in Vorbereitung')
+    expect(container).not.toHaveTextContent('Transportmodus-Assistent') // dropped by the owner 2026-11-08
   })
 
   // F-10 is not built: the tile must not link to the plain search view it used to duplicate.

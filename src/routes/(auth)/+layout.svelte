@@ -1,5 +1,6 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
+  import LegalLinks from '$lib/legalPages/LegalLinks.svelte'
 
   let { children } = $props()
 </script>
@@ -22,5 +23,9 @@
 
   <div class="w-full max-w-md rounded-2xl bg-white shadow-xl px-8 py-10">
     {@render children()}
+  </div>
+
+  <div class="mt-6">
+    <LegalLinks tone="dark" />
   </div>
 </div>

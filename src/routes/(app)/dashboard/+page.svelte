@@ -10,7 +10,7 @@
     { title: 'Regelwerksvergleich', description: 'ADR, RID, IMDG und ICAO nebeneinander – Abweichungen auf einen Blick (Beispiel UN 1203).', href: resolve('/(app)/un/[nummer]/vergleich', { nummer: '1203' }) },
   ]
 
-  const upcoming = ['1000-Punkte-Rechner', 'Dokumentengenerator', 'LQ/EQ-Rechner', 'Transportmodus-Assistent']
+  const upcoming = ['1000-Punkte-Rechner', 'Dokumentengenerator', 'LQ/EQ-Rechner']
 </script>
 
 <svelte:head>

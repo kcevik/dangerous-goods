@@ -40,3 +40,13 @@ describe('(app) layout shell', () => {
     expect(active.container).not.toHaveTextContent(LOCK_MESSAGE)
   })
 })
+
+describe('(app) layout legal links', () => {
+  it('links every legal page in the footer', () => {
+    const { container } = renderShell(true)
+    const nav = container.querySelector('nav[aria-label="Rechtliches"]')!
+    for (const href of ['/impressum', '/datenschutz', '/agb', '/widerruf']) {
+      expect(nav.querySelector(`a[href="${href}"]`), href).not.toBeNull()
+    }
+  })
+})

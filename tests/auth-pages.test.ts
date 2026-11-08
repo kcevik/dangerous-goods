@@ -40,7 +40,7 @@ describe('register page', () => {
     expect(container.querySelector('input[name="password"]')).not.toBeNull()
     expect(container.querySelector('input[name="passwordRepeat"]')).not.toBeNull()
     expect(container.querySelector('input[name="consent"][type="checkbox"]')).not.toBeNull()
-    expect(container.querySelector('a[href="https://gefahrgut.org/datenschutzerklaerung/"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/datenschutz"]')).not.toBeNull()
     expect(container.querySelector('a[href="/login"]')).not.toBeNull()
   })
 
@@ -66,7 +66,7 @@ describe('register page — waitlist mode', () => {
     expect(container.querySelector('input[name="password"]')).toBeNull()
     expect(container.querySelector('input[name="consent"][type="checkbox"]')).not.toBeNull()
     expect(container).toHaveTextContent('Ich möchte per E-Mail informiert werden, wenn gefahrgut.org startet.')
-    expect(container.querySelector('a[href="https://gefahrgut.org/datenschutzerklaerung/"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/datenschutz"]')).not.toBeNull()
     const honeypot = container.querySelector('input[name="website"]')!
     expect(honeypot.getAttribute('tabindex')).toBe('-1')
     expect(honeypot.closest('[aria-hidden="true"]')).not.toBeNull()

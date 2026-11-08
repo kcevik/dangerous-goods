@@ -27,7 +27,7 @@ Phase 1: F-01 UN number search · F-02 1000-point calculator (ADR 1.1.3.6) · F-
 F-04 user management · F-05 dashboard · F-09 RID/IMDG/ICAO data · F-10 cross-mode comparison ·
 F-13 ADR book viewer (the owner's second most important feature) · optional F-06 duty checker,
 F-07 SV browser, F-08 packaging browser.
-Phase 2: F-11 transport mode assistant, F-12 LQ/EQ calculator. Phase 3: AI assistant,
+Phase 2: F-12 LQ/EQ calculator (F-11 transport mode assistant dropped by the owner, 2026-11-08). Phase 3: AI assistant,
 Meilisearch, ERP/TMS API. Status per feature: `docs/STATUS.md`.
 
 ## Tech Stack
@@ -43,7 +43,7 @@ Meilisearch, ERP/TMS API. Status per feature: `docs/STATUS.md`.
 
 ## Routes
 
-Public: `/`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`,
+Public: `/`, `/impressum`, `/datenschutz`, `/agb`, `/widerruf`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`,
 `/auth/fehler`, `/logout`, `/healthz`. Login required (guard in `hooks.server.ts` →
 `/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/un/:nummer/vergleich`, `/regelwerk/:mode` (only `adr`).
 Planned (German, like the live ones): tools under `/tools/…`, `/documents`, `/changes`, `/settings`.
@@ -74,6 +74,7 @@ src/
     +page.svelte          # landing: SEO head (meta + 4 JSON-LD graphs) + sections
     (auth)/               # login, registrieren (sign-up | launch list), passwort-vergessen, passwort-neu
     +error.svelte         # German error page; 5xx details are never shown
+    (legal)/              # impressum, datenschutz, agb, widerruf (public)
     auth/confirm, auth/fehler, logout, healthz (liveness + book readiness)
     (app)/                # login required; app shell + lock banner
       dashboard, suche, un/[nummer] (+ vergleich/), regelwerk/[mode=bookMode] (+ window/ and search/ endpoints)
@@ -90,7 +91,9 @@ src/
                           # adrBookViewer.svelte.ts, bookFetch, Book*.svelte
     search/               # SearchState
     seo/                  # SITE_URL + JSON-LD builders
-    legal.ts              # PRIVACY_URL, IMPRINT_URL, BLOG_URL — the only place for WordPress links
+    legal.ts              # IMPRINT/PRIVACY/TERMS/WITHDRAWAL_URL, LEGAL_LINKS, BLOG_URL — the only place for legal links
+    legalPages/           # legal texts: facts.ts (LEGAL_FACTS), document.ts (fillDocument), impressum/datenschutz/agb/widerruf.ts,
+                          # LegalPage.svelte, LegalLinks.svelte
     server/
       adrBook/            # book viewer, server side: index, indexer, slice, render, api, access
       registrationMode.ts # REGISTRATION_MODE → 'open' | 'waitlist'
@@ -187,6 +190,11 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
   Only modes in a field's `compareModes` are compared — labels, packing instructions and SVs ADR↔RID only (other
   notations differ in the BAM feed); absence is never a deviation; an unresolved variant shows "?"; the UN column
   is reference only and never changes a status. The landing mockup is computed from `DEMO_DATA`.
+- **Legal pages:** texts live in `lib/legalPages/*.ts`; operator and plan facts only in `LEGAL_FACTS`
+  (`null` = unknown → `[[label]]` + draft banner + `noindex`; `false` = does not apply → block dropped). Bump
+  `LEGAL_UPDATED` with every content change. The Datenschutzerklärung must change whenever a new service touches
+  personal data (analytics needs a consent banner first). The Widerrufsbelehrung keeps the statutory "Sie" wording.
+  All texts are drafts until a lawyer has checked them.
 - **The ADR source is OCR-corrupted** (e.g. eleven spellings of Table A's header in 300 lines). Treat its text as untrusted, keep the "kein rechtsverbindlicher Text" disclaimer prominent, and never judge the database against it.
 - **Known no-op kept for parity:** `Features.svelte` builds `hover:border-[${color}]` at runtime; Tailwind can't see it.
 

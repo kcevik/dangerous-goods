@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BLOG_URL, IMPRINT_URL, PRIVACY_URL } from '$lib/legal'
+  import { BLOG_URL, LEGAL_LINKS } from '$lib/legal'
 
   let { registrationOpen = false }: { registrationOpen?: boolean } = $props()
 
@@ -24,11 +24,7 @@
     },
     {
       heading: 'Rechtliches',
-      links: [
-        { label: 'Impressum', href: IMPRINT_URL },
-        { label: 'Datenschutz', href: PRIVACY_URL },
-        { label: 'AGB', href: '#' },
-      ],
+      links: [...LEGAL_LINKS],
     },
   ])
 </script>
