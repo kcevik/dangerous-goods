@@ -28,6 +28,11 @@ describe('BurgerMenu', () => {
     expect(panel).not.toBeVisible()
   })
 
+  it('is a 44×44 px touch target that keeps the icon flush with the header edge', () => {
+    const { button } = renderMenu()
+    expect(button).toHaveClass('w-11', 'h-11', '-mr-2.5')
+  })
+
   it('hides itself from md by default, from lg when asked', () => {
     const { button } = renderMenu()
     expect(button.parentElement).toHaveClass('md:hidden')

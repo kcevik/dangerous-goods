@@ -78,7 +78,7 @@ src/
     +error.svelte         # German error page; 5xx details are never shown
     (legal)/              # impressum, datenschutz, agb, widerruf (public)
     auth/confirm, auth/fehler, logout, healthz (liveness + book readiness)
-    (app)/                # login required; app shell + lock banner
+    (app)/                # login required; app shell (header + burger), upsell banner/modal for locked accounts
       dashboard, suche, un/[nummer] (+ vergleich/), regelwerk/[mode=bookMode] (+ window/ and search/ endpoints),
       konto (named actions ?/password, ?/address, ?/delete)
   lib/
@@ -86,16 +86,18 @@ src/
                           # (+ fetchUnReference), variants.ts, multimodalTool.svelte.ts,
                           # specialProvisions.svelte.ts, MultimodalTool.svelte; F-10 side by side:
                           # compare.ts (COMPARE_FIELDS, buildComparison), comparisonView.svelte.ts,
-                          # ComparisonView/ComparisonTable/ComparisonLegend/VariantPicker.svelte
+                          # ComparisonView/ComparisonTable/ComparisonCards (below lg)/ComparisonCellValue/
+                          # ComparisonLegend/VariantPicker.svelte
     auth/                 # safeNext, messages (German), AuthFormState
     account/              # /konto: address + countries, messages, subscription (Stripe hook), form state, *Card.svelte
     prelaunch/            # consent.ts (CONSENT_VERSION), copy.ts, LaunchNotifyForm.svelte
     upsell/               # sales modal + banner for locked accounts: upsellThrottle.svelte.ts, copy.ts,
                           # UpsellModal.svelte, UpsellBanner.svelte
+    nav/                  # BurgerMenu.svelte + menu.svelte.ts (MenuState), appNav.ts (APP_NAV_ITEMS, inline + burger)
     landing/              # landing sections; faq.ts
     regulations/          # book viewer, client side: bookTypes (+ BOOK_LABELS), bookHighlighter,
                           # adrBookViewer.svelte.ts, bookFetch, Book*.svelte
-    search/               # SearchState
+    search/               # SearchState, QuickSearch.svelte (UN jump on /un/:nummer and the comparison)
     seo/                  # SITE_URL + JSON-LD builders
     legal.ts              # IMPRINT/PRIVACY/TERMS/WITHDRAWAL_URL, LEGAL_LINKS, BLOG_URL — the only place for legal links
     legalPages/           # legal texts: facts.ts (LEGAL_FACTS), document.ts (fillDocument), impressum/datenschutz/agb/widerruf.ts,
@@ -181,6 +183,8 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **English identifiers**, camelCase fields and label keys. **User-visible copy is German and addresses the user with "du".**
 - **Internal links** use `resolve()` with route IDs including groups (`resolve('/(auth)/login')`, `resolve('/(app)/un/[nummer]', { nummer })`). Query strings are appended to the resolved path; the autofixer's "without resolve()" warning on those, and on external URLs from `lib/legal.ts`, is a known false positive.
 - **Tailwind v4 + `@apply`** needs `@reference "tailwindcss"` at the top of the `<style>` block.
+- **Touch targets:** every link/button/field is at least 44×44 px (`min-h-11`/`min-w-11`, `inline-flex items-center`); keep the visual size with padding or negative margins; the app header stays `h-14` and one row at 768 px. Tests pin the classes.
+- **Smooth scrolling:** `html { scroll-behavior: smooth }` (app.css) animates SvelteKit's scroll reset on client navigations; a page whose notice must be in view at once (e.g. `/?konto=geloescht`) scrolls instantly and focuses it in `afterNavigate`.
 - **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`. The `(app)` layout's `UpsellBanner` is the one lock notice;
   pages add only page-specific hints (e.g. "UN 1090 ist erst nach der Freischaltung verfügbar"), the demo tools carry their DEMO badge.
 - **Sales modal (locked accounts):** only in the `(app)` layout; never for active accounts, never on `/konto`.

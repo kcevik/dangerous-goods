@@ -16,7 +16,7 @@
     {@render children()}
   </main>
 
-  <footer class="border-t border-slate-200 py-6 px-4">
+  <footer class="border-t border-slate-200 py-3 px-4">
     <LegalLinks />
   </footer>
 </div>

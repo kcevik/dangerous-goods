@@ -43,7 +43,7 @@
     bind:this={button}
     type="button"
     class={[
-      'inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2',
+      'inline-flex items-center justify-center w-11 h-11 -mr-2.5 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2',
       tone === 'dark'
         ? 'text-slate-200 hover:bg-white/10 hover:text-white focus-visible:outline-white'
         : 'text-[#0f2744] hover:bg-slate-100 focus-visible:outline-[#0f2744]',

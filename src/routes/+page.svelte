@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { afterNavigate } from '$app/navigation'
   import Comparison from '$lib/landing/Comparison.svelte'
   import Cta from '$lib/landing/Cta.svelte'
   import DataSource from '$lib/landing/DataSource.svelte'
@@ -33,6 +34,18 @@
     return `<script type="application/ld+json">${json}<\/script>`
   }
 
+  let deletedNotice = $state<HTMLDivElement>()
+
+  // The delete form on /konto redirects here with a client-side goto. SvelteKit's scroll reset
+  // runs, but `html { scroll-behavior: smooth }` turns it into an animation from the bottom of
+  // /konto, so the notice starts out of view. Once the navigation has settled (and on a full page
+  // load), jump to the top instantly and give the notice focus so screen readers read it.
+  afterNavigate(() => {
+    if (!data?.accountDeleted || !deletedNotice) return
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    deletedNotice.focus({ preventScroll: true })
+  })
+
   const jsonLd = [
     buildOrganizationLd(),
     buildWebSiteLd(),
@@ -62,7 +75,7 @@
 
 <div class="min-h-screen overflow-x-clip bg-white antialiased">
   {#if data?.accountDeleted}
-    <div role="status" class="bg-green-50 border-b border-green-200 text-green-900 text-sm">
+    <div bind:this={deletedNotice} role="status" tabindex="-1" class="bg-green-50 focus:outline-none border-b border-green-200 text-green-900 text-sm">
       <div class="max-w-5xl mx-auto px-4 py-3">{ACCOUNT_DELETED_MESSAGE}</div>
     </div>
   {/if}

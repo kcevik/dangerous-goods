@@ -1,10 +1,15 @@
 # Project status
 
-**Last updated:** 2026-11-23 · **Tests:** 1038 green + 1 skipped (85 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
+**Last updated:** 2026-11-23 · **Tests:** 1049 green + 1 skipped (85 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
 every working session.
+
+**Merged into `main` (2026-11-23):** #1 nav (burger menu), #2 account page (`/konto`), #3 comparison
+(responsive cards), #4 landing/search (responsive), #5 upsell (modal + banner). Migration
+`20261123120000_account_page` is applied. Branch `fix/followups`: scroll + focus after account
+deletion, 44 px touch targets in the app shell, docs.
 
 ---
 
@@ -13,13 +18,13 @@ every working session.
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | F-04 | Login, accounts, manual activation | ✅ done | Signup verified end-to-end on 2026-09-29 (built-in mail sender) |
-| F-04 | Account page (`/konto`) | ✅ done | Password change (re-auth), billing address, subscription status + disabled checkout placeholder, self-service deletion (spec 2026-11-23). Migration `20261123120000_account_page` applied 2026-11-23. Browser-checked 2026-11-23 at 320–1280 px with the E2E account (address save/reload, validation, wrong password, password change + restore, delete validation); real deletion tested end-to-end 2026-11-23 with the throw-away `E2E_DELETE_EMAIL` account (redirect to `/?konto=geloescht` with the notice, login afterwards fails); open: after the redirect the page kept the scroll position of the delete card, so the notice at the top was out of view |
+| F-04 | Account page (`/konto`) | ✅ done | Password change (re-auth), billing address, subscription status + disabled checkout placeholder, self-service deletion (spec 2026-11-23). Migration `20261123120000_account_page` applied 2026-11-23. Browser-checked 2026-11-23 at 320–1280 px with the E2E account (address save/reload, validation, wrong password, password change + restore, delete validation); real deletion tested end-to-end 2026-11-23 with the throw-away `E2E_DELETE_EMAIL` account (redirect to `/?konto=geloescht` with the notice, login afterwards fails). Fixed 2026-11-23 (`fix/followups`): `html { scroll-behavior: smooth }` animated SvelteKit's scroll reset from the delete card, so the landing page now jumps to the top instantly in `afterNavigate` and focuses the notice (`role="status"`, `tabindex="-1"`). Verified with tests and a browser run whose delete POST was answered in the browser with a fake redirect (no real deletion; the throw-away account is consumed) |
 | — | Sales modal + banner for locked accounts | ✅ done | `lib/upsell/`: `<dialog>` modal on the first `(app)` page view, then at most every 10 min on navigation (`UpsellThrottle`, last-shown time in localStorage); a slim banner (pitch, price, "Jetzt freischalten" → `/konto#abo`) replaces the old lock banner. Never for active accounts, never on `/konto`, never outside `(app)`. Price **125 € pro Monat inkl. MwSt.** set 2026-11-23 in `LEGAL_FACTS` (+ billing period "monatlich im Voraus"), read via `planPrice()` by the modal, banner, `/konto` Abo card and AGB. The page-level `LockNotice` is gone (the banner is the one lock notice; pages keep only page-specific hints). Browser-checked 2026-11-23 at 320/375/768/1280 with the locked account (first view, focus in/trap/return, Escape, "Später", throttle with a faked 11-min-old timestamp, banner under the burger header, no horizontal scroll, CTA → `/konto#abo` in view, demo data) and the activated account (no modal, no banner) |
 | F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed |
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
 | — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
-| F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column; one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Own quick search (`QuickSearch`) to switch the UN number, also on `/un/:nummer`; the comparison tool no longer carries its inert search field (2026-11-08). Not yet checked in a real browser |
+| F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column; one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Own quick search (`QuickSearch`) to switch the UN number, also on `/un/:nummer`; the comparison tool no longer carries its inert search field (2026-11-08). Below `lg` one card per field (`ComparisonCards`); browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950 |
 | — | Legal pages (`/impressum`, `/datenschutz`, `/agb`, `/widerruf`) | 🟡 drafts live | Texts in `src/lib/legalPages/`; draft banner + `noindex` until `LEGAL_FACTS` is complete and a lawyer has checked them (go-live blocker 4) |
 | F-05 | Dashboard | ⚪ shell | Two live tiles (Stoffsuche, Regelwerksvergleich → UN 1203) |
 | F-02 | 1000-Punkte-Rechner | ⚪ not started | |
@@ -67,6 +72,13 @@ than Stoffsuche still carry "Demnächst verfügbar". Un-gray a card when its too
 5. Impressum + Datenschutz on WordPress (owner side).
 6. Real SMTP sender (also blocker 2).
 
+## Touch targets 2026-11-23 — fixed (`fix/followups`)
+
+Browser audit, all now ≥ 44×44 px at 320/768/1280 (measured with the activated E2E account; header stays 56 px, no horizontal scroll):
+burger 40×40 → 44×44; app logo link 24 → 44 px tall; desktop nav links 20 → 44 px tall (Suche/Konto also 42/40 → 44 px wide);
+"Abmelden" 20 → 44 px; footer legal links 16 → 44 px tall (Agb 26 → 44 px wide; `LegalLinks` is shared, so the auth and legal
+footers get it too; footers' padding reduced). `QuickSearch` on `/un/:nummer` already measured 44 px on main (`min-h-11`, now pinned by a test).
+
 ## Code review 2026-09-29 — fixed
 
 Whole-project review (verdict: ready for the test deployment with fixes). Fixed, test-first:
@@ -82,7 +94,8 @@ book indexed at startup and checked by `/healthz`.
 
 - Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
-- F-10 minor (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation. (Fixed 2026-11-23 on `fix/responsive-comparison`: empty-filter message, sr-only cell hints, variant focus style; below `lg` the comparison renders as one card per field — `ComparisonCards` — instead of the table. Browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950.)
+- F-10 minor (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation.
+- ICAO hazard class "2" vs ADR/RID "2.1" flagged as a deviation on UN 1950 (`/un/1950/vergleich`). Owner decision whether to normalise the class notation or keep the flag.
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
 - `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.

@@ -109,6 +109,38 @@ describe('(app) layout navigation', () => {
   })
 })
 
+// Touch targets ≥ 44×44 px (browser audit 2026-11-23); the header stays h-14 and does not wrap.
+describe('(app) layout touch targets', () => {
+  it('makes the logo link 44 px tall', () => {
+    const { container } = renderShell(true)
+    const logo = container.querySelector('header .h-14 > a[href="/dashboard"]')!
+    expect(logo).toHaveClass('inline-flex', 'items-center', 'min-h-11')
+  })
+
+  it('makes every desktop nav link and "Abmelden" at least 44×44 px', () => {
+    const { container } = renderShell(true)
+    const links = container.querySelectorAll('nav[aria-label="Hauptnavigation"] a')
+    expect(links).toHaveLength(APP_NAV_ITEMS.length)
+    for (const link of links) expect(link).toHaveClass('inline-flex', 'items-center', 'justify-center', 'min-h-11', 'min-w-11', 'whitespace-nowrap')
+    const logout = container.querySelector('header .md\\:flex form[action="/logout"] button')!
+    expect(logout).toHaveClass('inline-flex', 'items-center', 'min-h-11', 'whitespace-nowrap')
+  })
+
+  it('keeps the header one row high', () => {
+    const { container } = renderShell(true)
+    expect(container.querySelector('header > div')).toHaveClass('h-14', 'items-center')
+  })
+
+  it('makes the footer legal links at least 44×44 px without a taller footer', () => {
+    const { container } = renderShell(true)
+    const footer = container.querySelector('footer')!
+    expect(footer).toHaveClass('py-2')
+    const links = footer.querySelectorAll('nav[aria-label="Rechtliches"] a')
+    expect(links.length).toBe(4)
+    for (const link of links) expect(link).toHaveClass('inline-flex', 'items-center', 'justify-center', 'min-h-11', 'min-w-11')
+  })
+})
+
 describe('(app) layout legal links', () => {
   it('links every legal page in the footer', () => {
     const { container } = renderShell(true)
