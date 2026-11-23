@@ -7,10 +7,11 @@
   const tools = [
     { title: 'Stoffsuche', description: 'UN-Nummer oder Stoffname suchen und alle Regelwerke vergleichen.', href: resolve('/(app)/suche') },
     { title: 'Regelwerksvergleich', description: 'ADR, RID, IMDG und ICAO nebeneinander – Abweichungen auf einen Blick (Beispiel UN 1203).', href: resolve('/(app)/un/[nummer]/vergleich', { nummer: '1203' }) },
+    { title: '1000-Punkte-Rechner', description: 'Gemischte Ladung nach ADR 1.1.3.6 bewerten – Punkte, Ergebnis, Pflichten und Ausdruck.', href: resolve('/(app)/tools/1000-punkte') },
     { title: 'Konto', description: 'Passwort, Rechnungsanschrift und Abo verwalten.', href: resolve('/(app)/konto') },
   ]
 
-  const upcoming = ['1000-Punkte-Rechner', 'Dokumentengenerator', 'LQ/EQ-Rechner']
+  const upcoming = ['Dokumentengenerator', 'LQ/EQ-Rechner']
 </script>
 
 <svelte:head>

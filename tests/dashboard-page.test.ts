@@ -25,6 +25,14 @@ describe('dashboard page', () => {
     expect(container).not.toHaveTextContent('Demnächst verfügbar')
   })
 
+  it('links to the 1000-Punkte-Rechner and no longer lists it as upcoming', () => {
+    const { container } = renderDashboard(true)
+    expect(container.querySelector('a[href="/tools/1000-punkte"]')).toHaveTextContent('1000-Punkte-Rechner')
+    const upcoming = [...container.querySelectorAll('.border-dashed')].map(e => e.textContent ?? '')
+    expect(upcoming.length).toBeGreaterThan(0)
+    expect(upcoming.some(t => t.includes('1000'))).toBe(false)
+  })
+
   it('links to the account page', () => {
     const { container } = renderDashboard(false)
     expect(container.querySelector('a[href="/konto"]')).toHaveTextContent('Konto')

@@ -48,7 +48,7 @@ Public: `/`, `/impressum`, `/datenschutz`, `/agb`, `/widerruf`, `/login`, `/regi
 `/auth/fehler`, `/logout`, `/healthz`. Login required (guard in `hooks.server.ts` →
 `/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/un/:nummer/vergleich`, `/regelwerk/:mode` (only `adr`),
 `/konto` (account: password, billing address, subscription status, deletion — usable while locked).
-Planned (German, like the live ones): tools under `/tools/…`, `/documents`, `/changes`, `/settings`.
+Planned (German, like the live ones): more tools under `/tools/…`, `/documents`, `/changes`, `/settings`.
 
 ## Commands
 
@@ -80,6 +80,7 @@ src/
     auth/confirm, auth/fehler, logout, healthz (liveness + book readiness)
     (app)/                # login required; app shell (header + burger), upsell banner/modal for locked accounts
       dashboard, suche, un/[nummer] (+ vergleich/), regelwerk/[mode=bookMode] (+ window/ and search/ endpoints),
+      tools/1000-punkte (+ eintrag/ endpoint),
       konto (named actions ?/password, ?/address, ?/delete)
   lib/
     multimodal/           # comparison tool: types.ts (LABELS, DEMO_DATA, pickSvText), mappers.ts
@@ -97,6 +98,8 @@ src/
     landing/              # landing sections; faq.ts
     regulations/          # book viewer, client side: bookTypes (+ BOOK_LABELS), bookHighlighter,
                           # adrBookViewer.svelte.ts, bookFetch, Book*.svelte
+    points/               # 1000-Punkte-Rechner (ADR 1.1.3.6): points.ts (rules), duties.ts (1.1.3.6.2 duties + refs),
+                          # pointsCalculator.svelte.ts, Points*.svelte (incl. print sheet)
     search/               # SearchState, QuickSearch.svelte (UN jump on /un/:nummer and the comparison)
     seo/                  # SITE_URL + JSON-LD builders
     legal.ts              # IMPRINT/PRIVACY/TERMS/WITHDRAWAL_URL, LEGAL_LINKS, BLOG_URL — the only place for legal links

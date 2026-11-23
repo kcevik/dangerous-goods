@@ -80,8 +80,16 @@ describe('(app) layout navigation', () => {
       { label: 'Dashboard', href: '/dashboard' },
       { label: 'Suche', href: '/suche' },
       { label: 'ADR-Text', href: '/regelwerk/adr' },
+      { label: '1000 Punkte', href: '/tools/1000-punkte' },
       { label: 'Konto', href: '/konto' },
     ])
+  })
+
+  it('keeps header, upsell banner and footer off the printout', () => {
+    const { container, getByTestId } = renderShell(false)
+    expect(container.querySelector('header')).toHaveClass('print:hidden')
+    expect(container.querySelector('footer')).toHaveClass('print:hidden')
+    expect(getByTestId('upsell-banner').closest('.print\\:hidden')).not.toBeNull()
   })
 
   it('renders every nav item inline and in the burger menu', () => {

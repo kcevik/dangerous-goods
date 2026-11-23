@@ -53,6 +53,17 @@ const RESPONSIVE_UTILITIES = [
   'lg:min-h-0',
   'lg:py-0.5',
   'lg:space-y-2.5',
+  // 1000-Punkte-Rechner: print view and row grid
+  'print:hidden',
+  'print:block',
+  'print:bg-white',
+  'print:min-h-0',
+  'print:max-w-none',
+  'print:p-0',
+  'print:no-underline',
+  'sm:grid-cols-[7rem_minmax(0,1fr)_11rem]',
+  'accent-orange-600',
+  'text-[10px]',
 ]
 
 describe('responsive utilities compile to CSS', () => {

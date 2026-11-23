@@ -13,5 +13,6 @@ export const APP_NAV_ITEMS: readonly NavItem[] = [
   { label: 'Dashboard', href: resolve('/(app)/dashboard') },
   { label: 'Suche', href: resolve('/(app)/suche') },
   { label: 'ADR-Text', href: resolve('/(app)/regelwerk/[mode=bookMode]', { mode: 'adr' }) },
+  { label: '1000 Punkte', href: resolve('/(app)/tools/1000-punkte') },
   { label: 'Konto', href: resolve('/(app)/konto') },
 ]
