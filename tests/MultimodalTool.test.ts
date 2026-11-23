@@ -261,9 +261,14 @@ describe('MultimodalTool — phone layout', () => {
     const tabs = screen.getAllByRole('tab')
     expect(tabs).toHaveLength(5)
     for (const tab of tabs) expect(tab).toHaveClass('min-h-11', 'shrink-0', 'whitespace-nowrap')
+    // narrow padding below 375px so all five tabs fit a 320px screen without scrolling
+    for (const tab of tabs) expect(tab).toHaveClass('px-2', 'min-[375px]:px-3')
+    // touch targets hold up to tablet width (768px is still a finger, not a mouse)
     for (const lang of ['DE', 'EN', 'FR', 'TR']) {
-      expect(screen.getByRole('button', { name: lang })).toHaveClass('min-h-11', 'min-w-11')
+      expect(screen.getByRole('button', { name: lang })).toHaveClass('min-h-11', 'min-w-11', 'lg:min-h-0')
     }
+    // the tool inherits the self-hosted body font
+    expect(container.querySelector('.font-sans')).toBeNull()
     // three overview cards per row on phones, five from sm
     expect(container.querySelector('[data-testid="overview-grid"]')).toHaveClass('grid-cols-3', 'sm:grid-cols-5')
   })
@@ -273,7 +278,13 @@ describe('MultimodalTool — phone layout', () => {
     render(MultimodalTool, { props: { unNumber: '1993', initialData: UN_1993 as Record<string, Entry[]>, supabase: client } })
     const buttons = screen.getByRole('group', { name: 'Variante' }).querySelectorAll('button')
     expect(buttons.length).toBeGreaterThan(1)
-    for (const button of buttons) expect(button).toHaveClass('min-h-11', 'sm:min-h-0', 'max-w-full', 'truncate')
+    for (const button of buttons) expect(button).toHaveClass('min-h-11', 'lg:min-h-0', 'max-w-full', 'truncate')
+  })
+
+  it('makes the UN number link into the ADR text a 44px target', () => {
+    const { client } = stubSupabase({})
+    render(MultimodalTool, { props: { unNumber: '1203', initialData: DEMO_DATA, supabase: client } })
+    expect(screen.getByRole('link', { name: 'UN 1203' })).toHaveClass('min-h-11')
   })
 
   it('lets long substance names wrap and hyphenate instead of overflowing', () => {

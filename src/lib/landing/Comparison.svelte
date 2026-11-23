@@ -24,7 +24,7 @@
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border" style="color: #f97316; background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2);">
           Einzigartiges Feature
         </div>
-        <h2 id="comparison-heading" class="text-3xl sm:text-4xl font-bold mb-6" style="color: #0f2744;">
+        <h2 id="comparison-heading" class="text-3xl sm:text-4xl font-bold mb-6 break-words hyphens-auto" style="color: #0f2744;">
           Alle Regelwerke auf einen Blick – automatisch verglichen
         </h2>
         <p class="text-base sm:text-lg text-slate-500 mb-8 leading-relaxed">

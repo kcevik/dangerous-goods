@@ -58,7 +58,7 @@
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border" style="color: #f97316; background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2);">
         Funktionen
       </div>
-      <h2 id="features-heading" class="text-3xl sm:text-4xl font-bold mb-4" style="color: #0f2744;">
+      <h2 id="features-heading" class="text-3xl sm:text-4xl font-bold mb-4 break-words hyphens-auto" style="color: #0f2744;">
         Eine Plattform. Alle Werkzeuge.
       </h2>
       <p class="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto">

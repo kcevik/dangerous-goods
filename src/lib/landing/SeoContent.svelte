@@ -1,6 +1,6 @@
 <section class="py-16 sm:py-20 lg:py-28 bg-[#f6f8fb]" aria-labelledby="about-heading">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 id="about-heading" class="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10 text-center" style="color: #0f2744;">
+    <h2 id="about-heading" class="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10 text-center break-words hyphens-auto" style="color: #0f2744;">
       Die Arbeitsplattform für Gefahrgutbeauftragte
     </h2>
 

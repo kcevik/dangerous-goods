@@ -7,7 +7,7 @@
 
 <section class="py-16 sm:py-20 lg:py-28" style="background: #0f2744;" aria-labelledby="cta-heading">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <h2 id="cta-heading" class="text-3xl sm:text-4xl font-bold text-white mb-6">
+    <h2 id="cta-heading" class="text-3xl sm:text-4xl font-bold text-white mb-6 break-words hyphens-auto">
       Gefahrgutarbeit. Professionell.
     </h2>
     <p class="text-base sm:text-lg text-slate-300 mb-8 sm:mb-10">

@@ -43,6 +43,12 @@ const RESPONSIVE_UTILITIES = [
   'min-[400px]:text-4xl',
   'overscroll-x-contain',
   'sm:flex-none',
+  'min-[375px]:px-3',
+  'min-[375px]:gap-1.5',
+  'last:mr-0',
+  'lg:min-h-0',
+  'lg:py-0.5',
+  'lg:space-y-2.5',
 ]
 
 describe('responsive utilities compile to CSS', () => {

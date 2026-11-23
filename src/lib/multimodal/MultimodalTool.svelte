@@ -44,7 +44,7 @@
         type="button"
         aria-pressed={tool.overrides[mode] === i}
         title={label}
-        class={['max-w-full sm:max-w-xs truncate min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.overrides[mode] === i
+        class={['max-w-full sm:max-w-xs truncate min-h-11 lg:min-h-0 px-3 lg:px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.overrides[mode] === i
           ? 'bg-amber-400 border-amber-500 text-black'
           : 'bg-white border-amber-400 text-[#0f2744] hover:border-orange-500']}
         onclick={() => tool.overrideVariant(mode, i)}
@@ -53,7 +53,7 @@
   </div>
 {/snippet}
 
-<div class="bg-[#e8eef5] font-sans">
+<div class="bg-[#e8eef5]">
   <div class="max-w-5xl mx-auto">
 
     <!-- Info banner -->
@@ -79,7 +79,7 @@
         {#each LANGS as lang (lang)}
           <button
             type="button"
-            class={['min-h-11 min-w-11 sm:min-h-0 px-3.5 py-2 font-mono text-[11px] font-bold tracking-[0.5px] transition-colors', tool.currentLang === lang
+            class={['min-h-11 min-w-11 lg:min-h-0 px-3.5 py-2 font-mono text-[11px] font-bold tracking-[0.5px] transition-colors', tool.currentLang === lang
               ? 'bg-orange-500 text-black'
               : 'bg-[#dce8f2] text-[#5a7a99] hover:bg-[#d4e2ef]']}
             onclick={() => tool.setLang(lang)}
@@ -119,7 +119,7 @@
               type="button"
               aria-pressed={tool.selectedVariantIndex === i}
               title={label}
-              class={['max-w-full sm:max-w-xs truncate min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.selectedVariantIndex === i
+              class={['max-w-full sm:max-w-xs truncate min-h-11 lg:min-h-0 px-3 lg:px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.selectedVariantIndex === i
                 ? 'bg-orange-500 border-orange-500 text-black'
                 : 'bg-[#dce8f2] border-[#b0c4d8] text-[#0f2744] hover:border-orange-400']}
               onclick={() => tool.selectVariant(i)}
@@ -193,7 +193,7 @@
           {@const rows = tool.hasRows(modal)}
           <button
             type="button"
-            class={['flex flex-1 sm:flex-none shrink-0 items-center justify-center gap-1.5 min-h-11 px-3 sm:px-4 py-2.5 font-mono text-[11px] font-bold tracking-[0.5px] whitespace-nowrap mr-0.5 relative top-px border border-b-0 transition-all', modal === tool.currentModal
+            class={['flex flex-1 sm:flex-none shrink-0 items-center justify-center gap-1 min-[375px]:gap-1.5 min-h-11 px-2 min-[375px]:px-3 sm:px-4 py-2.5 font-mono text-[11px] font-bold tracking-[0.5px] whitespace-nowrap mr-0.5 last:mr-0 relative top-px border border-b-0 transition-all', modal === tool.currentModal
               ? 'bg-[#f4f7fa] text-[#0f2744] border-[#b0c4d8] border-b-2 border-b-[#f4f7fa]'
               : rows
                 ? 'bg-[#dce8f2] text-[#0f2744] border-[#b0c4d8] hover:bg-[#d4e2ef] cursor-pointer'
@@ -224,10 +224,10 @@
                 target="_blank"
                 rel="noopener"
                 title={formatBookLabel(tool.currentLang, 'openUnInBook', { code: currentEntry.unNumber })}
-                class="font-mono text-2xl sm:text-3xl font-bold text-orange-500 leading-none flex-shrink-0 underline decoration-orange-300 decoration-2 underline-offset-4 hover:decoration-orange-500"
+                class="inline-flex min-h-11 items-center font-mono text-2xl sm:text-3xl font-bold text-orange-500 leading-none flex-shrink-0 underline decoration-orange-300 decoration-2 underline-offset-4 hover:decoration-orange-500"
               >UN {currentEntry.unNumber}</a>
             {:else}
-              <div class="font-mono text-2xl sm:text-3xl font-bold text-orange-500 leading-none flex-shrink-0">
+              <div class="inline-flex min-h-11 items-center font-mono text-2xl sm:text-3xl font-bold text-orange-500 leading-none flex-shrink-0">
                 UN {currentEntry.unNumber}
               </div>
             {/if}

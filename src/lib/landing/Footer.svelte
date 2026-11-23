@@ -51,10 +51,10 @@
       {#each linkColumns as col (col.heading)}
         <div class="min-w-0">
           <h4 class="text-sm font-semibold mb-4" style="color: #0f2744;">{col.heading}</h4>
-          <ul class="space-y-2.5">
+          <ul class="lg:space-y-2.5">
             {#each col.links as link (link.label)}
               <li>
-                <a href={link.href} class="inline-block py-0.5 text-sm text-slate-500 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer break-words">{link.label}</a>
+                <a href={link.href} class="inline-flex min-h-11 lg:min-h-0 items-center lg:py-0.5 text-sm text-slate-500 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer break-words">{link.label}</a>
               </li>
             {/each}
           </ul>

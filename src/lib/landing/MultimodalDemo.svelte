@@ -13,7 +13,7 @@
       >
         Interaktive Demo
       </div>
-      <h2 id="demo-heading" class="text-3xl sm:text-4xl font-bold mb-4" style="color: #0f2744;">
+      <h2 id="demo-heading" class="text-3xl sm:text-4xl font-bold mb-4 break-words hyphens-auto" style="color: #0f2744;">
         Alle Transportmodi auf einen Blick
       </h2>
       <p class="text-base sm:text-lg max-w-2xl mx-auto" style="color: #5a7a99;">

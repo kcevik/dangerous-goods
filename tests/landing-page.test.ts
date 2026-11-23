@@ -82,6 +82,25 @@ describe('landing page', () => {
     expect(container.querySelector('#features .grid')).toHaveClass('sm:grid-cols-2', 'lg:grid-cols-3')
   })
 
+  it('inherits the self-hosted body font instead of resetting to Tailwind\'s default sans stack', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    expect(container.querySelector('.font-sans')).toBeNull()
+  })
+
+  it('lets every section heading break long German compounds at 320px', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const headings = container.querySelectorAll('h1, h2')
+    expect(headings.length).toBeGreaterThanOrEqual(7)
+    for (const h of headings) expect(h).toHaveClass('break-words', 'hyphens-auto')
+  })
+
+  it('gives footer links a 44px touch target on phones and tablets', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const links = container.querySelectorAll('footer ul a')
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) expect(link).toHaveClass('min-h-11', 'lg:min-h-0')
+  })
+
   it('keeps the comparison mockup scrollable inside its card instead of widening the page', () => {
     const { container } = render(LandingPage, { props: PROPS })
     const table = container.querySelector('#comparison table')!
