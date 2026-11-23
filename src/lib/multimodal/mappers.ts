@@ -11,6 +11,26 @@ function str(v: unknown): string | undefined {
   return String(v)
 }
 
+/** list column plus a single extra value (IBC column 10 of IMDG / UN), joined like `joinArr` */
+function joinWith(arr: unknown, extra: unknown): string | undefined {
+  const list = Array.isArray(arr) ? arr.filter(Boolean).map(String) : []
+  const more = str(extra)
+  if (more && !list.includes(more)) list.push(more)
+  return list.length > 0 ? list.join(', ') : undefined
+}
+
+/**
+ * ICAO limited quantity: the "Y" packing instruction and the max net quantity per package
+ * (Technical Instructions, Table 3-1 cols. 10/11), e.g. "Y341 · max 1 L". Not the same concept as
+ * the ADR/RID/IMDG LQ per inner packaging, so the comparison shows it but never compares it.
+ */
+function icaoLimitedQty(pi: unknown, maxNet: unknown): string | undefined {
+  const instruction = str(pi)
+  const max = str(maxNet)
+  if (instruction && max) return `${instruction} · max ${max}`
+  return instruction ?? (max ? `max ${max}` : undefined)
+}
+
 type RawAdr = Record<string, unknown>
 type RawRid = Record<string, unknown>
 type RawImdg = Record<string, unknown>
@@ -79,7 +99,8 @@ function mapImdg(r: RawImdg): Entry {
     hazardLabels: joinArr(r.subsidiary_risks) ?? str(r.hazard_class),
     exceptedQty: str(r.excepted_qty),
     limitedQty: str(r.limited_qty),
-    packingInstructions: joinArr(r.packing_instructions),
+    // ADR/RID list P, IBC, LP and R instructions in one column; IMDG splits IBC into column 10
+    packingInstructions: joinWith(r.packing_instructions, r.ibc_instructions),
     ems1: str(r.ems_fire),
     ems2: str(r.ems_spill),
     stowageCategory: str(r.stowage_category),
@@ -101,10 +122,12 @@ function mapIcao(r: RawIcao): Entry {
     packingGroup: str(r.packing_group),
     hazardLabels: joinArr(r.hazard_labels),
     exceptedQty: str(r.excepted_qty),
+    limitedQty: icaoLimitedQty(r.packing_instr_passenger_y, r.max_net_passenger_y),
     packingInstrPassenger: str(r.packing_instr_passenger),
     packingInstrCargo: str(r.packing_instr_cargo),
     maxNetPassenger: str(r.max_net_passenger),
     maxNetCargo: str(r.max_net_cargo),
+    stateVariations: joinArr(r.state_variations),
     remark: str(r.remark),
     specialProvisions: joinArr(r.special_provision_codes),
   }
@@ -124,7 +147,7 @@ function mapUn(r: RawUn): Entry {
     hazardLabels: joinArr(r.subsidiary_risks),
     exceptedQty: str(r.excepted_qty),
     limitedQty: str(r.limited_qty),
-    packingInstructions: joinArr(r.packing_instructions),
+    packingInstructions: joinWith(r.packing_instructions, r.ibc_instructions),
     specialProvisions: joinArr(r.special_provision_codes),
     remark: str(r.remark),
   }

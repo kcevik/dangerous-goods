@@ -154,3 +154,19 @@ export function variantLabel(variant: Variant, lang: Lang, mode: Source, pgShort
   }
   return spec || orderedNames(variant.names, lang)[0] || `#${variant.representative.sequenceNumber}`
 }
+
+/**
+ * Labels for all variants of one mode, each distinguishable from its siblings. Where two share a
+ * label (ICAO UN 3481: same specification, "contained in" vs "packed with equipment" only in the
+ * name), the name goes first; where even that is equal, the BAM row number is appended.
+ */
+export function variantLabels(variants: readonly Variant[], lang: Lang, mode: Source, pgShort: string): string[] {
+  const duplicated = (labels: string[], i: number) => labels.filter(l => l === labels[i]).length > 1
+  const base = variants.map(v => variantLabel(v, lang, mode, pgShort))
+  const named = base.map((label, i) => {
+    if (!duplicated(base, i)) return label
+    const name = orderedNames(variants[i]!.names, lang)[0]
+    return name && !label.includes(name) ? `${name} · ${label}` : label
+  })
+  return named.map((label, i) => (duplicated(named, i) ? `${label} (#${variants[i]!.representative.sequenceNumber})` : label))
+}

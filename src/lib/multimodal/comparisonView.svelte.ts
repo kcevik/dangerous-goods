@@ -1,6 +1,7 @@
-import { buildComparison, type CompareCell, type CompareRow, summarizeDeviations } from './compare'
+import { airProhibition, buildComparison, type CompareCell, type CompareRow, summarizeDeviations } from './compare'
+import { parseEms } from './ems'
 import { type Entry, type Lang, LABELS, type Modal, MODAL_DESC_I18N, MODALS } from './types'
-import { groupVariants, matchVariant, orderedNames, type Source, type Variant, variantLabel } from './variants'
+import { groupVariants, matchVariant, orderedNames, type Source, type Variant, variantLabel, variantLabels } from './variants'
 
 /**
  * View state of /un/:nummer/vergleich. The data is fixed per instance (the page re-mounts per
@@ -76,10 +77,26 @@ export class ComparisonViewState {
   })
 
   readonly visibleRows: CompareRow[] = $derived(
-    this.rows.filter(r => r.status !== 'missing' && (!this.onlyDifferences || r.status === 'differs')),
+    this.rows.filter(r => r.status !== 'missing' && (!this.onlyDifferences || r.status === 'differs' || r.forbidden)),
   )
 
+  /** every critical finding, prohibitions included — drives the summary's tone */
   readonly deviations: CompareRow[] = $derived(summarizeDeviations(this.rows))
+
+  /** the deviations listed as "field: ADR … · RID …"; prohibitions get their own sentence */
+  readonly listedDeviations: CompareRow[] = $derived(this.deviations.filter(r => !r.forbidden))
+
+  /** "Passagierflugzeug (ICAO): verboten – nur Frachtflugzeug", or null */
+  readonly prohibitionNotice: string | null = $derived.by(() => {
+    const scope = airProhibition(this.variantFor('ICAO')?.representative)
+    if (!scope) return null
+    return this.L({ all: 'airForbiddenAll', passenger: 'airForbiddenPassenger', cargo: 'airForbiddenCargo' }[scope])
+  })
+
+  /** some EmS cell carries BAM's "!" (underlined in the IMDG Code) */
+  readonly hasUnderlinedEms: boolean = $derived(
+    this.rows.some(r => (r.field === 'ems1' || r.field === 'ems2') && r.cells.IMDG.raw != null && parseEms(r.cells.IMDG.raw).underlined),
+  )
 
   readonly title: { primary: string, others: string[] } = $derived.by(() => {
     const [primary = '', ...others] = this.chosen ? orderedNames(this.chosen.names, this.currentLang) : []
@@ -94,8 +111,12 @@ export class ComparisonViewState {
     return MODAL_DESC_I18N[this.currentLang]?.[mode] ?? mode
   }
 
+  /** distinguishable among the mode's variants (UN 3481 ICAO: same specification, different names) */
   labelOf(variant: Variant, mode: Source): string {
-    return variantLabel(variant, this.currentLang, mode, this.L('pgShort'))
+    const siblings = mode === 'UN' ? this.referenceVariants : (this.variantsByMode[mode] ?? [])
+    const index = siblings.indexOf(variant)
+    if (index < 0) return variantLabel(variant, this.currentLang, mode, this.L('pgShort'))
+    return variantLabels(siblings, this.currentLang, mode, this.L('pgShort'))[index]!
   }
 
   /**
@@ -103,22 +124,37 @@ export class ComparisonViewState {
    * undefined = the value speaks for itself. The UN reference column is never compared, so it
    * never says "not compared".
    */
-  cellHint(cell: CompareCell, isReference = false): string | undefined {
-    if (!cell.applicable) return this.L('notApplicable')
+  cellHint(cell: CompareCell, isReference = false, row?: CompareRow): string | undefined {
+    if (!cell.applicable) return this.gapHint(cell, row)
     if (cell.unresolved) return this.L('unresolved')
+    if (cell.forbidden) return this.L('forbidden')
+    if (!isReference && cell.crossRef) return this.L('crossRef')
     if (!isReference && cell.raw && !cell.compared) return this.L('notCompared')
     return undefined
   }
 
+  /** "not in this regulation" is said only where the regulation really lacks the field */
+  gapHint(cell: CompareCell, row?: CompareRow): string {
+    if (cell.gap === 'noSource') return this.L('noSourceData')
+    if (cell.gap === 'elsewhere' && row) {
+      return this.L('elsewhere').replace('{fields}', row.seeAlso.map(key => this.L(key)).join(', '))
+    }
+    return this.L('notApplicable')
+  }
+
   /** screen-reader name of a deviation (colour and ▲ alone are not enough) */
   deviationLabel(row: CompareRow, cell: CompareCell): string | undefined {
+    if (cell.forbidden) return this.L('legendCritical')
     if (!cell.deviates) return undefined
     return this.L(row.critical ? 'legendCritical' : 'legendDiffers')
   }
 
-  /** the modes a mobile card lists for a row: every mode with data for the field (ADN has none) */
+  /**
+   * The modes a mobile card lists for a row: every mode with data for the field (ADN has none), plus
+   * modes whose value the source lacks or another row carries — only "not in the regulation" is left out.
+   */
   cardModes(row: CompareRow): Modal[] {
-    return MODALS.filter(m => m !== 'ADN' && row.cells[m].applicable)
+    return MODALS.filter(m => m !== 'ADN' && (row.cells[m].applicable || (row.cells[m].gap != null && row.cells[m].gap !== 'notInRegulation')))
   }
 
   /** "ADR 5 L · RID 5 L · IMDG 1 L" — what each compared mode says, no advice */
@@ -151,6 +187,7 @@ export class ComparisonViewState {
 
 /** text/background classes of a mode's cell — shared by the table and the mobile cards */
 export function cellTone(row: CompareRow, cell: CompareCell): string {
+  if (cell.forbidden) return 'bg-orange-100 text-orange-900 font-bold'
   if (cell.deviates) return row.critical ? 'bg-orange-100 text-orange-900 font-bold' : 'bg-amber-50 text-[#0f2744] font-semibold'
   if (cell.raw && !cell.compared) return 'text-[#5a7a99] italic'
   return row.status === 'same' ? 'text-[#5a7a99]' : 'text-[#0f2744]'
