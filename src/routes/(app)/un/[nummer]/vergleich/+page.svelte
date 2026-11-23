@@ -14,13 +14,13 @@
   <link rel="canonical" href={`${SITE_URL}/un/${data.unNumber}/vergleich`} />
 </svelte:head>
 
-<div class="min-h-screen bg-[#e8eef5] py-8">
+<div class="min-h-screen bg-[#e8eef5] py-5 sm:py-8">
   <div class="max-w-6xl mx-auto px-4">
-    <a href={resolve('/(app)/un/[nummer]', { nummer: data.unNumber })} class="inline-block mb-4 text-sm text-[#5a7a99] hover:text-orange-500 font-mono">
+    <a href={resolve('/(app)/un/[nummer]', { nummer: data.unNumber })} class="inline-flex min-h-11 items-center mb-2 text-sm text-[#5a7a99] hover:text-orange-500 font-mono">
       ← UN {data.unNumber}
     </a>
     {#if !data.locked}
-      <div class="mb-4 max-w-md">
+      <div class="mb-4 w-full sm:max-w-md">
         <QuickSearch
           supabase={data.supabase}
           label="Andere UN-Nummer vergleichen"

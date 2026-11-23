@@ -78,7 +78,7 @@ book indexed at startup and checked by `/healthz`.
 
 - Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
-- F-10 minors (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation; "Nur Abweichungen zeigen" with none leaves an empty table; cell hints only in `title` (no screen-reader text); no visible focus style on variant buttons.
+- F-10 minor (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation. (Fixed 2026-11-23 on `fix/responsive-comparison`: empty-filter message, sr-only cell hints, variant focus style; below `lg` the comparison renders as one card per field — `ComparisonCards` — instead of the table. Browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950.)
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
 - `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.
