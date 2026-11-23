@@ -1,6 +1,6 @@
 # Account page `/konto` (F-04 user management) — Design
 
-> **Status:** decisions taken by the owner on 2026-11-23 (task brief). Migration written, **not applied**.
+> **Status:** decisions taken by the owner on 2026-11-23 (task brief). Migration applied 2026-11-23.
 
 ## Goal
 

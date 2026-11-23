@@ -40,9 +40,9 @@ describe('/konto page', () => {
   })
 
   it('shows an active account with its activation date', () => {
-    const { container, queryByRole } = renderPage({ subscription: { kind: 'active', since: '01.11.2026' } })
+    const { container, getByRole } = renderPage({ subscription: { kind: 'active', since: '01.11.2026' } })
     expect(container).toHaveTextContent('aktiv seit 01.11.2026')
-    expect(queryByRole('button', { name: /Abo abschließen/ })).toBeNull()
+    expect(getByRole('button', { name: 'Abo abschließen — demnächst verfügbar' })).toBeDisabled()
   })
 
   it('shows a failed profile load as an error, not as "gesperrt"', () => {
@@ -64,6 +64,12 @@ describe('/konto page', () => {
     expect(container.querySelector('input[name="vatId"]')).toBeNull()
     await fireEvent.input(container.querySelector('input[name="company"]')!, { target: { value: 'Muster GmbH' } })
     expect(container.querySelector('input[name="vatId"]')).not.toBeNull()
+  })
+
+  it('marks optional fields with a separated "(optional)"', () => {
+    const { container } = renderPage({ address: ADDRESS })
+    expect(container.querySelector('label[for="addr-company"]')!.textContent).toBe('Firma (optional)')
+    expect(container.querySelector('label[for="addr-firstName"]')!.textContent!.trim()).toBe('Vorname')
   })
 
   it('hides the address form when the address could not be loaded', () => {

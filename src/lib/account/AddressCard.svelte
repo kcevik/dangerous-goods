@@ -30,9 +30,7 @@
 {#snippet field(name: AddressField, label: string, autocomplete: AutoFill, required: boolean, hint: string | null = null)}
   {@const error = fieldError(name)}
   <div>
-    <label for={`addr-${name}`} class="block text-xs font-semibold text-slate-600 mb-1">
-      {label}{#if !required}<span class="font-normal text-slate-400"> (optional)</span>{/if}
-    </label>
+    <label for={`addr-${name}`} class="block text-xs font-semibold text-slate-600 mb-1">{required ? label : `${label} `}{#if !required}<span class="font-normal text-slate-400">(optional)</span>{/if}</label>
     <input
       id={`addr-${name}`}
       {name}

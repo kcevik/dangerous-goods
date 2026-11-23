@@ -20,13 +20,12 @@
     {/if}
   </p>
 
-  {#if status.kind !== 'active'}
-    <button
-      type="button"
-      disabled={!checkoutAvailable}
-      class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-semibold text-white bg-[#f97316] disabled:opacity-40 disabled:cursor-not-allowed"
-    >
-      {checkoutAvailable ? 'Abo abschließen' : 'Abo abschließen — demnächst verfügbar'}
-    </button>
-  {/if}
+  <!-- shown for active accounts too: today "aktiv" means activated by hand, not subscribed -->
+  <button
+    type="button"
+    disabled={!checkoutAvailable}
+    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-semibold text-white bg-[#f97316] disabled:opacity-40 disabled:cursor-not-allowed"
+  >
+    {checkoutAvailable ? 'Abo abschließen' : 'Abo abschließen — demnächst verfügbar'}
+  </button>
 </section>
