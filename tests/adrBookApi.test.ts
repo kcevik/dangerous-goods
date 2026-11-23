@@ -12,6 +12,7 @@ const { renderSlice } = await import('$lib/server/adrBook/render')
 const { buildBookIndex } = await import('$lib/server/adrBook/index')
 const {
   clearWindowCache,
+  findSection,
   hitsFor,
   resolvePrimaryHit,
   searchText,
@@ -331,6 +332,40 @@ describe('toc', () => {
 
   it('carries the anchor slug so the viewer can link to it', () => {
     expect(toc(fixtureIndex, 3).every(e => e.slug.startsWith('h-'))).toBe(true)
+  })
+
+  it('lists Teile, Kapitel and Abschnitte with clean labels, chapter titles folded in', () => {
+    const entries = toc(fixtureIndex, 3)
+    expect(entries.filter(e => /[*<>]|&amp;/.test(e.text))).toEqual([])
+    expect(entries.find(e => e.text === 'Teil 8 Vorschriften für die Fahrzeugbesatzungen')?.level).toBe(1)
+    expect(entries.find(e => e.text === 'Kapitel 8.7 Zusätzliche Vorschriften')?.level).toBe(2)
+    expect(entries.find(e => e.text === '8.6.1 Allgemeine Vorschriften')?.level).toBe(3)
+    // the folded title line is not listed a second time, the stray "#" heading is no Teil
+    expect(entries.map(e => e.text)).not.toContain('Zusätzliche Vorschriften')
+    expect(entries.find(e => e.text.startsWith('Ätzende'))).toBeUndefined()
+  })
+})
+
+describe('findSection', () => {
+  it('prefers the heading whose rank fits the number over a numbered list item', () => {
+    const index = buildBookIndex([
+      '# Teil 7 Beförderung', '', '#### 7.3.1 Tiegel', '', '### 4.1 Baumusterprüfung der Tiegel', '',
+      '# Teil 4 Verpackungen', '', '## Kapitel 4.1', '', 'Text.',
+    ])
+    expect(findSection(index, '4.1')?.line).toBe(9)
+  })
+
+  it('falls back to a body line opening with the number, bold before plain, paragraphs before lists', () => {
+    const index = buildBookIndex([
+      '#### 1.8.3 Sicherheitsberater', '',
+      '1.8.3.5 Querverweis', '',
+      '1.8.3.5 Das Unternehmen teilt der zuständigen Behörde die Identität seines Gefahrgutbeauftragten mit.', '',
+      '- 1.8.3.4** Die Funktion des Gefahrgutbeauftragten kann vom Leiter des Unternehmens wahrgenommen werden.', '',
+      '- 1.8.3.40 ist eine andere Nummer', '',
+    ])
+    expect(findSection(index, '1.8.3.4')?.line).toBe(7)
+    expect(findSection(index, '1.8.3.5')?.line).toBe(5)
+    expect(findSection(index, '1.8.3.9')).toBeNull()
   })
 })
 

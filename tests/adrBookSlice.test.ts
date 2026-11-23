@@ -270,6 +270,35 @@ describe('sliceAround — the real Table A repeats its header block', () => {
   })
 })
 
+describe('sliceAround — a table whose header row is empty', () => {
+  // the radionuclide tables in 2.2.7.2.2 have no header text at all; dropping the
+  // empty header row as filler left an alignment row first and the table rendered
+  // as raw `|…|` text
+  const lines = [
+    'a) Die Werte dieser Eltern-Radionuklide schließen Beiträge ein:', '',
+    '|         |               |',
+    '|---------|---------------|',
+    '| Mg-28   | Al-28         |',
+    '| Ar-42   | K-42          |',
+    '', 'Text danach.',
+  ]
+
+  it('keeps the empty header row, so the block is still a table', () => {
+    const s = sliceAround(lines, 5, 10, 10)
+    const at = s.lines.indexOf('|---------|---------------|')
+    expect(at).toBeGreaterThan(0)
+    expect(s.lines[at - 1]).toBe('|         |               |')
+    expect(s.removedLines).toBe(0)
+  })
+
+  it('renders as a table', async () => {
+    const { renderSlice } = await import('$lib/server/adrBook/render')
+    const html = renderSlice(sliceAround(lines, 5, 10, 10).lines.join('\n'))
+    expect(html).toContain('<td>Mg-28</td>')
+    expect(html).not.toContain('|---')
+  })
+})
+
 describe('sliceAround — the conversion misspells the repeated header', () => {
   // Real finding: inside one 300-line stretch of Table A the converted source
   // carries eleven different spellings of the same header — "Gefahrzettel" appears

@@ -145,32 +145,107 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+const KAPITEL_RE = /^Kapitel[ \t]+(\d+\.\d+)(?=[\s:.)]|$)/
+const TEIL_RE = /^Teil[ \t]+\d+(?=\s|$)/
+
+/**
+ * Heading text as a reader should see it in the TOC and the breadcrumbs: no
+ * markdown emphasis (`**Kapitel 1.11**`), no footnote markers (`<sup>1)</sup>`),
+ * no other tags, entities decoded. The rendered heading in the text keeps its
+ * formatting; this is only the label.
+ */
+export function cleanHeadingText(raw: string): string {
+  return raw
+    .replace(/<sup>[\s\S]*?<\/sup>/gi, '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\*\*|__|\*/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0*39;|&apos;/g, '\'')
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t\u00A0]+/g, ' ')
+    .trim()
+}
+
+/**
+ * Where a heading sits in the ADR's own structure, independent of its markdown
+ * level. The conversion's levels are unreliable — Teil 1 and 2 are `##`, Teil 3
+ * to 9 are `#`, and a substance list inside 2.2.8.3 opens with a `#` heading —
+ * so a path built from `#` counts put "Ätzende Stoffe …" above every later
+ * chapter. The numbering is what the ADR itself uses: Teil = 1, Kapitel = 2,
+ * a section number with n parts = n (1.1.3 = 3, 1.1.3.6 = 4).
+ */
+function structuralDepth(text: string, sectionNo: string | null): number | null {
+  if (TEIL_RE.test(text)) return 1
+  if (KAPITEL_RE.test(text)) return 2
+  if (!sectionNo) return null
+  const parts = sectionNo.split('.').length
+  // a bare two-part number ("4.1 Baumusterprüfung der Tiegel") is a numbered
+  // list inside some paragraph, not a chapter — chapters are always "Kapitel …"
+  return parts >= 3 ? parts : null
+}
+
 /**
  * Builds the heading list in one pass, together with the enclosing path and a
  * slug that is unique across the whole document — the registry lives here, not
  * per rendered window, so two identically named sections never share an anchor.
+ *
+ * Unnumbered headings ("Tabelle A", a glossary entry, a chapter's title line)
+ * hang below the nearest numbered one and never become the parent of the next
+ * numbered heading. A title line directly under `Kapitel X.Y` is folded into the
+ * chapter's label ("Kapitel 1.10 Vorschriften für die Sicherung") and kept out
+ * of the TOC.
  */
 function collectHeadings(lines: string[]): BookHeading[] {
   const headings: BookHeading[] = []
   const taken = new Set<string>()
-  const stack: BookHeading[] = []
+  const stack: { heading: BookHeading, free: boolean }[] = []
+  let lastChapter: { heading: BookHeading, index: number } | null = null
 
   for (let i = 0; i < lines.length; i++) {
     const match = HEADING_RE.exec(lines[i])
     if (!match) continue
 
     const level = match[1].length
-    const text = match[2]
-    const sectionNo = SECTION_NO_RE.exec(text)?.[1] ?? null
+    const text = cleanHeadingText(match[2])
+    const sectionNo = SECTION_NO_RE.exec(text)?.[1] ?? KAPITEL_RE.exec(text)?.[1] ?? null
 
-    const base = sectionNo
+    const base = sectionNo && SECTION_NO_RE.test(text)
       ? `h-${sectionNo.replace(/\./g, '-')}`
       : `h-${slugify(text) || 'abschnitt'}`
     let slug = base
     for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`
     taken.add(slug)
 
-    while (stack.length > 0 && stack[stack.length - 1].level >= level) stack.pop()
+    const structural = structuralDepth(text, sectionNo)
+
+    // a chapter's title is the unnumbered heading right after "Kapitel X.Y"
+    if (structural === null && lastChapter && lastChapter.index === headings.length - 1
+      && lines.slice(lastChapter.heading.line, i).every(line => line.trim() === '')) {
+      lastChapter.heading.text = `${lastChapter.heading.text} ${text}`
+      const chapter = lastChapter.heading
+      const heading: BookHeading = {
+        level, text, sectionNo, slug, line: i + 1,
+        depth: chapter.depth + 1, inToc: false,
+        path: [...chapter.path, chapter.text],
+      }
+      headings.push(heading)
+      lastChapter = null
+      continue
+    }
+
+    let depth: number
+    if (structural === null) {
+      // siblings, not nesting: an unnumbered heading never contains the next one
+      while (stack.length > 1 && stack.at(-1)!.free) stack.pop()
+      depth = stack.length > 0 ? stack.at(-1)!.heading.depth + 1 : 0
+    }
+    else {
+      depth = structural
+      while (stack.length > 0 && stack.at(-1)!.heading.depth >= depth) stack.pop()
+    }
 
     const heading: BookHeading = {
       level,
@@ -178,10 +253,15 @@ function collectHeadings(lines: string[]): BookHeading[] {
       sectionNo,
       slug,
       line: i + 1,
-      path: stack.map((h) => h.text),
+      depth,
+      // unnumbered headings are captions ("S1: …", "(2) Beauftragter", a glossary
+      // entry) — the TOC is the ADR's own numbering, nothing else
+      inToc: structural !== null && depth <= 3,
+      path: stack.map(entry => entry.heading.text),
     }
     headings.push(heading)
-    stack.push(heading)
+    stack.push({ heading, free: structural === null })
+    lastChapter = depth === 2 && structural === 2 ? { heading, index: headings.length - 1 } : null
   }
 
   return headings
@@ -189,7 +269,7 @@ function collectHeadings(lines: string[]): BookHeading[] {
 
 /**
  * The line range of chapter 3.3, found by heading. It ends at the next
- * `Kapitel` or `Teil` heading of the same or higher level; hard-coded line
+ * `Kapitel` or `Teil` heading of the same or higher rank; hard-coded line
  * numbers would break with the next edition.
  */
 function findSpecialProvisionRange(headings: BookHeading[]): { start: number, end: number } | null {
@@ -199,8 +279,8 @@ function findSpecialProvisionRange(headings: BookHeading[]): { start: number, en
   const next = headings.find(
     (h) =>
       h.line > start.line
-      && h.level <= start.level
-      && /^(?:\*\*)?(?:Kapitel|Teil)\b/.test(h.text),
+      && h.depth <= start.depth
+      && /^(?:Kapitel|Teil)\b/.test(h.text),
   )
   return { start: start.line, end: next ? next.line - 1 : Number.MAX_SAFE_INTEGER }
 }

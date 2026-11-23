@@ -1,5 +1,6 @@
 import type { BookIndex } from './index'
 import {
+  type BookHeading,
   type BookHit,
   type BookTarget,
   type HitListResult,
@@ -103,16 +104,16 @@ function bestHit(index: BookIndex, kind: 'sv' | 'un', code: string): BookHit | n
  */
 export function resolvePrimaryHit(index: BookIndex, target: BookTarget): BookHit | null {
   if (target.kind === 'section') {
-    const heading = index.headings.find(h => h.sectionNo === target.sectionNo)
-    if (!heading) return null
+    const found = findSection(index, target.sectionNo)
+    if (!found) return null
     return {
       kind: 'sv',
       code: target.sectionNo,
-      line: heading.line,
+      line: found.line,
       rank: 1,
       role: 'definition',
-      context: heading.text,
-      heading,
+      context: found.context,
+      heading: found.heading,
     }
   }
 
@@ -132,6 +133,58 @@ export function resolvePrimaryHit(index: BookIndex, target: BookTarget): BookHit
   }
 
   return direct
+}
+
+// ── Sections ─────────────────────────────────────────────────
+
+const LIST_PREFIX = /^\s*(?:[-*+]\s+)?/
+/** Real paragraphs are long; a short plain line is usually a cross-reference list. */
+const PARAGRAPH_MIN_LENGTH = 60
+
+/**
+ * Where `?section=` lands. Most numbers have a heading of their own — once the
+ * indexer reads `**1.1.3.6 …**` and `Kapitel 3.4` as numbered — but a good
+ * share of paragraphs (`- **1.8.3.4** Die Funktion …`, `2.2.41.1.10 Die
+ * Zersetzung …`) are body lines that only *start* with their number. In order:
+ *
+ * 1. a heading with that number whose rank fits it (Kapitel 4.1 before a
+ *    numbered list item "4.1 Baumusterprüfung" somewhere in Teil 7),
+ * 2. any heading with that number,
+ * 3. the first body line opening with the number in bold,
+ * 4. the first long body line opening with it, then any such line.
+ */
+export function findSection(index: BookIndex, sectionNo: string): { line: number, context: string, heading: BookHeading | null } | null {
+  const parts = sectionNo.split('.').length
+  const headings = index.headings.filter(h => h.sectionNo === sectionNo)
+  const heading = headings.find(h => h.depth === parts) ?? headings[0]
+  if (heading) return { line: heading.line, context: heading.text, heading }
+
+  const escaped = sectionNo.replace(/\./g, '\\.')
+  const bold = new RegExp(`^\\*\\*${escaped}(?:\\*\\*|\\s|$)`)
+  const plain = new RegExp(`^${escaped}(?=[\\s)]|$)`)
+  let long: number | null = null
+  let any: number | null = null
+
+  for (let i = 0; i < index.lines.length; i++) {
+    const line = index.lines[i]!
+    if (line.startsWith('#') || TABLE_ROW.test(line)) continue
+    const body = line.replace(LIST_PREFIX, '')
+    if (!body.startsWith(sectionNo[0]!) && !body.startsWith('**')) continue
+    if (bold.test(body)) return bodyHit(index, i)
+    if (any === null || long === null) {
+      const text = body.replace(/\*\*|__/g, '')
+      if (plain.test(text)) {
+        any ??= i
+        if (long === null && text.length >= PARAGRAPH_MIN_LENGTH) long = i
+      }
+    }
+  }
+  const at = long ?? any
+  return at === null ? null : bodyHit(index, at)
+}
+
+function bodyHit(index: BookIndex, i: number): { line: number, context: string, heading: BookHeading | null } {
+  return { line: i + 1, context: contextAround(index.lines[i]!.replace(/\*\*/g, ''), 0), heading: headingFor(index, i + 1) }
 }
 
 // ── Hit lists ────────────────────────────────────────────────
@@ -285,7 +338,7 @@ export function windowAt(
 
   const headings: TocEntry[] = index.headings
     .filter(h => h.line >= slice.lineStart && h.line <= slice.lineEnd)
-    .map(({ level, text, sectionNo, slug, line: at }) => ({ level, text, sectionNo, slug, line: at }))
+    .map(({ depth, text, sectionNo, slug, line: at }) => ({ level: depth, text, sectionNo, slug, line: at }))
 
   const rendered: RenderedWindow = {
     // every heading takes the index's slug, which is unique across the whole
@@ -341,8 +394,9 @@ function sourceLinesOf(index: BookIndex, slice: ReturnType<typeof sliceAround>):
 
 // ── Table of contents ────────────────────────────────────────
 
+/** Teile, Kapitel and Abschnitte by the ADR's numbering, not by markdown level. */
 export function toc(index: BookIndex, maxLevel = 3): TocEntry[] {
   return index.headings
-    .filter(h => h.level <= maxLevel)
-    .map(({ level, text, sectionNo, slug, line }) => ({ level, text, sectionNo, slug, line }))
+    .filter(h => h.inToc && h.depth <= maxLevel)
+    .map(({ depth, text, sectionNo, slug, line }) => ({ level: depth, text, sectionNo, slug, line }))
 }

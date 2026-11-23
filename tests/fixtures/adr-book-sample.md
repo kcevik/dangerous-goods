@@ -122,3 +122,31 @@ Fettgedruckte Überschrift, deren Abschnittsnummer die Anker-Vergabe erkennen mu
 ### Prüfzeichen
 
 Das Prüfzeichen steht am Behälter, ein zweites Prüfzeichen am Deckel.
+
+# Teil 8 Vorschriften für die Fahrzeugbesatzungen
+
+## Kapitel 8.6
+
+### Beschränkungen für die Durchfahrt durch Straßentunnel
+
+#### 8.6.1 Allgemeine Vorschriften
+
+Die Vorschriften dieses Kapitels gelten für die Durchfahrt durch Straßentunnel.
+
+##### **8.6.3 Tunnelbeschränkungscode**
+
+- 8.6.3.2** Die Beschränkungen gelten für Beförderungseinheiten mit gefährlichen Gütern.
+
+Der Aktivitätswert darf den  $A_2$ -Wert und $1 \times 10^{-1}$ TBq nicht überschreiten.
+
+### **Kapitel 8.7**
+
+### Zusätzliche Vorschriften
+
+# **Ätzende Stoffe mit Nebengefahr(en)**
+
+Eine Stoffliste, deren Überschrift die Konvertierung auf die oberste Ebene gesetzt hat.
+
+#### 8.7.1 Anwendungsbereich
+
+Ein Abschnitt hinter der falsch eingestuften Überschrift.

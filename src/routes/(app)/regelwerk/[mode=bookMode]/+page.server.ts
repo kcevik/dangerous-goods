@@ -8,14 +8,13 @@ import {
   HIT_LIMIT,
   MAX_BOOK_QUERY_LENGTH,
   MIN_BOOK_QUERY_LENGTH,
+  normalizeSectionNo,
   SV_CODE_RE,
   UN_NUMBER_RE,
 } from '$lib/regulations/bookTypes'
 import { hitsFor, resolvePrimaryHit, searchText, toc, windowAt } from '$lib/server/adrBook/api'
 import { getBookIndex } from '$lib/server/adrBook/index'
 import type { PageServerLoad } from './$types'
-
-const SECTION_RE = /^\d+(?:\.\d+){0,5}$/
 
 /** Exactly one target is honoured: sv > un > section > q (spec §1.2). */
 function parseTarget(params: URLSearchParams): BookTarget | null {
@@ -31,8 +30,10 @@ function parseTarget(params: URLSearchParams): BookTarget | null {
   }
   const section = params.get('section')
   if (section !== null) {
-    if (!SECTION_RE.test(section)) error(400, 'Ungültiger Abschnitt')
-    return { kind: 'section', sectionNo: section }
+    // tolerant of how people write it: '1.1.3.6.', '1. 1.3.6', 'Kapitel 3.4'
+    const sectionNo = section.length <= 40 ? normalizeSectionNo(section) : null
+    if (sectionNo === null) error(400, 'Ungültiger Abschnitt')
+    return { kind: 'section', sectionNo }
   }
   const q = params.get('q')?.trim()
   if (q) {

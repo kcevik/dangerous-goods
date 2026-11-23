@@ -1,6 +1,7 @@
 import { readFileSync, statSync } from 'node:fs'
 import { env } from '$env/dynamic/private'
 import { indexBook, type IndexedBook } from './indexer'
+import { repairSourceLine } from './sourceFixes'
 
 /**
  * Loads the consolidated ADR text and indexes it in memory.
@@ -47,13 +48,20 @@ function unNumbersFromTableA(lines: string[]): Set<string> {
   return found
 }
 
-/** Indexes already-split lines. Pure apart from the clock, so it is easy to test. */
-export function buildBookIndex(lines: string[]): BookIndex {
+/**
+ * Indexes already-split lines. Pure apart from the clock, so it is easy to test.
+ *
+ * Every line is repaired first (`repairSourceLine`: orphaned `**`, LaTeX
+ * formulas), one line for one line, so the index, search, slicer and renderer
+ * all work on the same text and line numbers stay those of the file.
+ */
+export function buildBookIndex(source: string[]): BookIndex {
+  const lines = source.map(repairSourceLine)
   const indexed = indexBook(lines, { unNumbers: unNumbersFromTableA(lines) })
   return {
     ...indexed,
     lines,
-    bytes: lines.reduce((sum, line) => sum + Buffer.byteLength(line, 'utf8') + 1, -1),
+    bytes: source.reduce((sum, line) => sum + Buffer.byteLength(line, 'utf8') + 1, -1),
     builtAt: Date.now(),
   }
 }
