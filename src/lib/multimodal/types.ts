@@ -30,6 +30,8 @@ export interface Entry {
   packingInstrCargo?: string
   maxNetPassenger?: string
   maxNetCargo?: string
+  /** ICAO state variations, e.g. "AU 1, US 3" */
+  stateVariations?: string
   cones?: string | number | null
   equipment?: string
   remark?: string
@@ -53,6 +55,7 @@ export const MODAL_DESC_I18N: Record<Lang, Record<Modal, string>> = {
 
 export const LABELS: Record<Lang, Record<string, string>> = {
   de: {
+    language: 'Sprache', stateVariations: 'Staatenabweichungen', noSourceData: 'Keine Angabe in der Quelle (BAM)', noSourceShort: 'k. A.', elsewhere: 'Im Luftverkehr: siehe {fields}', crossRef: 'Verweis auf eine Sondervorschrift – nicht verglichen', forbidden: 'Beförderung verboten', forbiddenBadge: 'Verboten', airForbiddenAll: 'Luftverkehr (ICAO): Beförderung verboten – auf Passagier- und Frachtflugzeugen', airForbiddenPassenger: 'Passagierflugzeug (ICAO): verboten – nur Frachtflugzeug', airForbiddenCargo: 'Frachtflugzeug (ICAO): verboten', emsUnderlined: 'Im IMDG-Code unterstrichen: Der EmS-Leitfaden enthält zusätzliche Hinweise für diesen Stoff.',
     class: 'Klasse', classCode: 'Klassifizierungscode', packingGroup: 'Verpackungsgruppe',
     labels: 'Gefahrzettel', exceptedQty: 'Freigestellte Mengen', limitedQty: 'Begrenzte Mengen',
     transportCat: 'Beförderungskategorie', kemler: 'Kemler-Zahl', tunnelCode: 'Tunnelcode',
@@ -74,6 +77,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     bannerSub: ' UN-Nummer eingeben und alle Transportmodi auf einen Blick vergleichen.',
   },
   en: {
+    language: 'Language', stateVariations: 'State variations', noSourceData: 'No data in the source (BAM)', noSourceShort: 'n/a', elsewhere: 'Air transport: see {fields}', crossRef: 'Reference to a special provision – not compared', forbidden: 'Carriage forbidden', forbiddenBadge: 'Forbidden', airForbiddenAll: 'Air (ICAO): carriage forbidden – on passenger and cargo aircraft', airForbiddenPassenger: 'Passenger aircraft (ICAO): forbidden – cargo aircraft only', airForbiddenCargo: 'Cargo aircraft (ICAO): forbidden', emsUnderlined: 'Underlined in the IMDG Code: the EmS Guide has additional advice for this substance.',
     class: 'Class', classCode: 'Classification code', packingGroup: 'Packing group',
     labels: 'Labels', exceptedQty: 'Excepted qty.', limitedQty: 'Limited qty.',
     transportCat: 'Transport cat.', kemler: 'Kemler number', tunnelCode: 'Tunnel code',
@@ -95,6 +99,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     bannerSub: ' Enter a UN number and compare all transport modes at a glance.',
   },
   fr: {
+    language: 'Langue', stateVariations: 'Divergences des États', noSourceData: 'Pas de donnée dans la source (BAM)', noSourceShort: 'n.d.', elsewhere: 'Transport aérien : voir {fields}', crossRef: 'Renvoi à une disposition spéciale – non comparé', forbidden: 'Transport interdit', forbiddenBadge: 'Interdit', airForbiddenAll: 'Aérien (OACI) : transport interdit – avions passagers et cargo', airForbiddenPassenger: 'Avion passagers (OACI) : interdit – avion cargo uniquement', airForbiddenCargo: 'Avion cargo (OACI) : interdit', emsUnderlined: 'Souligné dans le Code IMDG : le Guide EmS contient des indications supplémentaires pour cette matière.',
     class: 'Classe', classCode: 'Code de classification', packingGroup: "Groupe d'emballage",
     labels: 'Étiquettes', exceptedQty: 'Qté exemptée', limitedQty: 'Qté limitée',
     transportCat: 'Catégorie transp.', kemler: 'Numéro Kemler', tunnelCode: 'Code tunnel',
@@ -116,6 +121,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     bannerSub: " Saisissez un numéro ONU et comparez tous les modes de transport d'un coup d'œil.",
   },
   tr: {
+    language: 'Dil', stateVariations: 'Devlet farklılıkları', noSourceData: 'Kaynakta veri yok (BAM)', noSourceShort: 'yok', elsewhere: 'Hava taşımacılığı: bkz. {fields}', crossRef: 'Özel hükme atıf – karşılaştırılmadı', forbidden: 'Taşıma yasak', forbiddenBadge: 'Yasak', airForbiddenAll: 'Hava (ICAO): taşıma yasak – yolcu ve kargo uçağında', airForbiddenPassenger: 'Yolcu uçağı (ICAO): yasak – yalnızca kargo uçağı', airForbiddenCargo: 'Kargo uçağı (ICAO): yasak', emsUnderlined: 'IMDG Kodunda altı çizili: EmS Kılavuzu bu madde için ek bilgiler içerir.',
     class: 'Sınıf', classCode: 'Sınıflandırma kodu', packingGroup: 'Ambalaj grubu',
     labels: 'Tehlike etiketleri', exceptedQty: 'Muaf miktar', limitedQty: 'Sınırlı miktar',
     transportCat: 'Taşıma kategorisi', kemler: 'Kemler numarası', tunnelCode: 'Tünel kodu',

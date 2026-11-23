@@ -53,7 +53,24 @@
   </div>
 {/snippet}
 
-<div class="bg-[#e8eef5]">
+<!-- lang follows the switcher, so the browser uppercases Turkish labels correctly (i → İ) -->
+<!-- BAM marks the IMDG Code's underlined EmS codes with "!"; show them as the Code prints them -->
+{#snippet emsCode(value: string)}
+  {@const ems = tool.ems(value)}
+  {#if ems.underlined}<u class="underline-offset-2" title={tool.L('emsUnderlined')}>{ems.code}</u><span class="sr-only"> ({tool.L('emsUnderlined')})</span>{:else}{ems.code}{/if}
+{/snippet}
+
+<!-- ICAO "FORBIDDEN" is a prohibition, never just another instruction number -->
+{#snippet airInstruction(value: string)}
+  {#if tool.isForbidden(value)}
+    <span data-forbidden="true" class="font-mono text-[13px] font-bold text-red-700"><span aria-hidden="true">▲ </span>{value}</span>
+    <span class="text-xs font-semibold text-red-700 ml-1.5">{tool.L('forbidden')}</span>
+  {:else}
+    <span class="mono-val">{value}</span>
+  {/if}
+{/snippet}
+
+<div class="bg-[#e8eef5]" lang={tool.currentLang}>
   <div class="max-w-5xl mx-auto">
 
     <!-- Info banner -->
@@ -75,7 +92,7 @@
       <p data-testid="tool-subject" class="flex-1 min-w-0 basis-48 font-mono text-sm font-semibold text-[#0f2744] truncate">{tool.searchDisplay}</p>
 
       <!-- Language toggle -->
-      <div class="flex overflow-hidden border-[1.5px] border-[#b0c4d8]">
+      <div role="group" aria-label={tool.L('language')} class="flex overflow-hidden border-[1.5px] border-[#b0c4d8]">
         {#each LANGS as lang (lang)}
           <button
             type="button"
@@ -298,12 +315,16 @@
                 </tr>
               {/if}
               {#if currentEntry.packingInstructions}
+                {@const codes = tool.codes(currentEntry.packingInstructions)}
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('packingInstr')}</td>
                   <td class="field-value">
-                    {#each currentEntry.packingInstructions.split(',') as p (p)}
-                      <span class="badge bg-[#1e3a5f] text-blue-200 mr-0.5">{p.trim()}</span>
-                    {/each}
+                    <!-- the separator is real text, so copying or reading out never gives "P001IBC02R001" -->
+                    <span class="inline-flex flex-wrap gap-1">
+                      {#each codes as code, i (code)}
+                        <span class="badge bg-[#1e3a5f] text-blue-200">{code}{#if i < codes.length - 1}<span class="sr-only">, </span>{/if}</span>
+                      {/each}
+                    </span>
                   </td>
                 </tr>
               {/if}
@@ -336,7 +357,7 @@
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('ems')}</td>
                   <td class="field-value">
-                    <span class="mono-val">{currentEntry.ems1}{currentEntry.ems2 ? ' / ' + currentEntry.ems2 : ''}</span>
+                    <span class="mono-val">{@render emsCode(currentEntry.ems1)}{#if currentEntry.ems2}&nbsp;/&nbsp;{@render emsCode(currentEntry.ems2)}{/if}</span>
                   </td>
                 </tr>
               {/if}
@@ -368,7 +389,7 @@
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('piPassenger')}</td>
                   <td class="field-value">
-                    <span class="mono-val">{currentEntry.packingInstrPassenger}</span>
+                    {@render airInstruction(currentEntry.packingInstrPassenger)}
                     {#if currentEntry.maxNetPassenger}<span class="text-xs text-[#5a7a99] ml-1.5">· max {currentEntry.maxNetPassenger}</span>{/if}
                   </td>
                 </tr>
@@ -377,9 +398,15 @@
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('piCargo')}</td>
                   <td class="field-value">
-                    <span class="mono-val">{currentEntry.packingInstrCargo}</span>
+                    {@render airInstruction(currentEntry.packingInstrCargo)}
                     {#if currentEntry.maxNetCargo}<span class="text-xs text-[#5a7a99] ml-1.5">· max {currentEntry.maxNetCargo}</span>{/if}
                   </td>
+                </tr>
+              {/if}
+              {#if currentEntry.stateVariations}
+                <tr class="even:bg-[#dce8f2]">
+                  <td class="field-label">{tool.L('stateVariations')}</td>
+                  <td class="field-value"><span class="mono-val">{currentEntry.stateVariations}</span></td>
                 </tr>
               {/if}
               {#if currentEntry.cones != null && currentEntry.cones !== ''}

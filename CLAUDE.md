@@ -206,8 +206,13 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **ADR book viewer:** the book is a **file** (`ADR_BOOK_PATH`), never in Postgres, `static/` or an image. No RLS stands behind it — the `isActive` check in the page load and both endpoints (`bookAccessDenied`) **is** the gate; any new reader must repeat it. Generated HTML carries only `book-*` classes (Tailwind cannot see runtime classes). The renderer tags blocks and table rows with `book-ln-<line>` so `pickActiveMark` finds the right `<mark>`. ~25–30 MB index per worker. No keyboard shortcuts except Enter in the search field (owner decision).
 - **Regulatory comparison (F-10):** `COMPARE_FIELDS` must list exactly the fields each mapper writes (a test pins it).
   Only modes in a field's `compareModes` are compared — labels, packing instructions and SVs ADR↔RID only (other
-  notations differ in the BAM feed); absence is never a deviation; an unresolved variant shows "?"; the UN column
-  is reference only and never changes a status. The landing mockup is computed from `DEMO_DATA`.
+  notations differ in the BAM feed); ICAO LQ (Y instruction + max net) is shown but never compared; absence is never
+  a deviation; "See SP…"/"siehe SV …" in a quantity column is a reference, shown but never compared; an unresolved
+  variant shows "?"; the UN column is reference only and never changes a status. An empty mode says *why*
+  (`CompareField.gaps`): "In diesem Regelwerk nicht vorgesehen" only where the regulation lacks the field,
+  "Keine Angabe in der Quelle (BAM)" where only the feed lacks it (RID Kemler), "→" where another row carries it.
+  ICAO "FORBIDDEN" (read from the PI columns — `icao_entries.prohibited` is BAM's N_VERBOT, 1 = permitted) is always
+  a critical finding. IMDG/UN IBC instructions (col. 10) join the packing instructions. The landing mockup is computed from `DEMO_DATA`.
 - **Legal pages:** texts live in `lib/legalPages/*.ts`; operator and plan facts only in `LEGAL_FACTS`
   (`null` = unknown → `[[label]]` + draft banner + `noindex`; `false` = does not apply → block dropped). Bump
   `LEGAL_UPDATED` with every content change. The Datenschutzerklärung must change whenever a new service touches

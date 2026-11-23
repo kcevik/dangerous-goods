@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isForbidden } from './compare'
+import { type EmsCode, parseEms } from './ems'
 import { fetchCompareForUn } from './mappers'
 import {
   BK_CLASSES,
@@ -9,7 +11,7 @@ import {
   MODAL_DESC_I18N,
   MODALS,
 } from './types'
-import { groupVariants, matchVariant, orderedNames, type Variant, variantLabel, variantSpecs } from './variants'
+import { groupVariants, matchVariant, orderedNames, type Variant, variantLabel, variantLabels, variantSpecs } from './variants'
 
 export interface MultimodalToolOptions {
   /** Pre-loaded comparison data (demo data, or server-loaded data on the UN page) */
@@ -122,8 +124,27 @@ export class MultimodalToolState {
     return variant ? variantSpecs(variant, this.currentLang, mode) : []
   }
 
+  /** distinguishable among the mode's variants (UN 3481 ICAO: same specification, different names) */
   labelOf(variant: Variant, mode: Modal): string {
-    return variantLabel(variant, this.currentLang, mode, this.L('pgShort'))
+    const siblings = this.variantsByMode[mode] ?? []
+    const index = siblings.indexOf(variant)
+    if (index < 0) return variantLabel(variant, this.currentLang, mode, this.L('pgShort'))
+    return variantLabels(siblings, this.currentLang, mode, this.L('pgShort'))[index]!
+  }
+
+  /** ICAO "FORBIDDEN" in a packing-instruction column */
+  isForbidden(value: string | undefined): boolean {
+    return isForbidden(value)
+  }
+
+  /** an EmS code without BAM's "!" marker, which stands for the IMDG Code's underlining */
+  ems(value: string): EmsCode {
+    return parseEms(value)
+  }
+
+  /** a list column ("P001, IBC02, R001") as separate codes */
+  codes(value: string): string[] {
+    return value.split(',').map(code => code.trim()).filter(Boolean)
   }
 
   getName(entry: Entry): string {

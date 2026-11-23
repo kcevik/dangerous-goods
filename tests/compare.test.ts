@@ -101,8 +101,10 @@ describe('buildComparison', () => {
     expect([eq.cells.ADR.deviates, eq.cells.IMDG.deviates]).toEqual([true, true])
   })
 
-  it('treats language-only differences as the same', () => {
-    expect(row(buildComparison({ ADR: e({ limitedQty: 'siehe SV 251' }), IMDG: e({ limitedQty: 'See SP251' }) }), 'limitedQty').status).toBe('same')
+  it('never compares provision references, in any language (persona test 2026-11-23)', () => {
+    const lq = row(buildComparison({ ADR: e({ limitedQty: 'siehe SV 251' }), IMDG: e({ limitedQty: 'See SP251' }) }), 'limitedQty')
+    expect(lq.status).toBe('onlyOne')
+    expect([lq.cells.ADR.deviates, lq.cells.IMDG.deviates]).toEqual([false, false])
   })
 
   it('compares labels across ADR and RID only, ignoring RID markers', () => {

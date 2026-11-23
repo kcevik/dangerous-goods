@@ -42,7 +42,7 @@
                 <td data-mode="ADN" rowspan={view.visibleRows.length} class="px-3 py-2 align-top text-xs italic text-[#5a7a99] bg-[#eef2f6]">{view.L('noAdnData')}</td>
               {/if}
             {:else}
-              <td data-mode={mode} data-deviates={cell.deviates} title={view.cellHint(cell)} class={['px-3 py-2 align-top font-mono text-[13px] wrap-break-word', cellTone(row, cell)]}>
+              <td data-mode={mode} data-deviates={cell.deviates} data-forbidden={cell.forbidden} title={view.cellHint(cell, false, row)} class={['px-3 py-2 align-top font-mono text-[13px] wrap-break-word', cellTone(row, cell)]}>
                 <ComparisonCellValue {view} {row} {cell} />
               </td>
             {/if}
