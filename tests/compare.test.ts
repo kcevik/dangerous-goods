@@ -2,6 +2,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
 import { buildComparison, COMPARE_FIELDS, normalizeValue, summarizeDeviations } from '$lib/multimodal/compare'
+import { DETAIL_FIELDS } from '$lib/multimodal/details'
 import { fetchCompareForUn } from '$lib/multimodal/mappers'
 import { DEMO_DATA, type Entry, type Modal } from '$lib/multimodal/types'
 
@@ -53,6 +54,21 @@ describe('buildComparison', () => {
       expect(row(rows, field).status, field).toBe('onlyOne')
     }
     expect(row(rows, 'tunnelCode').cells.IMDG).toMatchObject({ applicable: false, raw: null })
+  })
+
+  it('compares the tank instructions ADR↔RID, shows IMDG uncompared and never calls a tank difference critical', () => {
+    const rows = buildComparison({
+      ADR: e({ portableTankInstr: 'T50 (M)', tankCodes: 'PxBH(M)' }),
+      RID: e({ portableTankInstr: 'T50 (M)', tankCodes: 'LGBF' }),
+      IMDG: e({ portableTankInstr: 'T50' }),
+      ICAO: e({}),
+    })
+    expect(row(rows, 'portableTankInstr').status).toBe('same')
+    expect(row(rows, 'portableTankInstr').cells.IMDG).toMatchObject({ raw: 'T50', compared: false, deviates: false })
+    expect(row(rows, 'portableTankInstr').cells.ICAO.gap).toBe('notInRegulation')
+    expect(row(rows, 'tankCodes').status).toBe('differs')
+    expect(row(rows, 'tankCodes').cells.IMDG.gap).toBe('notInRegulation')
+    expect(summarizeDeviations(rows)).toEqual([])
   })
 
   it('reads a class without division as compatible with one division of that class', () => {
@@ -161,8 +177,23 @@ describe('COMPARE_FIELDS', () => {
         ;(written[field] ??= []).push(mode)
       }
     }
-    const registry = Object.fromEntries(COMPARE_FIELDS.map(f => [f.field, [...f.modes]]))
+    // compared fields plus the display-only detail fields; a field in both must agree on its modes
+    const registry: Record<string, Modal[]> = Object.fromEntries(COMPARE_FIELDS.map(f => [f.field, [...f.modes]]))
+    for (const d of DETAIL_FIELDS) {
+      if (registry[d.field]) expect([...d.modes], d.field).toEqual(registry[d.field])
+      else registry[d.field] = [...d.modes]
+    }
     expect(registry).toEqual(written)
+  })
+
+  it('compares only the detail fields that share one notation: the tank instructions ADR↔RID', () => {
+    const shared = DETAIL_FIELDS.filter(d => COMPARE_FIELDS.some(f => f.field === d.field)).map(d => d.field)
+    expect(shared).toEqual(['portableTankInstr', 'tankCodes'])
+    for (const name of shared) {
+      const f = COMPARE_FIELDS.find(c => c.field === name)!
+      expect(f.compareModes, name).toEqual(['ADR', 'RID'])
+      expect(f.critical, name).toBe(false)
+    }
   })
 
   it('only compares modes that carry the field', () => {

@@ -9,11 +9,13 @@ const cell = (container: HTMLElement, field: string, mode: string) =>
   container.querySelector(`tr[data-field="${field}"] td[data-mode="${mode}"]`)!
 
 describe('ComparisonView', () => {
-  it('shows every mode side by side, ADN as "no data", inside its own scroll container (desktop table)', () => {
+  it('shows the BAM modes side by side, ADN only as one note, inside its own scroll container (desktop table)', () => {
     const { container } = render(ComparisonView, { props: { unNumber: '1203', data: DEMO_DATA } })
     const heads = [...container.querySelectorAll('thead th')].map(th => th.textContent?.trim().split(/\s/)[0])
-    expect(heads).toEqual(['Angabe', 'ADR', 'RID', 'IMDG', 'ICAO', 'ADN'])
-    expect(container.querySelector('td[data-mode="ADN"]')).toHaveTextContent('Die BAM veröffentlicht keine ADN-Daten.')
+    // ADN is empty by design (no BAM data): no column
+    expect(heads).toEqual(['Angabe', 'ADR', 'RID', 'IMDG', 'ICAO'])
+    expect(container.querySelector('[data-mode="ADN"]')).toBeNull()
+    expect(screen.getByTestId('adn-note')).toHaveTextContent('ADN (Binnenschifffahrt): keine Daten in der BAM-Quelle.')
     expect(container.querySelector('table')!.parentElement).toHaveClass('overflow-x-auto')
   })
 
@@ -142,7 +144,7 @@ describe('ComparisonView', () => {
     const sv = cards.querySelector('li[data-field="specialProvisions"]')!
     expect(sv.querySelector('[data-mode="UN"]')).toHaveTextContent('243')
     expect(sv.querySelector('[data-mode="UN"] dt')).toHaveTextContent('UN-Modellvorschriften')
-    expect(cards).toHaveTextContent('Die BAM veröffentlicht keine ADN-Daten.')
+    expect(cards.querySelector('[data-mode="ADN"]')).toBeNull()
   })
 
   it('marks a differing field on its card and the deviating mode line', () => {

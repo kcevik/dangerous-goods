@@ -1,6 +1,6 @@
 import { airProhibition, buildComparison, type CompareCell, type CompareRow, summarizeDeviations } from './compare'
 import { parseEms } from './ems'
-import { type Entry, type Lang, LABELS, type Modal, MODAL_DESC_I18N, MODALS } from './types'
+import { DATA_MODES, type Entry, type Lang, LABELS, type Modal, MODAL_DESC_I18N, MODALS } from './types'
 import { groupVariants, matchVariant, orderedNames, type Source, type Variant, variantLabel, variantLabels } from './variants'
 
 /**
@@ -150,11 +150,11 @@ export class ComparisonViewState {
   }
 
   /**
-   * The modes a mobile card lists for a row: every mode with data for the field (ADN has none), plus
-   * modes whose value the source lacks or another row carries — only "not in the regulation" is left out.
+   * The modes a mobile card lists for a row: every BAM mode with data for the field, plus modes
+   * whose value the source lacks or another row carries — only "not in the regulation" is left out.
    */
   cardModes(row: CompareRow): Modal[] {
-    return MODALS.filter(m => m !== 'ADN' && (row.cells[m].applicable || (row.cells[m].gap != null && row.cells[m].gap !== 'notInRegulation')))
+    return DATA_MODES.filter(m => row.cells[m].applicable || (row.cells[m].gap != null && row.cells[m].gap !== 'notInRegulation'))
   }
 
   /** "ADR 5 L · RID 5 L · IMDG 1 L" — what each compared mode says, no advice */

@@ -84,6 +84,7 @@ function field(
  * - limitedQty: ICAO LQ is the Y packing instruction + max net per package (`packing_instr_passenger_y`,
  *   `max_net_passenger_y`); a different concept from ADR/RID/IMDG "1 L" per inner packaging → shown, not compared
  * - packingInstructions: ICAO has them per aircraft type → `elsewhere` (PI Passagier / PI Fracht)
+ * - portableTankInstr: ICAO has no tanks; tankCodes (ADR/RID col. 12): IMDG uses portable tanks only
  * - transportCategory, multiplier: ADR/RID 1.1.3.6 only
  * - kemlerNumber: RID has the hazard identification number (col. 20), the BAM RID feed has no column → `noSource`
  * - tunnelCode: ADR only
@@ -103,6 +104,11 @@ export const COMPARE_FIELDS: readonly CompareField[] = [
     gaps: { ICAO: 'elsewhere' },
     seeAlso: ['piPassenger', 'piCargo'],
   }),
+  // ADR and RID take both from the same RID/ADR Chapters 4.2/4.3 notation; IMDG uses the same
+  // T codes but not ADR's "(M)" MEGC marker, so it is shown, not compared. The UN Model
+  // Regulations have the portable tank instructions too (col. 10) → reference (2026-11-23)
+  field('portableTankInstr', 'portableTank', 'set', ROAD_RAIL_SEA, { compareModes: LAND, reference: true }),
+  field('tankCodes', 'tankCodes', 'set', LAND),
   field('transportCategory', 'transportCat', 'text', LAND),
   field('multiplier', 'multiplier', 'text', LAND),
   field('kemlerNumber', 'kemler', 'text', ROAD, { gaps: { RID: 'noSource' } }),

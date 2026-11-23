@@ -11,7 +11,6 @@
   Modes where the field does not exist are left out instead of listing "—" rows.
 -->
 <div data-testid="comparison-cards" class="space-y-3">
-  <p class="px-1 text-xs italic text-[#5a7a99]"><span class="font-mono font-bold not-italic">ADN</span> · {view.L('noAdnData')}</p>
   <ul class="grid items-start gap-3 sm:grid-cols-2">
     {#each view.visibleRows as row (row.field)}
       <li data-field={row.field} data-status={row.status} class={['border bg-white', row.status === 'differs' || row.forbidden ? 'border-orange-300' : 'border-[#c8d6e5]']}>

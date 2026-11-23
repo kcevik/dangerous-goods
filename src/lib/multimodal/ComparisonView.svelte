@@ -119,6 +119,8 @@
       <div class="lg:hidden"><ComparisonCards {view} /></div>
       <div class="hidden lg:block"><ComparisonTable {view} /></div>
     {/if}
+    <!-- ADN is empty by design (no BAM data): one note instead of an empty column -->
+    <p data-testid="adn-note" class="px-1 text-xs italic text-[#5a7a99]">{view.L('noAdnData')}</p>
     <ComparisonLegend {view} />
   {/if}
 </div>

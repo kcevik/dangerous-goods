@@ -28,6 +28,9 @@
   }))
 
 
+  // only the ADR has a book, and a locked (demo) user would only meet a lock notice
+  const linkToBook = $derived(tool.currentModal === 'ADR' && !demo)
+
   // client-side load when the prop changes and nothing was preloaded for it
   $effect(() => {
     if (demo || !unNumber) return
@@ -150,8 +153,8 @@
         <div class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mb-2.5">
           UN {tool.currentUnNumber} · {tool.L('availability')}
         </div>
-        <div data-testid="overview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          {#each tool.MODALS as modal (modal)}
+        <div data-testid="overview-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {#each tool.modes as modal (modal)}
             {@const entry = tool.getEntry(modal)}
             {@const rows = tool.hasRows(modal)}
             <div
@@ -201,11 +204,13 @@
             </div>
           {/each}
         </div>
+        <!-- ADN is empty by design: one note instead of an empty tile and tab -->
+        <p data-testid="adn-note" class="mt-2 text-[11px] italic text-[#5a7a99]">{tool.L('noAdnData')}</p>
       </div>
 
       <!-- Modal tabs -->
       <div data-testid="mode-tabs" class="flex overflow-x-auto overscroll-x-contain border-b-2 border-[#b0c4d8]" role="tablist">
-        {#each tool.MODALS as modal (modal)}
+        {#each tool.modes as modal (modal)}
           {@const entry = tool.getEntry(modal)}
           {@const rows = tool.hasRows(modal)}
           <button
@@ -232,6 +237,7 @@
           {@const currentEntry = tool.currentEntry}
           {@const names = tool.variantNames(tool.currentModal)}
           {@const specs = tool.variantSpecs(tool.currentModal)}
+          {@const groups = tool.detailGroups(tool.currentModal)}
 
           <!-- UN header -->
           <div class="flex flex-wrap items-start gap-x-3.5 gap-y-2 pb-4 mb-4 border-b border-[#c8d6e5]">
@@ -421,6 +427,13 @@
                   <td class="field-value"><span class="mono-val">{currentEntry.equipment}</span></td>
                 </tr>
               {/if}
+              {#each tool.sourceGaps(tool.currentModal) as labelKey (labelKey)}
+                <!-- the regulation has this, the BAM feed has no column for it: never "not in the regulation" -->
+                <tr data-gap="noSource" class="even:bg-[#dce8f2]">
+                  <td class="field-label">{tool.L(labelKey)}</td>
+                  <td class="field-value"><span class="text-xs italic text-[#5a7a99]">{tool.L('noSourceData')}</span></td>
+                </tr>
+              {/each}
               {#if currentEntry.remark}
                 <tr class="even:bg-[#dce8f2]">
                   <td class="field-label">{tool.L('remark')}</td>
@@ -429,6 +442,55 @@
               {/if}
             </tbody>
           </table>
+
+          <!-- Table A detail columns, grouped (persona test 2026-11-23) -->
+          {#if groups.length > 0}
+            <div data-testid="detail-groups" class="mt-5 space-y-4">
+              {#each groups as group (group.key)}
+                <section data-group={group.key} aria-label={group.label}>
+                  <h3 class="font-mono text-[10px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] pb-1.5 border-b-2 border-[#c8d6e5]">{group.label}</h3>
+                  <!-- fixed label column from sm, so the groups line up under each other -->
+                  <table class="w-full text-sm border-collapse sm:table-fixed">
+                    <tbody>
+                      {#each group.rows as row (row.field)}
+                        <tr data-field={row.field} class="even:bg-[#dce8f2]">
+                          <td class="field-label detail-label">{row.label}</td>
+                          <td class="field-value">
+                            {#if row.noSource}
+                              <span class="text-xs italic text-[#5a7a99]">{tool.L('noSourceData')}</span>
+                            {:else if row.codes.length > 0}
+                              <span class="inline-flex flex-wrap gap-1 align-middle">
+                                {#each row.codes as code, i (code)}
+                                  <span class="badge bg-[#1e3a5f] text-blue-200">{code}{#if i < row.codes.length - 1}<span class="sr-only">, </span>{/if}</span>
+                                {/each}
+                              </span>
+                            {:else}
+                              <span class="text-[13px] font-semibold text-[#0f2744]">{row.text}</span>
+                            {/if}
+                            {#if linkToBook}
+                              {#each row.sections as section (section)}
+                                <a
+                                  href={`${resolve('/(app)/regelwerk/[mode=bookMode]', { mode: 'adr' })}?section=${encodeURIComponent(section)}`}
+                                  target="_blank"
+                                  rel="noopener"
+                                  aria-label={tool.L('openSection').replace('{section}', section)}
+                                  title={tool.L('openSection').replace('{section}', section)}
+                                  class="ml-1.5 inline-flex min-h-11 lg:min-h-0 items-center align-middle font-mono text-[11px] text-[#3d5a78] underline decoration-[#b0c4d8] underline-offset-2 hover:text-orange-600"
+                                >{section}&nbsp;↗</a>
+                              {/each}
+                            {/if}
+                          </td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </section>
+              {/each}
+              {#if groups.some(g => g.rows.some(r => r.codes.length > 0))}
+                <p class="text-[11px] italic text-[#5a7a99]">{tool.L(linkToBook ? 'detailsHintBook' : 'detailsHint')}</p>
+              {/if}
+            </div>
+          {/if}
 
           <!-- Special provisions -->
           {#if currentEntry.specialProvisions}
@@ -481,6 +543,10 @@
   }
   .field-value {
     @apply py-2 px-2.5 border-b border-[#c8d6e5] align-top text-[#2d5070] wrap-anywhere hyphens-auto max-sm:block max-sm:pt-0.5;
+  }
+  /* long detail labels wrap inside one fixed column instead of pushing the values around */
+  .detail-label {
+    @apply sm:w-64 sm:whitespace-normal;
   }
   .badge {
     @apply inline-block font-mono text-[10px] font-bold px-2 py-0.5 tracking-[0.3px];

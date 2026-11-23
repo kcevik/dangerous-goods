@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-23 · **Tests:** 1049 green + 1 skipped (85 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
+**Last updated:** 2026-11-23 · **Tests:** 1275 green + 1 skipped (97 files) · `pnpm check` 0 errors (6 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -11,6 +11,15 @@ every working session.
 `20261123120000_account_page` is applied. Branch `fix/followups`: scroll + focus after account
 deletion, 44 px touch targets in the app shell, docs.
 
+**Merged later on 2026-11-23:** #7 1000-Punkte-Rechner (F-02), #8 ADR viewer fixes (counter, TOC labels,
+mobile find bar, section jumps, SV landing), #10 landing claims, #11 comparison correctness (source gaps,
+ICAO Y-LQ + state variations, FORBIDDEN as critical, "See SP…" not compared, IMDG IBC). Branch
+`feat/adr-detail-data` (this session, PR open): Table A detail columns on the UN page, demo-data
+generator, ADN hidden, 1000-Punkte card live. **Open:** #9 search synonyms — waits for the owner's
+review of the synonym list.
+
+Persona test 2026-11-23 (five simulated officers, desktop + phone): `docs/research/2026-11-23-persona-tests/`.
+
 ---
 
 ## Features
@@ -20,21 +29,23 @@ deletion, 44 px touch targets in the app shell, docs.
 | F-04 | Login, accounts, manual activation | ✅ done | Signup verified end-to-end on 2026-09-29 (built-in mail sender) |
 | F-04 | Account page (`/konto`) | ✅ done | Password change (re-auth), billing address, subscription status + disabled checkout placeholder, self-service deletion (spec 2026-11-23). Migration `20261123120000_account_page` applied 2026-11-23. Browser-checked 2026-11-23 at 320–1280 px with the E2E account (address save/reload, validation, wrong password, password change + restore, delete validation); real deletion tested end-to-end 2026-11-23 with the throw-away `E2E_DELETE_EMAIL` account (redirect to `/?konto=geloescht` with the notice, login afterwards fails). Fixed 2026-11-23 (`fix/followups`): `html { scroll-behavior: smooth }` animated SvelteKit's scroll reset from the delete card, so the landing page now jumps to the top instantly in `afterNavigate` and focuses the notice (`role="status"`, `tabindex="-1"`). Verified with tests and a browser run whose delete POST was answered in the browser with a fake redirect (no real deletion; the throw-away account is consumed) |
 | — | Sales modal + banner for locked accounts | ✅ done | `lib/upsell/`: `<dialog>` modal on the first `(app)` page view, then at most every 10 min on navigation (`UpsellThrottle`, last-shown time in localStorage); a slim banner (pitch, price, "Jetzt freischalten" → `/konto#abo`) replaces the old lock banner. Never for active accounts, never on `/konto`, never outside `(app)`. Price **125 € pro Monat inkl. MwSt.** set 2026-11-23 in `LEGAL_FACTS` (+ billing period "monatlich im Voraus"), read via `planPrice()` by the modal, banner, `/konto` Abo card and AGB. The page-level `LockNotice` is gone (the banner is the one lock notice; pages keep only page-specific hints). Browser-checked 2026-11-23 at 320/375/768/1280 with the locked account (first view, focus in/trap/return, Escape, "Später", throttle with a faked 11-min-old timestamp, banner under the burger header, no horizontal scroll, CTA → `/konto#abo` in view, demo data) and the activated account (no modal, no banner) |
-| F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed |
+| F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed. Since 2026-11-23 the UN page also shows the Table A detail columns in groups (Verpackung, Tank, Beförderung, Stauung und Trennung, Sicherung 1.10, Weitere Angaben): ADR/RID 9a, 9b MP, 10/11 T/TP, 12/13 tank code + TU/TC/TE/TA/TT/TM, ADR 14 vehicle, 16–19 V/W, VC/AP, CV/CW, S, RID CE, 1.10.3 level + thresholds, N mark, compatibility group; IMDG PP/B, T/TP, H, SGG (`lib/multimodal/details.ts`). No texts for these codes in the feed, so ADR rows link to the defining ADR section (`?section=`). ADN tab hidden (one note instead) |
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
 | — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
-| F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column; one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Own quick search (`QuickSearch`) to switch the UN number, also on `/un/:nummer`; the comparison tool no longer carries its inert search field (2026-11-08). Below `lg` one card per field (`ComparisonCards`); browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950 |
+| F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column (ADN column replaced by one note, 2026-11-23); two non-critical rows added 2026-11-23: portable tank instructions (ADR↔RID compared, IMDG shown, UN reference) and tank code (ADR↔RID); one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Own quick search (`QuickSearch`) to switch the UN number, also on `/un/:nummer`; the comparison tool no longer carries its inert search field (2026-11-08). Below `lg` one card per field (`ComparisonCards`); browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950 |
 | — | Legal pages (`/impressum`, `/datenschutz`, `/agb`, `/widerruf`) | 🟡 drafts live | Texts in `src/lib/legalPages/`; draft banner + `noindex` until `LEGAL_FACTS` is complete and a lawyer has checked them (go-live blocker 4) |
 | F-05 | Dashboard | ⚪ shell | Two live tiles (Stoffsuche, Regelwerksvergleich → UN 1203) |
-| F-02 | 1000-Punkte-Rechner | ⚪ not started | |
+| F-02 | 1000-Punkte-Rechner (`/tools/1000-punkte`) | ✅ done | Merged 2026-11-23 (PR #7). Open domain questions for an expert: (1) the BK-2-only limit of 333 units vs. a total of 999.9 points; (2) whether the 8.6 tunnel restrictions are lifted for a load under 1.1.3.6; (3) aerosols: mass without packaging — how the calculator should ask for it |
 | F-11 | Transport mode assistant | ❌ dropped | Owner decision 2026-11-08; removed from landing page, dashboard and CLAUDE.md |
 | F-03 | Document generator | ⚪ not started | |
 | F-06–08 | Duty checker, SV browser, packaging browser | ⚪ not started | |
 
 Landing page: the comparison section is live and computed from `DEMO_DATA` (no PDF/assistant claims,
-ADN no longer advertised as compared, hero "Neu: Regelwerksvergleich"). The five feature cards other
-than Stoffsuche still carry "Demnächst verfügbar". Un-gray a card when its tool ships.
+ADN no longer advertised as compared, hero "Neu: Regelwerksvergleich"). Feature cards: Stoffsuche,
+Regelwerksvergleich, ADR im Volltext, 1000-Punkte-Rechner and Konto are live; only LQ/EQ-Rechner and
+Dokumentengenerator carry "Demnächst verfügbar". Un-gray a card when its tool ships. `DEMO_DATA` is
+generated (`pnpm generate:demo`, run 2026-11-23); the demo tool shows no ADN tab.
 
 ## Next steps (recommended order)
 
@@ -92,13 +103,18 @@ book indexed at startup and checked by `/healthz`.
 
 ## Known issues and debt
 
+- **`*_entries.prohibited` is misleading:** it is filled from BAM `N_VERBOT`, where "1" means *permitted*
+  ("0" forbidden, "2" not subject to the regulations), and the import maps only "1" to `true`. So
+  `true` = permitted, `false` = forbidden *or* not subject. Nothing in the app reads it (ICAO prohibitions
+  come from "FORBIDDEN" in the packing-instruction columns). Rename or re-import as an enum before anyone uses it.
+- Detail columns not shown yet: ICAO `supplementary_code` (looks like the ERG drill code, e.g. "3L") and
+  `attachment` ("+"); meaning not confirmed from the BAM ICAO table description.
+
 - Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
-- F-10 minor (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation.
 - Idea: manual ICAO variant pick: list the variants whose division matches the selected ADR classification code first (e.g. ADR 5A → ICAO 2.2).
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
-- `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.
 - 57 of 9,124 real-book search hits (0.6 %) get no highlight: table cells containing raw block HTML (`<p>`, nested tables) that the browser rearranges. Source quirk.
 - `/passwort-neu` accepts any session, not only a recovery session (review minor).
 - Book endpoint rate limits are keyed by IP before the access check; colleagues behind one NAT share the budget (review minor).

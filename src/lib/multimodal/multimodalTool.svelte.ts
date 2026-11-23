@@ -1,9 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isForbidden } from './compare'
+import { COMPARE_FIELDS, isForbidden } from './compare'
+import { type DetailGroup, detailGroups } from './details'
 import { type EmsCode, parseEms } from './ems'
 import { fetchCompareForUn } from './mappers'
 import {
   BK_CLASSES,
+  DATA_MODES,
   type Entry,
   type Lang,
   LABELS,
@@ -40,7 +42,8 @@ export class MultimodalToolState {
   /** manual pick per mode where matching found no unambiguous variant */
   overrides = $state<Partial<Record<Modal, number>>>({})
 
-  readonly MODALS = MODALS
+  /** the tabs and overview tiles: ADN is empty by design (no BAM data) and shown only as a note */
+  readonly modes = DATA_MODES
   readonly #supabase: SupabaseClient | undefined
 
   constructor(options: MultimodalToolOptions = {}) {
@@ -140,6 +143,17 @@ export class MultimodalToolState {
   /** an EmS code without BAM's "!" marker, which stands for the IMDG Code's underlining */
   ems(value: string): EmsCode {
     return parseEms(value)
+  }
+
+  /** Table A detail sections of the mode's displayed entry (packaging, tank, carriage, 1.10 …) */
+  detailGroups(mode: Modal): DetailGroup[] {
+    const entry = this.getEntry(mode)
+    return entry ? detailGroups(entry, mode, key => this.L(key)) : []
+  }
+
+  /** LABELS keys of fields the regulation has but the BAM feed of `mode` carries no column for */
+  sourceGaps(mode: Modal): string[] {
+    return COMPARE_FIELDS.filter(f => f.gaps[mode] === 'noSource').map(f => f.labelKey)
   }
 
   /** a list column ("P001, IBC02, R001") as separate codes */

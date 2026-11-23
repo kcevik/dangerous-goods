@@ -22,12 +22,12 @@
 - Multimodaler Regelwerksvergleich (ADR / RID / IMDG / ICAO nebeneinander, Abweichungen markiert)
 - Sondervorschriften im Volltext; Oberfläche des Vergleichs auf DE/EN/FR/TR
 - ADR als durchsuchbarer Lesetext (kein rechtsverbindlicher Text)
+- 1000-Punkte-Rechner nach ADR 1.1.3.6 (Freistellung bei nicht mehr als 1.000 Punkten je
+  Beförderungseinheit), mit Ausdruck
 - Konto: Passwort, Rechnungsadresse, Abo-Status, Selbstlöschung
 
 ## Geplant
 
-- 1000-Punkte-Rechner nach ADR 1.1.3.6 (Freistellung bei nicht mehr als 1.000 Punkten je
-  Beförderungseinheit)
 - Dokumentengenerator für Beförderungspapiere
 - Rechner für begrenzte und freigestellte Mengen (LQ/EQ)
 
