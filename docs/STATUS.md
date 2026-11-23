@@ -110,7 +110,7 @@ book indexed at startup and checked by `/healthz`.
 - Detail columns not shown yet: ICAO `supplementary_code` (looks like the ERG drill code, e.g. "3L") and
   `attachment` ("+"); meaning not confirmed from the BAM ICAO table description.
 
-- Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
+- Search: batteries rank behind other hits for "lithium"/"battery" (within a rank tier results are ordered by UN number); they are on the first page or behind "Weitere Treffer laden". Synonyms exist only for the Stoffsuche, not for the ADR text viewer (see "Tunnelcode" below). `/un/9999` (ICAO placeholder) is still directly reachable; only the search excludes it.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
 - Idea: manual ICAO variant pick: list the variants whose division matches the selected ADR classification code first (e.g. ADR 5A → ICAO 2.2).
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.

@@ -7,12 +7,12 @@ Designs and plans are indexed in `docs/README.md`.
 ## Project Overview
 
 A web platform for **Gefahrgutbeauftragte** (dangerous goods officers): the regulations (ADR, RID,
-IMDG, ICAO, ADN, UN) as a working tool, not a static reference.
+IMDG, ICAO, plus the UN model regulations as a reference; ADN has no BAM data) as a working tool, not a static reference.
 
 - **Brand & domain:** **gefahrgut.org** (never "GefahrgutProfi" — old name). The apex still serves
   WordPress (blog, ~219 URLs, legal pages); rollout plan: test at `app.gefahrgut.org` (behind basic auth), blog to
   `blog.gefahrgut.org`, then the apex to the app (spec `2026-09-29-prelaunch-deployment`).
-- **Core differentiator:** cross-mode comparison (ADR vs RID vs IMDG vs ICAO vs ADN) — Phase 1.
+- **Core differentiator:** cross-mode comparison (ADR vs RID vs IMDG vs ICAO; ADN would need another source) — Phase 1.
 - **Data source:** BAM GEFAHRGUT database, licence dl-de/by-2-0 (attribution required,
   modifications must be marked). The database is authoritative.
 - **Business model:** no free tier; exactly one paid plan: **125 € pro Monat inkl. MwSt.** (owner, 2026-11-23),
@@ -47,8 +47,9 @@ Meilisearch, ERP/TMS API. Status per feature: `docs/STATUS.md`.
 Public: `/`, `/impressum`, `/datenschutz`, `/agb`, `/widerruf`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`,
 `/auth/fehler`, `/logout`, `/healthz`. Login required (guard in `hooks.server.ts` →
 `/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/un/:nummer/vergleich`, `/regelwerk/:mode` (only `adr`),
-`/konto` (account: password, billing address, subscription status, deletion — usable while locked).
-Planned (German, like the live ones): more tools under `/tools/…`, `/documents`, `/changes`, `/settings`.
+`/konto` (account: password, billing address, subscription status, deletion — usable while locked),
+`/tools/1000-punkte` (F-02 calculator; active accounts only, locked ones see the upsell banner and no demo).
+Planned (German, like the live ones): more tools under `/tools/…` (LQ/EQ), `/documents`, `/changes`, `/settings`.
 
 ## Commands
 
@@ -87,7 +88,7 @@ src/
     multimodal/           # comparison tool: types.ts (LABELS, DEMO_DATA, pickSvText), mappers.ts
                           # (+ fetchUnReference), variants.ts, multimodalTool.svelte.ts,
                           # specialProvisions.svelte.ts, MultimodalTool.svelte, details.ts (Table A detail groups),
-                    # demoData.generated.ts (pnpm generate:demo); F-10 side by side:
+                          # demoData.generated.ts (pnpm generate:demo); F-10 side by side:
                           # compare.ts (COMPARE_FIELDS, buildComparison), comparisonView.svelte.ts,
                           # ComparisonView/ComparisonTable/ComparisonCards (below lg)/ComparisonCellValue/
                           # ComparisonLegend/VariantPicker.svelte
@@ -97,7 +98,7 @@ src/
     upsell/               # sales modal + banner for locked accounts: upsellThrottle.svelte.ts, copy.ts,
                           # UpsellModal.svelte, UpsellBanner.svelte
     nav/                  # BurgerMenu.svelte + menu.svelte.ts (MenuState), appNav.ts (APP_NAV_ITEMS, inline + burger)
-    landing/              # landing sections; faq.ts
+    landing/              # landing sections; faq.ts; siteFacts.ts (SITE_FACTS: UN numbers, entries, SVs — the one place for the numbers)
     regulations/          # book viewer, client side: bookTypes (+ BOOK_LABELS), bookHighlighter,
                           # adrBookViewer.svelte.ts, bookFetch, Book*.svelte
     points/               # 1000-Punkte-Rechner (ADR 1.1.3.6): points.ts (rules), duties.ts (1.1.3.6.2 duties + refs),
@@ -108,7 +109,7 @@ src/
     legalPages/           # legal texts: facts.ts (LEGAL_FACTS), document.ts (fillDocument), impressum/datenschutz/agb/widerruf.ts,
                           # LegalPage.svelte, LegalLinks.svelte
     server/
-      adrBook/            # book viewer, server side: index, indexer, slice, render, api, access
+      adrBook/            # book viewer, server side: index, indexer, slice, render, api, access, sourceFixes (load-time repairs of the OCR source)
       registrationMode.ts # REGISTRATION_MODE → 'open' | 'waitlist'
       rateLimit.ts, authValidation.ts, accountValidation.ts
 tests/                    # vitest (flat); helpers/, fixtures/, stubs/
@@ -118,7 +119,7 @@ supabase/templates/       # auth email templates (pasted into the dashboard)
 deploy/                   # compose.yaml, app.env.example, Caddyfile
 scripts/                  # import-regulations.ts, generate-demo-data.ts, deploy.sh, remote-switch.sh (runs on the server)
 csvbase/                  # BAM TSV sources + the ADR book markdown — gitignored
-docs/                     # STATUS.md, README.md (index), schema doc, specs + plans
+docs/                     # STATUS.md, README.md (index), schema doc, specs + plans, research/ (persona tests, synonym review)
 ```
 
 ## Data / CSV Import
@@ -164,6 +165,7 @@ docs/                     # STATUS.md, README.md (index), schema doc, specs + pl
 | `ADDRESS_HEADER` / `XFF_DEPTH` | adapter-node | `X-Forwarded-For` / `1` — Caddy sets the real client as the right-most hop (no trusted proxies) |
 | `PORT` | adapter-node | 3000 |
 | `DEPLOY_HOST`, `DEPLOY_USER` | `.deploy.env` (gitignored) | target of `scripts/deploy.sh` |
+| `E2E_EMAIL`/`E2E_PASSWORD`, `E2E_LOCKED_EMAIL`/`E2E_LOCKED_PASSWORD` | `.env` only | test accounts for browser checks: activated (full data) and locked (demo + upsell). Never read by the app. The throw-away delete account was consumed on 2026-11-23 |
 
 Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 **Vite gotcha:** `.env.local` overrides `.env` — never keep a placeholder template under that name.
@@ -179,6 +181,8 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - `$env/dynamic/private`: `vi.hoisted` object + `vi.mock('$env/dynamic/private', () => ({ env }))` + top-level `await import(...)`.
 - Static guards: migrations (`migration-*.test.ts`), email templates, deploy files (Dockerfile, compose, `.dockerignore`, deploy script), `tailwind-classes.test.ts` (utilities that compile to nothing).
 - Book tests use `tests/fixtures/adr-book-sample.md`; the real file (`csvbase/`) is gitignored, so real-file checks are never committed.
+- `<dialog>`: jsdom has no `showModal()`; `tests/helpers/dialog.ts` stands in. Responsive utilities used in `@apply` or classes are compiled by `tests/responsive-utilities.test.ts` / `tailwind-classes.test.ts`.
+- **Browser checks** (jsdom cannot see layout): drive Chromium with `playwright-core` from a script outside the repo (never add Playwright to `package.json`); check 320, 375, 768, 1024, 1280 px for horizontal scroll (`scrollWidth <= innerWidth`) and 44 px targets, and look at the screenshots. Use the `E2E_*` accounts read-only: never log out (it signs out every session of the shared account), never change the password or address except in a test that restores it. Login is limited to 10 per IP per 15 min, so save the storage state. Chromium may lack `libnspr4`/`libnss3`/`libasound2`: unpack the `.deb`s locally and set `LD_LIBRARY_PATH`. The 🌐 emoji renders as a box in headless Chromium (missing font, not an app bug).
 
 ## Coding Conventions
 
@@ -190,12 +194,12 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **Tailwind v4 + `@apply`** needs `@reference "tailwindcss"` at the top of the `<style>` block.
 - **Touch targets:** every link/button/field is at least 44×44 px (`min-h-11`/`min-w-11`, `inline-flex items-center`); keep the visual size with padding or negative margins; the app header stays `h-14` and one row at 768 px. Tests pin the classes.
 - **Smooth scrolling:** `html { scroll-behavior: smooth }` (app.css) animates SvelteKit's scroll reset on client navigations; a page whose notice must be in view at once (e.g. `/?konto=geloescht`) scrolls instantly and focuses it in `afterNavigate`.
-- **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`. The `(app)` layout's `UpsellBanner` is the one lock notice;
+- **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`. `/konto` touches no regulation data and is fully usable while locked. The `(app)` layout's `UpsellBanner` is the one lock notice;
   pages add only page-specific hints (e.g. "UN 1090 ist erst nach der Freischaltung verfügbar"), the demo tools carry their DEMO badge.
 - **Sales modal (locked accounts):** only in the `(app)` layout; never for active accounts, never on `/konto`.
   Opens on the first page view, then at most every 10 min on navigation (`UpsellThrottle`, localStorage key
   `gefahrgut.upsell.lastShown`, storage failures just show it again); a banner covers the time in between.
-  Its CTA links to `/konto#abo` — the Abo card keeps `id="abo"`. Benefit facts follow the site facts. `/konto` touches no regulation data and is fully usable while locked.
+  Its CTA links to `/konto#abo` — the Abo card keeps `id="abo"`; until Stripe exists that card only shows a disabled button, so the sales path is a dead end by design for now. Benefit facts follow the site facts.
 - **Account actions:** password change and deletion re-authenticate with the current password (`signInWithPassword` on the session email) first; their rate limits are keyed by user id. Deletion goes through the `delete_own_account()` RPC — the app still never uses the service-role key.
 
 ## Key Rules
@@ -209,8 +213,8 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **Failures are never "no data":** a failed load must show an error state, not an empty result — in this domain "nothing found" is a statement about the regulation.
 - **Auth flow:** confirmation and recovery go through `/auth/confirm?token_hash=…&type=…&next=…` (server-side `verifyOtp`); templates in `supabase/templates/` extend `{{ .RedirectTo }}`. Rate limits: login 10/IP/15 min; register, launch list and reset 5/IP/hour. Registration, the launch list and reset never reveal whether an address exists.
 - **Launch list:** `CONSENT_VERSION` is stored with every address and must change whenever `LAUNCH_CONSENT_TEXT` changes (a test pins both). The first mail these addresses ever get is the double-opt-in confirmation.
-- **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` (`lib/landing/faq.ts`). Site facts (16.730 entries, 1.354 SVs) stay consistent across meta description, FAQ, SeoContent and `static/llms.txt`.
-- **ADR book viewer:** the book is a **file** (`ADR_BOOK_PATH`), never in Postgres, `static/` or an image. No RLS stands behind it — the `isActive` check in the page load and both endpoints (`bookAccessDenied`) **is** the gate; any new reader must repeat it. Generated HTML carries only `book-*` classes (Tailwind cannot see runtime classes). The renderer tags blocks and table rows with `book-ln-<line>` so `pickActiveMark` finds the right `<mark>`. ~25–30 MB index per worker. No keyboard shortcuts except Enter in the search field (owner decision).
+- **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` (`lib/landing/faq.ts`). Site facts (2.347 UN numbers, 16.730 entries, 1.354 SVs) live in `lib/landing/siteFacts.ts` and stay consistent across meta description, FAQ, SeoContent, the hero panel and `static/llms.txt` (a test pins them); update them after every yearly import. Never claim more than the data holds: the BAM certifies nothing ("Datenbasis: BAM-Datenbank GEFAHRGUT"), there are 4 regulations plus the UN reference, ADN is not advertised, and no promise of "rechtssicher"/"immer aktuell". The FAQ price answer lives in `PRICE_FAQ_ANSWER` and names no amount.
+- **ADR book viewer:** the book is a **file** (`ADR_BOOK_PATH`), never in Postgres, `static/` or an image. No RLS stands behind it — the `isActive` check in the page load and both endpoints (`bookAccessDenied`) **is** the gate; any new reader must repeat it. Generated HTML carries only `book-*` classes (Tailwind cannot see runtime classes). The renderer tags blocks and table rows with `book-ln-<line>` so `pickActiveMark` finds the right `<mark>`. ~25–30 MB index per worker. No keyboard shortcuts except Enter in the search field (owner decision). The source is repaired at load time (`sourceFixes.ts`: orphan `**`, `$…$` maths → sub/sup); the TOC follows the ADR numbering (part → chapter → section by digit count), not the converter's unreliable `#` levels; section lookup tolerates bold and "Kapitel X.Y" headings and normalises input ("8.6.", "Kapitel 8.6"). Anchors, the hit counter (`statusLabel`) and SV/section scroll targets are covered by tests.
 - **Regulatory comparison (F-10):** `COMPARE_FIELDS` plus the display-only `DETAIL_FIELDS` must list exactly the fields each mapper writes (a test pins it).
   Only modes in a field's `compareModes` are compared — labels, packing instructions, tank instructions (T, tank code) and SVs ADR↔RID only (other
   notations differ in the BAM feed); ICAO LQ (Y instruction + max net) is shown but never compared; absence is never
@@ -220,6 +224,7 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
   "Keine Angabe in der Quelle (BAM)" where only the feed lacks it (RID Kemler), "→" where another row carries it.
   ICAO "FORBIDDEN" (read from the PI columns — `icao_entries.prohibited` is BAM's N_VERBOT, 1 = permitted) is always
   a critical finding. IMDG/UN IBC instructions (col. 10) join the packing instructions. The landing mockup is computed from `DEMO_DATA`.
+- **1000-Punkte-Rechner (F-02, `lib/points/`):** rules per ADR 1.1.3.6 — BK 1 ×50, BK 2 ×3, BK 3 ×1, BK 4 ×0; footnote a) (multiplier 20, e.g. UN 1005) is read from `multiplier`; exempt only if the sum is **not more than** 1000 (1000 itself is exempt); any BK 0 or "BEFÖRDERUNG VERBOTEN" row means not exempt; empty uncleaned packagings count as BK 4 (BK 0 content stays 0); BK "-"/NULL means "bitte prüfen", never 0 points. Quantity units follow 1.1.3.6.3 (aerosols: mass without packaging). It never reads `adr_entries.prohibited`; it uses `transport_category` and `remark`. A failed lookup is an error, never 0 points. The result lists the duties that still apply, with paragraph references; links into the ADR viewer only where the book has that heading. Open expert questions (STATUS.md): the 333 limit for BK 2 alone, 8.6 tunnel rules, aerosol mass. Print view is the browser's print dialog (no Puppeteer, nothing stored).
 - **Stoffsuche:** `lib/search/` — `normalize.ts` (case/umlaut/ß/separator folding, `UN3373` → UN number, ILIKE
   patterns), `results.ts` (ranking + cards), `synonyms.ts` (curated trade names; owner-reviewed, every UN number checked
   by SQL, table in `docs/research/synonyms-review.md`). Synonym hits always come after official-name hits and are
