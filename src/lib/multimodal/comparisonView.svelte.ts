@@ -1,4 +1,4 @@
-import { buildComparison, type CompareRow, summarizeDeviations } from './compare'
+import { buildComparison, type CompareCell, type CompareRow, summarizeDeviations } from './compare'
 import { type Entry, type Lang, LABELS, type Modal, MODAL_DESC_I18N, MODALS } from './types'
 import { groupVariants, matchVariant, orderedNames, type Source, type Variant, variantLabel } from './variants'
 
@@ -98,6 +98,29 @@ export class ComparisonViewState {
     return variantLabel(variant, this.currentLang, mode, this.L('pgShort'))
   }
 
+  /**
+   * What a cell means beyond its visible value (shown as `title` and read out as sr-only text);
+   * undefined = the value speaks for itself. The UN reference column is never compared, so it
+   * never says "not compared".
+   */
+  cellHint(cell: CompareCell, isReference = false): string | undefined {
+    if (!cell.applicable) return this.L('notApplicable')
+    if (cell.unresolved) return this.L('unresolved')
+    if (!isReference && cell.raw && !cell.compared) return this.L('notCompared')
+    return undefined
+  }
+
+  /** screen-reader name of a deviation (colour and ▲ alone are not enough) */
+  deviationLabel(row: CompareRow, cell: CompareCell): string | undefined {
+    if (!cell.deviates) return undefined
+    return this.L(row.critical ? 'legendCritical' : 'legendDiffers')
+  }
+
+  /** the modes a mobile card lists for a row: every mode with data for the field (ADN has none) */
+  cardModes(row: CompareRow): Modal[] {
+    return MODALS.filter(m => m !== 'ADN' && row.cells[m].applicable)
+  }
+
   /** "ADR 5 L · RID 5 L · IMDG 1 L" — what each compared mode says, no advice */
   deviationText(row: CompareRow): string {
     return MODALS
@@ -124,4 +147,11 @@ export class ComparisonViewState {
   overrideVariant(mode: Modal, index: number): void {
     this.overrides = { ...this.overrides, [mode]: index }
   }
+}
+
+/** text/background classes of a mode's cell — shared by the table and the mobile cards */
+export function cellTone(row: CompareRow, cell: CompareCell): string {
+  if (cell.deviates) return row.critical ? 'bg-orange-100 text-orange-900 font-bold' : 'bg-amber-50 text-[#0f2744] font-semibold'
+  if (cell.raw && !cell.compared) return 'text-[#5a7a99] italic'
+  return row.status === 'same' ? 'text-[#5a7a99]' : 'text-[#0f2744]'
 }

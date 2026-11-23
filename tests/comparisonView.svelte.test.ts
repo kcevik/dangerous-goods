@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ComparisonViewState } from '$lib/multimodal/comparisonView.svelte'
+import { cellTone, ComparisonViewState } from '$lib/multimodal/comparisonView.svelte'
 import { DEMO_DATA, type Entry } from '$lib/multimodal/types'
 import { UN_1203, UN_1993 } from './fixtures/variant-rows'
 
@@ -85,5 +85,26 @@ describe('ComparisonViewState', () => {
     const view = new ComparisonViewState({ ADR: [], RID: [], IMDG: [], ICAO: [], ADN: [] })
     expect(view.anchorMode).toBeNull()
     expect(view.visibleRows).toEqual([])
+  })
+
+  it('explains cells for title and screen readers; the UN reference is never "not compared"', () => {
+    const view = new ComparisonViewState(DEMO_DATA, [e({ packingGroup: 'II', specialProvisions: '243' })])
+    const sv = rowOf(view, 'specialProvisions')
+    expect(view.cellHint(rowOf(view, 'tunnelCode').cells.IMDG)).toBe('In diesem Regelwerk nicht vorgesehen')
+    expect(view.cellHint(sv.cells.IMDG)).toBe('Nicht verglichen: abweichende Systematik')
+    expect(view.cellHint(sv.cells.ADR)).toBeUndefined()
+    expect(view.cellHint(sv.reference!, true)).toBeUndefined()
+    const ambiguous = new ComparisonViewState(AMBIGUOUS)
+    expect(ambiguous.cellHint(rowOf(ambiguous, 'limitedQty').cells.IMDG)).toBe('Keine eindeutige Variante')
+  })
+
+  it('names deviations and lists only modes that have the field on a card', () => {
+    const view = new ComparisonViewState({ ADR: [e({ limitedQty: '5 L' })], RID: [e({ limitedQty: '5 L' })], IMDG: [e({ limitedQty: '1 L' })] })
+    const lq = rowOf(view, 'limitedQty')
+    expect(view.deviationLabel(lq, lq.cells.IMDG)).toBe('Kritische Abweichung')
+    expect(view.deviationLabel(lq, lq.cells.ADR)).toBeUndefined()
+    expect(cellTone(lq, lq.cells.IMDG)).toContain('bg-orange-100')
+    expect(view.cardModes(lq)).toEqual(['ADR', 'RID', 'IMDG'])
+    expect(view.cardModes(rowOf(view, 'tunnelCode'))).toEqual(['ADR'])
   })
 })
