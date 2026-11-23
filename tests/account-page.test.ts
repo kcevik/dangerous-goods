@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/svelte'
 import { describe, expect, it, vi } from 'vitest'
+import { planPrice } from '$lib/legalPages/facts'
 import KontoPage from '../src/routes/(app)/konto/+page.svelte'
 
 vi.mock('$app/forms', () => ({ enhance: () => ({ destroy() {} }) }))
@@ -32,11 +33,18 @@ describe('/konto page', () => {
     }
   })
 
-  it('shows a locked account with a disabled checkout button and no price', () => {
+  it('shows a locked account with a disabled checkout button', () => {
     const { container, getByRole } = renderPage()
     expect(container).toHaveTextContent('gesperrt')
     expect(getByRole('button', { name: 'Abo abschließen — demnächst verfügbar' })).toBeDisabled()
-    expect(container.textContent).not.toMatch(/€|EUR/)
+  })
+
+  it('gives the Abo card the anchor the sales modal links to, with the price from LEGAL_FACTS', () => {
+    const { container } = renderPage()
+    const card = container.querySelector('section#abo')!
+    expect(card).toHaveAttribute('aria-labelledby', 'subscription-heading')
+    expect(card.querySelector('[data-testid="plan-price"]')).toHaveTextContent(planPrice()!)
+    expect(container.querySelectorAll('#abo')).toHaveLength(1)
   })
 
   it('shows an active account with its activation date', () => {

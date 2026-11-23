@@ -1,9 +1,11 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
-  import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
+  import { page } from '$app/state'
   import LegalLinks from '$lib/legalPages/LegalLinks.svelte'
   import BurgerMenu from '$lib/nav/BurgerMenu.svelte'
   import { APP_NAV_ITEMS } from '$lib/nav/appNav'
+  import UpsellBanner from '$lib/upsell/UpsellBanner.svelte'
+  import UpsellModal from '$lib/upsell/UpsellModal.svelte'
 
   let { data, children } = $props()
 </script>
@@ -48,12 +50,8 @@
   </header>
 
   {#if !data.isActive}
-    <div class="bg-amber-100 border-b border-amber-300 text-amber-900 text-sm">
-      <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-start gap-2">
-        <span aria-hidden="true">🔒</span>
-        <span class="min-w-0 break-words">{LOCK_MESSAGE}</span>
-      </div>
-    </div>
+    <UpsellBanner />
+    <UpsellModal isActive={data.isActive} pathname={page.url.pathname} />
   {/if}
 
   <div class="flex-1">

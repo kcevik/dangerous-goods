@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-23 · **Tests:** 971 green (83 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
+**Last updated:** 2026-11-23 · **Tests:** 999 green + 1 skipped (85 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -14,6 +14,7 @@ every working session.
 |---|---|---|---|
 | F-04 | Login, accounts, manual activation | ✅ done | Signup verified end-to-end on 2026-09-29 (built-in mail sender) |
 | F-04 | Account page (`/konto`) | ✅ done | Password change (re-auth), billing address, subscription status + disabled checkout placeholder, self-service deletion (spec 2026-11-23). Migration `20261123120000_account_page` applied 2026-11-23. Browser-checked 2026-11-23 at 320–1280 px with the E2E account (address save/reload, validation, wrong password, password change + restore, delete validation); actual deletion not yet tested live (no second test account) |
+| — | Sales modal + banner for locked accounts | ✅ code complete | `lib/upsell/`: `<dialog>` modal on the first `(app)` page view, then at most every 10 min on navigation (`UpsellThrottle`, last-shown time in localStorage); a slim banner (pitch, price, "Jetzt freischalten" → `/konto#abo`) replaces the old lock banner. Never for active accounts, never on `/konto`, never outside `(app)`. Price **125 € pro Jahr inkl. MwSt.** set 2026-11-23 in `LEGAL_FACTS` (+ billing period "jährlich im Voraus"), read via `planPrice()` by the modal, banner, `/konto` Abo card and AGB. Not yet browser-checked: no locked test account (`E2E_LOCKED_EMAIL`/`E2E_LOCKED_PASSWORD`) in `.env` |
 | F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed |
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
@@ -51,10 +52,11 @@ than Stoffsuche still carry "Demnächst verfügbar". Un-gray a card when its too
 ## Owner to-dos
 
 - Test the real account deletion on `/konto` with a throw-away account (needs a second test account).
+- Create a locked test account and put it into `.env` as `E2E_LOCKED_EMAIL` / `E2E_LOCKED_PASSWORD`, so the sales modal can be browser-checked (320/375/768/1280, throttle, Escape, link to `/konto#abo`).
 
 - Book the Strato VPS; DNS `app` → VPS (apex only in Phase C; never touch MX).
 - WordPress: move the blog to `blog.gefahrgut.org` (rollout Phase B); link the app's `/impressum` and give the blog its own privacy policy.
-- Legal: found the company, fill in `src/lib/legalPages/facts.ts` (address, contact, register, VAT ID, § 18 MStV person, mail sender, log retention, price, billing period, minimum term), then have all four texts checked by a lawyer.
+- Legal: found the company, fill in `src/lib/legalPages/facts.ts` (address, contact, register, VAT ID, § 18 MStV person, mail sender, log retention, minimum term; price and billing period set 2026-11-23), then have all four texts checked by a lawyer.
 - Pick the analytics tool, if any — it needs a consent banner and a new privacy section before it goes live.
 
 ## Parked (do not start without being asked — owner, 2026-09-29)

@@ -27,9 +27,12 @@ export interface LegalFacts {
   mailProvider: string | null | false
   /** how long the web server keeps access logs, e.g. "14 Tagen" */
   logRetention: string | null | false
-  /** e.g. "29 € pro Monat" */
+  /**
+   * the one plan's price as shown everywhere (sales modal, banner, `/konto`, AGB) — read it
+   * through `planPrice()`, never retype it
+   */
   price: string | null | false
-  /** e.g. "monatlich im Voraus" */
+  /** e.g. "jährlich im Voraus" */
   billingPeriod: string | null | false
   /** minimum term, e.g. "einen Monat" */
   minimumTerm: string | null | false
@@ -51,8 +54,9 @@ export const LEGAL_FACTS: LegalFacts = {
   contentResponsible: null,
   mailProvider: null,
   logRetention: null,
-  price: null,
-  billingPeriod: null,
+  // owner decision 2026-11-23: 125 € gross per year
+  price: '125 € pro Jahr inkl. MwSt.',
+  billingPeriod: 'jährlich im Voraus',
   minimumTerm: null,
 }
 
@@ -78,3 +82,8 @@ export const FACT_LABELS: Record<FactKey, string> = {
 
 /** date shown as "Stand:" on every legal page; change it with every content change */
 export const LEGAL_UPDATED = '23.11.2026'
+
+/** the plan price for display, or null while it is not set */
+export function planPrice(facts: LegalFacts = LEGAL_FACTS): string | null {
+  return typeof facts.price === 'string' && facts.price !== '' ? facts.price : null
+}

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/svelte'
 import { afterEach, describe, expect, it } from 'vitest'
 import LandingPage from '../src/routes/+page.svelte'
 import { FAQ_ITEMS } from '$lib/landing/faq'
+import { planPrice } from '$lib/legalPages/facts'
 
 afterEach(() => {
   document.head.innerHTML = ''
@@ -25,6 +26,12 @@ describe('landing page', () => {
     expect(container.querySelectorAll('a[href="/registrieren"]').length).toBeGreaterThanOrEqual(3)
     expect(container).not.toHaveTextContent('Warteliste')
     expect(container).not.toHaveTextContent(/kostenlos/i)
+  })
+
+  it('shows no price (owner rule: no pricing section on the landing page)', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    expect(container).not.toHaveTextContent(planPrice()!)
+    expect(container).not.toHaveTextContent(/\d\s*€/)
   })
 
   it('describes the single paid plan in the pricing FAQ', () => {

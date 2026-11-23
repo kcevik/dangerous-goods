@@ -28,7 +28,7 @@ export const AGB: LegalDocument = {
     { kind: 'p', text: '(4) Der Kunde muss bei der Registrierung wahre Angaben machen und sie aktuell halten.' },
 
     { kind: 'h2', text: '§ 4 Preise und Zahlung' },
-    { kind: 'p', text: '(1) Es gilt der zum Zeitpunkt der Bestellung auf der Website angegebene Preis, derzeit {price}. Gegenüber Verbrauchern sind alle Preise Endpreise einschließlich der gesetzlichen Umsatzsteuer; gegenüber Unternehmern verstehen sie sich zuzüglich der gesetzlichen Umsatzsteuer, soweit nicht anders angegeben.' },
+    { kind: 'p', text: '(1) Es gilt der zum Zeitpunkt der Bestellung auf der Website angegebene Preis (derzeit {price}). Gegenüber Verbrauchern sind alle Preise Endpreise einschließlich der gesetzlichen Umsatzsteuer; gegenüber Unternehmern verstehen sie sich zuzüglich der gesetzlichen Umsatzsteuer, soweit nicht anders angegeben.' },
     { kind: 'p', text: '(2) Die Vergütung ist {billingPeriod} fällig. Die Zahlung erfolgt über den bei der Bestellung angebotenen Zahlungsdienstleister.' },
     { kind: 'p', text: '(3) Gerät ein Unternehmer mit der Zahlung in Verzug, dürfen wir den Zugang nach vorheriger Ankündigung in Textform bis zum Ausgleich sperren.' },
 
