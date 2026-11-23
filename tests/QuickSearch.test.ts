@@ -14,6 +14,8 @@ function stubSearch(rows: Record<string, unknown>[], error: unknown = null) {
     const builder = {
       select: () => builder,
       or: () => builder,
+      neq: () => builder,
+      in: () => builder,
       order: () => builder,
       limit: () => Promise.resolve(error ? { data: null, error } : { data: rows, error: null }),
     }
@@ -109,5 +111,35 @@ describe('QuickSearch', () => {
     const { container } = render(QuickSearch, { props: { supabase: client, hrefFor } })
     await type('xyzzy')
     expect(container).toHaveTextContent('Keine Ergebnisse für „xyzzy“')
+  })
+
+  it('marks synonym hits', async () => {
+    // no official name matches; only the detail load (.in) returns the synonym's row
+    const row = { un_number: '1824', hazard_class: '8', packing_group: 'II', name: 'NATRIUMHYDROXIDLÖSUNG' }
+    const from = vi.fn(() => {
+      let detail = false
+      const builder = {
+        select: () => builder,
+        or: () => builder,
+        neq: () => builder,
+        in: () => { detail = true; return builder },
+        order: () => builder,
+        limit: () => Promise.resolve({ data: detail ? [row] : [], error: null }),
+      }
+      return builder
+    })
+    const { container } = render(QuickSearch, { props: { supabase: { from } as unknown as SupabaseClient, hrefFor } })
+    await type('Natronlauge')
+    expect(container.querySelector('a[href="/un/1824/vergleich"]')).toHaveTextContent('NATRIUMHYDROXIDLÖSUNG')
+    expect(screen.getByTestId('synonym-notice')).toHaveTextContent('Über Synonym „Natronlauge“ gefunden')
+  })
+
+  it('asks to refine instead of presenting a cut list as complete', async () => {
+    const rows = Array.from({ length: 25 }, (_, i) => ({ ...ROW, un_number: String(3000 + i), name: 'ACID' }))
+    const { client } = stubSearch(rows)
+    const { container } = render(QuickSearch, { props: { supabase: client, hrefFor } })
+    await type('acid')
+    expect(container.querySelectorAll('li')).toHaveLength(20)
+    expect(screen.getByTestId('refine-hint')).toHaveTextContent('Weitere Treffer – Suche verfeinern')
   })
 })
