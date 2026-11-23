@@ -40,6 +40,12 @@ afterEach(() => {
 })
 
 describe('QuickSearch', () => {
+  it('gives the field a 44 px touch target', () => {
+    const { client } = stubSearch([])
+    render(QuickSearch, { props: { supabase: client, hrefFor } })
+    expect(screen.getByRole('searchbox')).toHaveClass('min-h-11')
+  })
+
   it('lists name hits as links to the target of each UN number', async () => {
     const { client } = stubSearch([ROW])
     const { container } = render(QuickSearch, { props: { supabase: client, hrefFor } })
