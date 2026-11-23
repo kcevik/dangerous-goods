@@ -32,9 +32,10 @@
       <div>
         <h3 class="font-semibold mb-2" style="color: #0f2744;">Werkzeuge statt Nachschlagewerk</h3>
         <p>
-          Heute gibt es die Stoffsuche, den Regelwerksvergleich und das ADR als durchsuchbaren
-          Lesetext (kein rechtsverbindlicher Text). Geplant sind ein 1000-Punkte-Rechner nach
-          ADR 1.1.3.6 und ein Dokumentengenerator für Beförderungspapiere. Die Werkzeuge
+          Heute gibt es die Stoffsuche, den Regelwerksvergleich, den 1000-Punkte-Rechner nach
+          ADR 1.1.3.6 und das ADR als durchsuchbaren Lesetext (kein rechtsverbindlicher Text).
+          Geplant sind ein Rechner für begrenzte und freigestellte Mengen (LQ/EQ) und ein
+          Dokumentengenerator für Beförderungspapiere. Die Werkzeuge
           unterstützen dich; die Verantwortung für Einstufung und Papiere bleibt bei dir.
         </p>
       </div>

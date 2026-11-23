@@ -60,6 +60,7 @@ pnpm check               # svelte-kit sync + svelte-check
 pnpm test                # vitest suite
 pnpm test:watch
 pnpm import:regulations  # import BAM CSVs + SV texts into Supabase (needs the service-role key)
+pnpm generate:demo       # regenerate DEMO_DATA/DEMO_SVS from the live tables (service-role key, read-only)
 pnpm deploy:test         # build image → ship over SSH → switch → /healthz → auto-rollback
 pnpm deploy:rollback     # back to the previous image
 ```
@@ -85,7 +86,8 @@ src/
   lib/
     multimodal/           # comparison tool: types.ts (LABELS, DEMO_DATA, pickSvText), mappers.ts
                           # (+ fetchUnReference), variants.ts, multimodalTool.svelte.ts,
-                          # specialProvisions.svelte.ts, MultimodalTool.svelte; F-10 side by side:
+                          # specialProvisions.svelte.ts, MultimodalTool.svelte, details.ts (Table A detail groups),
+                    # demoData.generated.ts (pnpm generate:demo); F-10 side by side:
                           # compare.ts (COMPARE_FIELDS, buildComparison), comparisonView.svelte.ts,
                           # ComparisonView/ComparisonTable/ComparisonCards (below lg)/ComparisonCellValue/
                           # ComparisonLegend/VariantPicker.svelte
@@ -114,7 +116,7 @@ supabase/migrations/      # schema, SV languages, (retired waitlist), auth_and_e
                           # harden_grants, launch_signups, account_page
 supabase/templates/       # auth email templates (pasted into the dashboard)
 deploy/                   # compose.yaml, app.env.example, Caddyfile
-scripts/                  # import-regulations.ts, deploy.sh, remote-switch.sh (runs on the server)
+scripts/                  # import-regulations.ts, generate-demo-data.ts, deploy.sh, remote-switch.sh (runs on the server)
 csvbase/                  # BAM TSV sources + the ADR book markdown — gitignored
 docs/                     # STATUS.md, README.md (index), schema doc, specs + plans
 ```
@@ -155,7 +157,7 @@ docs/                     # STATUS.md, README.md (index), schema doc, specs + pl
 | Name | Where | Purpose |
 |---|---|---|
 | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `$env/static/public` | baked in at build (Docker build args) |
-| `SUPABASE_SERVICE_ROLE_KEY` | `.env` only | import script — **the app never uses it** |
+| `SUPABASE_SERVICE_ROLE_KEY` | `.env` only | import script and demo generator — **the app never uses it** |
 | `REGISTRATION_MODE` | `$env/dynamic/private` | only exactly `open` opens sign-up; anything else = launch list |
 | `ADR_BOOK_PATH` | `$env/dynamic/private` | the ADR markdown on the server; not in the repo. Indexed at server start (`init` in `hooks.server.ts`); unset = the book page answers with the error page (links stay visible); a missing or < 1 MB file is logged at boot and makes `/healthz` answer 503 |
 | `ORIGIN` | adapter-node | public URL — required or form actions reject POSTs |
@@ -199,7 +201,9 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 ## Key Rules
 
 - **i18n:** de/en/fr/tr via `LABELS` (`lib/multimodal/types.ts`) and `BOOK_LABELS` (`lib/regulations/bookTypes.ts`); no i18n module. `pickSvText()` is the single home of the SV language fallback (tr reads en first).
-- **Demo constants:** `DEMO_DATA`/`DEMO_SVS` are generated from the live BAM tables for UN 1203 sequence 1 — never hand-edit. `DEMO_SVS` is keyed `MODE:code`; `DEMO_DATA.ADN` is empty on purpose.
+- **Demo constants:** `DEMO_DATA`/`DEMO_SVS` live in `lib/multimodal/demoData.generated.ts`, written by `scripts/generate-demo-data.ts` (`pnpm generate:demo`) from the live BAM tables for UN 1203 sequence 1 through the app's own mapper (`fetchCompareForUn`); `types.ts` re-exports them. Never hand-edit; rerun after every import or mapper change and commit the output (`tests/demo-data-generated.test.ts` pins its key facts). `DEMO_SVS` is keyed `MODE:code`; `DEMO_DATA.ADN` is empty on purpose.
+- **ADN:** BAM ships no ADN data. `Modal` keeps `'ADN'` (data shape `ADN: []`), but tabs, overview tiles and comparison columns iterate `DATA_MODES` and show one `noAdnData` note instead.
+- **Table A detail columns** (`lib/multimodal/details.ts`, `DETAIL_FIELDS`): display only, grouped on the UN page. `special_provisions` holds column-6 codes only, so detail codes (MP, TU, V, CV, S …) have no texts; ADR rows link to the defining section (`/regelwerk/adr?section=`, verified against the real book), never RID/IMDG. An empty Table A cell is left out; BAM's explicit "no statement" (`n_mark`, `security_level` null) shows "Keine Angabe in der Quelle (BAM)". `*_entries.prohibited` is BAM `N_VERBOT` (1 = permitted) — never read it as a prohibition.
 - **Session per request:** `locals.safeGetSession()` is memoised per request (one `getUser` + one profile query). An action that signs in or out must redirect.
 - **Redirect targets:** only through `safeNext()` — it rejects control characters, backslashes and anything the URL parser resolves off-site.
 - **Failures are never "no data":** a failed load must show an error state, not an empty result — in this domain "nothing found" is a statement about the regulation.
@@ -207,8 +211,8 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **Launch list:** `CONSENT_VERSION` is stored with every address and must change whenever `LAUNCH_CONSENT_TEXT` changes (a test pins both). The first mail these addresses ever get is the double-opt-in confirmation.
 - **SEO invariant:** the visible FAQ and the FAQPage JSON-LD both render from `FAQ_ITEMS` (`lib/landing/faq.ts`). Site facts (16.730 entries, 1.354 SVs) stay consistent across meta description, FAQ, SeoContent and `static/llms.txt`.
 - **ADR book viewer:** the book is a **file** (`ADR_BOOK_PATH`), never in Postgres, `static/` or an image. No RLS stands behind it — the `isActive` check in the page load and both endpoints (`bookAccessDenied`) **is** the gate; any new reader must repeat it. Generated HTML carries only `book-*` classes (Tailwind cannot see runtime classes). The renderer tags blocks and table rows with `book-ln-<line>` so `pickActiveMark` finds the right `<mark>`. ~25–30 MB index per worker. No keyboard shortcuts except Enter in the search field (owner decision).
-- **Regulatory comparison (F-10):** `COMPARE_FIELDS` must list exactly the fields each mapper writes (a test pins it).
-  Only modes in a field's `compareModes` are compared — labels, packing instructions and SVs ADR↔RID only (other
+- **Regulatory comparison (F-10):** `COMPARE_FIELDS` plus the display-only `DETAIL_FIELDS` must list exactly the fields each mapper writes (a test pins it).
+  Only modes in a field's `compareModes` are compared — labels, packing instructions, tank instructions (T, tank code) and SVs ADR↔RID only (other
   notations differ in the BAM feed); ICAO LQ (Y instruction + max net) is shown but never compared; absence is never
   a deviation; "See SP…"/"siehe SV …" in a quantity column is a reference, shown but never compared; an unresolved
   variant shows "?"; the UN column is reference only and never changes a status. An empty mode says *why*

@@ -28,4 +28,11 @@ describe('static/llms.txt', () => {
     expect(llms).toMatch(/## Funktionen \(verfügbar\)/)
     expect(llms).toMatch(/## Geplant/)
   })
+
+  it('lists the shipped 1000-Punkte-Rechner as available, not as planned', () => {
+    const [available, planned] = llms.split('## Geplant')
+    expect(available).toContain('1000-Punkte-Rechner')
+    expect(planned).not.toContain('1000-Punkte')
+    expect(planned).toContain('LQ/EQ')
+  })
 })

@@ -7,6 +7,7 @@
 | [`schema-diagram.html`](schema-diagram.html) | ER diagram of the regulation tables (open in a browser). Predates the auth work: it still shows the dropped `un_comparison` view and lacks `profiles` / `launch_signups` |
 | [`go-live-readiness-2026-09-28.md`](go-live-readiness-2026-09-28.md) | Historical snapshot of 2026-09-28; its open points now live in `STATUS.md` |
 | [`deploy/README.md`](deploy/README.md) | Server runbook (Caddy, `app.gefahrgut.org`); the plan's `concepts.md` page was never written |
+| [`research/2026-11-23-persona-tests/`](research/2026-11-23-persona-tests/README.md) | Persona test 2026-11-23: five simulated dangerous goods officers tried the product in a real browser; summary + five reports (hypotheses, not customer interviews) |
 
 ## Designs and plans
 
