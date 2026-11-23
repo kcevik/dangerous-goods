@@ -8,7 +8,7 @@
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border" style="color: #15779b; background: rgba(21,119,155,0.08); border-color: rgba(21,119,155,0.2);">
         FAQ
       </div>
-      <h2 id="faq-heading" class="text-3xl sm:text-4xl font-bold break-words hyphens-auto" style="color: #0f2744;">
+      <h2 id="faq-heading" class="text-2xl min-[375px]:text-3xl sm:text-4xl font-bold break-words hyphens-auto" style="color: #0f2744;">
         Häufige Fragen
       </h2>
     </div>

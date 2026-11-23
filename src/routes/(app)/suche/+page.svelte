@@ -27,8 +27,8 @@
   <!-- Top bar -->
   <div class="bg-[#0f2744] px-4 py-4">
     <div class="max-w-5xl mx-auto flex items-center gap-3 sm:gap-4">
-      <a href={resolve('/(app)/dashboard')} class="inline-flex min-h-11 items-center text-slate-400 hover:text-white transition-colors text-sm font-mono shrink-0">
-        ← zurück
+      <a href={resolve('/(app)/dashboard')} aria-label="zurück zum Dashboard" class="inline-flex min-h-11 min-w-11 items-center text-slate-400 hover:text-white transition-colors text-sm font-mono shrink-0">
+        <span aria-hidden="true">←</span><span class="max-sm:sr-only">&nbsp;zurück</span>
       </a>
       <div class="flex-1 min-w-0 relative">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -40,7 +40,7 @@
           bind:value={search.query}
           {@attach (node) => { node.focus() }}
           type="search"
-          placeholder="UN-Nummer oder Stoffname suchen …"
+          placeholder="UN-Nummer oder Stoffname"
           class="w-full min-h-11 pl-9 pr-9 py-2.5 rounded-lg text-base sm:text-sm bg-white/10 border border-white/20 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white/15 transition-all [&::-webkit-search-cancel-button]:hidden"
           aria-label="Gefahrgut suchen"
         />

@@ -41,6 +41,7 @@ const RESPONSIVE_UTILITIES = [
   'max-sm:border-b-0',
   'max-sm:sr-only',
   'min-[400px]:text-4xl',
+  'min-[375px]:text-3xl',
   'overscroll-x-contain',
   'sm:flex-none',
   'min-[375px]:px-3',

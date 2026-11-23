@@ -183,6 +183,15 @@ describe('/suche page (active account)', () => {
     expect(screen.getByTestId('result-badges')).toHaveClass('flex-wrap')
   })
 
+  it('leaves the search field room on a 320px phone: short placeholder, arrow-only back link', () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    expect(container.querySelector('input')).toHaveAttribute('placeholder', 'UN-Nummer oder Stoffname')
+    const back = screen.getByRole('link', { name: 'zurück zum Dashboard' })
+    expect(back).toHaveClass('min-w-11')
+    expect(back.querySelector('.max-sm\\:sr-only')).toHaveTextContent('zurück')
+  })
+
   it('gives the example chips and the search field 44px touch targets', () => {
     const { client } = stubSearch([])
     const { container } = renderPage(client)

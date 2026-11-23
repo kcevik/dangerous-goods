@@ -89,16 +89,25 @@ describe('landing page', () => {
 
   it('lets every section heading break long German compounds at 320px', () => {
     const { container } = render(LandingPage, { props: PROPS })
-    const headings = container.querySelectorAll('h1, h2')
-    expect(headings.length).toBeGreaterThanOrEqual(7)
-    for (const h of headings) expect(h).toHaveClass('break-words', 'hyphens-auto')
+    const headings = container.querySelectorAll('h2')
+    expect(headings.length).toBeGreaterThanOrEqual(6)
+    // one type scale; 24px below 375px so "Gefahrgutbeauftragte" fits a 320px line unbroken
+    for (const h of headings) expect(h).toHaveClass('break-words', 'hyphens-auto', 'text-2xl', 'min-[375px]:text-3xl', 'sm:text-4xl')
+  })
+
+  it('breaks the hero headline only at its soft hyphen ("Gefahrgut-vorschriften", never "…vorschrif-ten")', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const h1 = container.querySelector('h1')!
+    expect(h1.textContent).toContain('Gefahrgut­vorschriften')
+    expect(h1).not.toHaveClass('hyphens-auto')
+    expect(h1).toHaveClass('break-words')
   })
 
   it('gives footer links a 44px touch target on phones and tablets', () => {
     const { container } = render(LandingPage, { props: PROPS })
     const links = container.querySelectorAll('footer ul a')
     expect(links.length).toBeGreaterThan(0)
-    for (const link of links) expect(link).toHaveClass('min-h-11', 'lg:min-h-0')
+    for (const link of links) expect(link).toHaveClass('min-h-11', 'min-w-11', 'lg:min-h-0')
   })
 
   it('keeps the comparison mockup scrollable inside its card instead of widening the page', () => {

@@ -15,7 +15,7 @@
       </div>
 
       <!-- Headline -->
-      <h1 class="text-3xl min-[400px]:text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6 break-words hyphens-auto">
+      <h1 class="text-3xl min-[400px]:text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6 break-words">
         Alle Gefahrgut&shy;vorschriften.<br />
         <span style="color: #f97316;">Ein Werkzeug.</span>
       </h1>
