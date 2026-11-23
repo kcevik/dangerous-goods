@@ -1,7 +1,8 @@
-import { render } from '@testing-library/svelte'
+import { fireEvent, render } from '@testing-library/svelte'
 import { createRawSnippet } from 'svelte'
 import { describe, expect, it } from 'vitest'
 import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
+import { APP_NAV_ITEMS } from '$lib/nav/appNav'
 import { load } from '../src/routes/(app)/+layout.server'
 import AppLayout from '../src/routes/(app)/+layout.svelte'
 
@@ -38,6 +39,40 @@ describe('(app) layout shell', () => {
     locked.unmount()
     const active = renderShell(true)
     expect(active.container).not.toHaveTextContent(LOCK_MESSAGE)
+  })
+})
+
+describe('(app) layout navigation', () => {
+  it('defines the nav items once, as resolved hrefs', () => {
+    expect(APP_NAV_ITEMS).toEqual([
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Suche', href: '/suche' },
+      { label: 'ADR-Text', href: '/regelwerk/adr' },
+    ])
+  })
+
+  it('renders every nav item inline and in the burger menu', () => {
+    const { container } = renderShell(true)
+    const inline = container.querySelector('nav[aria-label="Hauptnavigation"]')!
+    const panel = container.querySelector('#app-menu')!
+    for (const item of APP_NAV_ITEMS) {
+      expect(inline.querySelector(`a[href="${item.href}"]`), item.label).toHaveTextContent(item.label)
+      expect(panel.querySelector(`a[href="${item.href}"]`), item.label).toHaveTextContent(item.label)
+    }
+  })
+
+  it('puts a POST logout form into the burger menu, closed by default', async () => {
+    const { container } = renderShell(true)
+    const burger = container.querySelector('button[aria-controls="app-menu"]')!
+    expect(burger).toHaveAttribute('aria-expanded', 'false')
+    const panel = container.querySelector('#app-menu')!
+    const logout = panel.querySelector('form[action="/logout"]')!
+    expect(logout).toHaveAttribute('method', 'POST')
+    expect(logout.querySelector('button[type="submit"]')).toHaveTextContent('Abmelden')
+    expect(panel).toHaveTextContent('k@example.de')
+    await fireEvent.click(burger)
+    expect(burger).toHaveAttribute('aria-expanded', 'true')
+    expect(panel).toBeVisible()
   })
 })
 

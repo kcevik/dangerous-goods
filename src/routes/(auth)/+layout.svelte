@@ -21,7 +21,7 @@
     <span class="font-bold text-lg text-white">gefahrgut<span style="color: #f97316;">.org</span></span>
   </a>
 
-  <div class="w-full max-w-md rounded-2xl bg-white shadow-xl px-8 py-10">
+  <div class="w-full max-w-md rounded-2xl bg-white shadow-xl px-5 py-8 sm:px-8 sm:py-10">
     {@render children()}
   </div>
 
