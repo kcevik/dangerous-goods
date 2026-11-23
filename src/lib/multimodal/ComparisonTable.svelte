@@ -1,25 +1,15 @@
 <script lang="ts">
-  import type { CompareCell, CompareRow } from './compare'
-  import type { ComparisonViewState } from './comparisonView.svelte'
+  import ComparisonCellValue from './ComparisonCellValue.svelte'
+  import { cellTone, type ComparisonViewState } from './comparisonView.svelte'
   import { MODALS } from './types'
 
   let { view }: { view: ComparisonViewState } = $props()
-
-  function tone(row: CompareRow, cell: CompareCell): string {
-    if (cell.deviates) return row.critical ? 'bg-orange-100 text-orange-900 font-bold' : 'bg-amber-50 text-[#0f2744] font-semibold'
-    if (cell.raw && !cell.compared) return 'text-[#5a7a99] italic'
-    return row.status === 'same' ? 'text-[#5a7a99]' : 'text-[#0f2744]'
-  }
-
-  function hint(cell: CompareCell): string | undefined {
-    if (!cell.applicable) return view.L('notApplicable')
-    if (cell.unresolved) return view.L('unresolved')
-    if (cell.raw && !cell.compared) return view.L('notCompared')
-    return undefined
-  }
 </script>
 
-<!-- the table scrolls inside this box; the page body never scrolls sideways -->
+<!--
+  Desktop (lg+): all modes side by side. Below lg the cards in ComparisonCards take over, so this
+  box only scrolls sideways on unusually narrow desktop windows — never the page body.
+-->
 <div class="overflow-x-auto border border-[#b0c4d8] bg-[#f4f7fa]">
   <table class="w-full min-w-[760px] text-sm border-collapse">
     <thead>
@@ -43,7 +33,7 @@
       {#each view.visibleRows as row, i (row.field)}
         <tr data-field={row.field} data-status={row.status} class="border-t border-[#c8d6e5]">
           <th scope="row" class="sticky left-0 z-10 bg-[#f4f7fa] px-3 py-2 text-left align-top font-mono text-[10px] font-bold uppercase tracking-[0.5px] text-[#5a7a99] whitespace-nowrap">
-            {view.L(row.labelKey)}{#if row.critical}<span class="ml-1 text-orange-500" title={view.L('criticalField')}>*</span>{/if}
+            {view.L(row.labelKey)}{#if row.critical}<span class="ml-1 text-orange-500" title={view.L('criticalField')} aria-hidden="true">*</span><span class="sr-only">({view.L('criticalField')})</span>{/if}
           </th>
           {#each MODALS as mode (mode)}
             {@const cell = row.cells[mode]}
@@ -52,30 +42,14 @@
                 <td data-mode="ADN" rowspan={view.visibleRows.length} class="px-3 py-2 align-top text-xs italic text-[#5a7a99] bg-[#eef2f6]">{view.L('noAdnData')}</td>
               {/if}
             {:else}
-              <td data-mode={mode} data-deviates={cell.deviates} title={hint(cell)} class={['px-3 py-2 align-top font-mono text-[13px]', tone(row, cell)]}>
-                {#if !cell.applicable}
-                  <span class="text-[#b0c4d8]">—</span>
-                {:else if cell.unresolved}
-                  <span class="font-bold text-amber-600">?</span>
-                {:else if cell.raw}
-                  {#if cell.deviates && row.critical}<span class="mr-1" aria-hidden="true">▲</span>{/if}{cell.raw}
-                {:else}
-                  <span class="text-[#b0c4d8]">–</span>
-                {/if}
+              <td data-mode={mode} data-deviates={cell.deviates} title={view.cellHint(cell)} class={['px-3 py-2 align-top font-mono text-[13px] wrap-break-word', cellTone(row, cell)]}>
+                <ComparisonCellValue {view} {row} {cell} />
               </td>
             {/if}
           {/each}
           {#if view.hasReference}
-            <td data-mode="UN" title={row.reference?.unresolved ? view.L('unresolved') : undefined} class="px-3 py-2 align-top font-mono text-[13px] text-slate-500 bg-slate-50">
-              {#if !row.reference}
-                <span class="text-[#b0c4d8]">—</span>
-              {:else if row.reference.unresolved}
-                <span class="font-bold text-amber-600">?</span>
-              {:else if row.reference.raw}
-                {row.reference.raw}
-              {:else}
-                <span class="text-[#b0c4d8]">–</span>
-              {/if}
+            <td data-mode="UN" title={row.reference ? view.cellHint(row.reference, true) : undefined} class="px-3 py-2 align-top font-mono text-[13px] text-slate-500 bg-slate-50 wrap-break-word">
+              <ComparisonCellValue {view} {row} cell={row.reference} isReference />
             </td>
           {/if}
         </tr>

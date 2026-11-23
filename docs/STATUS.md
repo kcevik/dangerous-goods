@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-08 · **Tests:** 862 green · `pnpm check` 0 errors · `pnpm build` OK · nothing committed (the owner commits)
+**Last updated:** 2026-11-08 · **Tests:** 864 green (73 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK · nothing committed (the owner commits)
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -18,6 +18,7 @@ every working session.
 | F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
 | — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
 | F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column; one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Own quick search (`QuickSearch`) to switch the UN number, also on `/un/:nummer`; the comparison tool no longer carries its inert search field (2026-11-08). Not yet checked in a real browser |
+| — | Legal pages (`/impressum`, `/datenschutz`, `/agb`, `/widerruf`) | 🟡 drafts live | Texts in `src/lib/legalPages/`; draft banner + `noindex` until `LEGAL_FACTS` is complete and a lawyer has checked them (go-live blocker 4) |
 | F-05 | Dashboard | ⚪ shell | Two live tiles (Stoffsuche, Regelwerksvergleich → UN 1203) |
 | F-02 | 1000-Punkte-Rechner | ⚪ not started | |
 | F-11 | Transport mode assistant | ❌ dropped | Owner decision 2026-11-08; removed from landing page, dashboard and CLAUDE.md |
@@ -77,7 +78,7 @@ book indexed at startup and checked by `/healthz`.
 
 - Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
-- F-10 minors (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation; "Nur Abweichungen zeigen" with none leaves an empty table; cell hints only in `title` (no screen-reader text); no visible focus style on variant buttons.
+- F-10 minor (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation. (Fixed 2026-11-23 on `fix/responsive-comparison`: empty-filter message, sr-only cell hints, variant focus style; below `lg` the comparison renders as one card per field — `ComparisonCards` — instead of the table. Browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950.)
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
 - `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.
