@@ -1,6 +1,7 @@
 {
   "enabledPlugins": {
-    "svelte@svelte": true
+    "svelte@svelte": true,
+    "ponytail@ponytail": true
   },
   "extraKnownMarketplaces": {
     "svelte": {
