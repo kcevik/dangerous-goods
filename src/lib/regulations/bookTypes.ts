@@ -15,10 +15,21 @@ export type BookMode = typeof BOOK_MODES[number]
 export interface BookHeading {
   /** 1..6, matching `#`..`######` */
   level: number
-  /** raw heading text, without the leading hashes */
+  /**
+   * Heading text as a label: emphasis, tags and footnote markers removed. A
+   * chapter's title line is folded in ('Kapitel 1.10 Vorschriften für die Sicherung').
+   */
   text: string
-  /** '1.1.3.6' when the heading starts with an ADR number, else null */
+  /** '1.1.3.6' when the heading starts with an ADR number, '1.10' for 'Kapitel 1.10', else null */
   sectionNo: string | null
+  /**
+   * Rank in the ADR's own structure: 0 the document title, 1 Teil, 2 Kapitel,
+   * n for an n-part section number; an unnumbered heading is one below its parent.
+   * The markdown level of the conversion is unreliable, this is not.
+   */
+  depth: number
+  /** listed in the table of contents (depth 1–3, not a chapter's folded title line) */
+  inToc: boolean
   /** stable anchor id, 'h-1-1-3-6' or 'h-<text-slug>', unique across the document */
   slug: string
   /** 1-based line in the source file */
@@ -28,6 +39,7 @@ export interface BookHeading {
 }
 
 export interface TocEntry {
+  /** structural depth (see `BookHeading.depth`): 1 Teil, 2 Kapitel, 3 Abschnitt */
   level: number
   text: string
   sectionNo: string | null
@@ -155,6 +167,25 @@ export const SV_CODE_RE = /^\d{2,3}[A-Z]?$/
 
 /** UN numbers: exactly four digits. */
 export const UN_NUMBER_RE = /^\d{4}$/
+
+/** A normalised ADR section number: '1.1.3.6', '3.4'. */
+export const SECTION_NO_RE = /^\d+(?:\.\d+){0,6}$/
+
+/**
+ * A section number as people type or paste it — '1.1.3.6.', ' 1. 1.3.6',
+ * '1,10', 'Kapitel 3.4', '§ 8.6' — in the form the index uses ('1.1.3.6').
+ * Null when nothing number-shaped is left.
+ */
+export function normalizeSectionNo(raw: string): string | null {
+  const cleaned = raw
+    .trim()
+    .replace(/^(?:kapitel|abschnitt|unterabschnitt|absatz|teil|§)\s*/i, '')
+    .replace(/,/g, '.')
+    .replace(/\s+/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+  return SECTION_NO_RE.test(cleaned) ? cleaned : null
+}
 
 /** Shortest search term accepted, matching the substance search. */
 export const MIN_BOOK_QUERY_LENGTH = 2

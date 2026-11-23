@@ -1,5 +1,6 @@
 import {
   ADJACENT_WINDOW_LINES,
+  type BookHeading,
   type BookHit,
   type BookTarget,
   formatBookLabel,
@@ -43,8 +44,22 @@ export interface ViewerDeps {
 export interface ChapterGroup {
   label: string
   count: number
-  /** `index` is the position in `hits`, so a click can `goTo` it */
-  entries: { hit: BookHit, index: number }[]
+  /**
+   * `index` is the position in `hits`, so a click can `goTo` it; `section` the
+   * number of the numbered heading the hit sits under, for citing it
+   */
+  entries: { hit: BookHit, index: number, section: string | null }[]
+}
+
+/**
+ * The chapter a hit belongs to: its "Kapitel X.Y …" heading, else its Teil. The
+ * path is the ADR's structure (see `BookHeading.depth`), so a stray caption in
+ * between can no longer pose as the chapter.
+ */
+function chapterOf(heading: BookHeading | null): string | null {
+  if (!heading) return null
+  const trail = [...heading.path, heading.text]
+  return trail.find(text => /^Kapitel\s/.test(text)) ?? trail.find(text => /^Teil\s/.test(text)) ?? null
 }
 
 /**
@@ -121,18 +136,29 @@ export class AdrBookViewerState {
     return formatBookLabel(this.lang, 'hitCounter', { current: this.currentIndex + 1, total })
   })
 
+  /**
+   * Everything the counter shows, as one string. The find bar renders exactly
+   * this and nothing else: a counter assembled from several template branches
+   * left the previous search's text node standing after hydration ("Treffer 1
+   * von 254Treffer 1 von 22", tester report 2026-11-23).
+   */
+  readonly statusLabel = $derived.by(() => {
+    if (this.isLoading) return getBookLabel(this.lang, 'loading')
+    if (this.wrapped && this.counterLabel) return `${this.counterLabel} · ${getBookLabel(this.lang, 'wrapped')}`
+    return this.counterLabel
+  })
+
   readonly hitsByChapter = $derived.by<ChapterGroup[]>(() => {
     const groups = new Map<string, ChapterGroup>()
     this.hits.forEach((hit, index) => {
-      const trail = hit.heading ? [...hit.heading.path, hit.heading.text].slice(0, 2) : []
-      const label = trail.length > 0 ? trail.join(' › ') : getBookLabel(this.lang, 'noChapter')
+      const label = chapterOf(hit.heading) ?? getBookLabel(this.lang, 'noChapter')
       let group = groups.get(label)
       if (!group) {
         group = { label, count: 0, entries: [] }
         groups.set(label, group)
       }
       group.count++
-      group.entries.push({ hit, index })
+      group.entries.push({ hit, index, section: hit.heading?.sectionNo ?? null })
     })
     return [...groups.values()]
   })

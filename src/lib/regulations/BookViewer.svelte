@@ -28,7 +28,10 @@
   const t = (key: string) => getBookLabel(viewer.lang, key)
 
   let content: HTMLElement | undefined = $state()
-  let tocOpen = $state(true)
+  /** phones only: the TOC starts closed so the text is on the first screen; md+ always shows it */
+  let tocOpen = $state(false)
+  /** the sticky find bar's height; anchors scroll to just below it */
+  let barHeight = $state(0)
 
   // ── highlighting and scrolling ─────────────────────────────
 
@@ -36,9 +39,19 @@
     return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   }
 
-  function scrollToElement(el: Element | null, focus = false) {
+  /**
+   * `start` puts the target right under the find bar (its `scroll-margin-top`
+   * follows the bar's measured height): a provision, a UN row or a section opens
+   * at the top of the view. Free-text hits are centred, with context above.
+   */
+  function scrollToElement(el: Element | null, focus = false, block: ScrollLogicalPosition = 'start') {
     if (!el) return
-    el.scrollIntoView?.({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+    // The bar's height right now, not a CSS variable that may not have caught up
+    // yet: on first load the scroll starts before the bar's height is known, and
+    // a phone's bar (chip, navigation, checkbox, hit list) is over 200px tall.
+    const bar = document.querySelector<HTMLElement>('[data-book-bar]')?.offsetHeight ?? 0
+    if (el instanceof HTMLElement && bar > 0) el.style.scrollMarginTop = `${bar + 12}px`
+    el.scrollIntoView?.({ block, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
     // move focus to the hit (spec §10) — but never out of a field the reader is
     // typing in or pressing Enter in, or their next keystrokes would be lost
     const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement
@@ -86,7 +99,11 @@
       scrolledFor = key
       const mark = marks[active]!
       mark.tabIndex = -1
-      scrollToElement(mark, true)
+      const fromCode = target?.kind === 'sv' || target?.kind === 'un'
+      // a code target lands with its paragraph at the top: the mark's block, not the mark
+      const anchor = fromCode ? (mark.closest('li, p, tr, h1, h2, h3, h4, h5, h6') ?? mark) : mark
+      scrollToElement(anchor, false, fromCode ? 'start' : 'center')
+      if (mark instanceof HTMLElement && !(document.activeElement instanceof HTMLInputElement)) mark.focus({ preventScroll: true })
     }
     else if (target?.kind === 'section' && data.focusLine !== null) {
       scrolledFor = key
@@ -125,6 +142,8 @@
   // ── navigation helpers ─────────────────────────────────────
 
   async function openTocEntry(entry: TocEntry) {
+    // on a phone the open TOC would cover the text the reader just asked for
+    tocOpen = false
     if (!(await viewer.ensureLineLoaded(entry.line))) return
     // the window renders on the next frame
     requestAnimationFrame(() => scrollToElement(document.getElementById(entry.slug)))
@@ -144,19 +163,38 @@
   const atEnd = $derived((viewer.windows.at(-1)?.lineEnd ?? 0) >= viewer.totalLines)
 </script>
 
-<div>
+<div style:--book-bar="{barHeight}px">
   <a href="#book-content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-30 focus:rounded focus:bg-white focus:px-3 focus:py-1.5 focus:text-sm">
     {t('skipToContent')}
   </a>
 
-  <BookFindBar {viewer} notFound={data.notFound} fallbackFrom={data.fallbackFrom} />
+  <BookFindBar {viewer} notFound={data.notFound} fallbackFrom={data.fallbackFrom} bind:barHeight />
 
-  <div class="max-w-7xl mx-auto px-4 py-6 md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:gap-8">
-    <aside class="mb-6 md:mb-0">
-      <details bind:open={tocOpen} class="md:sticky md:top-28 md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
-        <summary class="cursor-pointer select-none text-xs font-mono font-bold uppercase tracking-wider text-[#5a7a99] mb-2">{t('toc')}</summary>
-        <BookToc toc={data.toc} lang={viewer.lang} onnavigate={openTocEntry} />
-      </details>
+  <div class="max-w-7xl mx-auto px-4 py-4 md:py-6 md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:gap-8">
+    <aside class="mb-4 md:mb-0">
+      <div class="book-toc-panel md:sticky md:overflow-y-auto">
+        <button
+          type="button"
+          class="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-[#c8d6e5] bg-white px-3 text-sm font-semibold text-[#0f2744] md:hidden"
+          aria-expanded={tocOpen}
+          aria-controls="book-toc"
+          onclick={() => (tocOpen = !tocOpen)}
+        >
+          {t('toc')}
+          <span aria-hidden="true" class={['inline-block transition-transform', tocOpen && 'rotate-180']}>▾</span>
+        </button>
+        <p class="mb-2 hidden text-xs font-mono font-bold uppercase tracking-wider text-[#5a7a99] md:block">{t('toc')}</p>
+        <div
+          id="book-toc"
+          class={[
+            'mt-2 max-h-[60vh] overflow-y-auto rounded-lg border border-[#c8d6e5] bg-white p-2',
+            'md:mt-0 md:block md:max-h-none md:overflow-visible md:rounded-none md:border-0 md:bg-transparent md:p-0',
+            !tocOpen && 'hidden',
+          ]}
+        >
+          <BookToc toc={data.toc} lang={viewer.lang} onnavigate={openTocEntry} />
+        </div>
+      </div>
     </aside>
 
     <main id="book-content" tabindex="-1" lang="de" class="book-content min-w-0 focus:outline-none" bind:this={content}>
@@ -217,7 +255,7 @@
   .book-content :global(.book-window h6) {
     font-weight: 700;
     margin: 1.4em 0 0.5em;
-    scroll-margin-top: 8rem;
+    scroll-margin-top: calc(var(--book-bar, 7rem) + 0.75rem);
   }
   .book-content :global(.book-window h1) { font-size: 1.6em; }
   .book-content :global(.book-window h2) { font-size: 1.35em; }
@@ -263,7 +301,21 @@
     background: #fde68a;
     color: #0f2744;
     border-radius: 2px;
-    scroll-margin-top: 9rem;
+    scroll-margin-top: calc(var(--book-bar, 7rem) + 0.75rem);
+  }
+  /* the block a provision or UN row is scrolled to, and any tagged block */
+  .book-content :global(li),
+  .book-content :global(p),
+  .book-content :global(tr) {
+    scroll-margin-top: calc(var(--book-bar, 7rem) + 0.75rem);
+  }
+
+  /* the desktop TOC sticks just below the find bar */
+  @media (min-width: 48rem) {
+    .book-toc-panel {
+      top: calc(var(--book-bar, 7rem) + 1rem);
+      max-height: calc(100vh - var(--book-bar, 7rem) - 2rem);
+    }
   }
   .book-content :global(mark.book-hit-active) {
     background: #f97316;

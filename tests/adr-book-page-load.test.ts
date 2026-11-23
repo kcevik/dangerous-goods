@@ -82,6 +82,36 @@ describe('/regelwerk/adr page load', () => {
     expect(data.focusLine).toBe(fixtureIndex.headings.find(h => h.sectionNo === '1.1.3.3')!.line)
   })
 
+  // tester report 2026-11-23: 1.1.3.6, 3.4, 8.6 and 1.10 answered "nicht gefunden"
+  it.each([
+    ['a bold heading (**8.6.3 …**)', '8.6.3', '##### **8.6.3 Tunnelbeschränkungscode**'],
+    ['a "Kapitel X.Y" heading', '8.6', '## Kapitel 8.6'],
+    ['a bold "Kapitel X.Y" heading', '8.7', '### **Kapitel 8.7**'],
+    ['a body paragraph that only starts with the number', '8.6.3.2', '- **8.6.3.2** Die Beschränkungen'],
+  ])('jumps to %s', async (_label, sectionNo, lineStart) => {
+    const data = await run(`?section=${sectionNo}`)
+    if (data.locked) throw new Error('expected unlocked')
+    expect(data.notFound).toBeNull()
+    expect(fixtureIndex.lines[data.focusLine! - 1]).toMatch(new RegExp(`^${lineStart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`))
+    const [w] = data.windows
+    expect(w!.lineStart).toBeLessThanOrEqual(data.focusLine!)
+    expect(w!.lineEnd).toBeGreaterThanOrEqual(data.focusLine!)
+  })
+
+  it.each(['8.6.', ' 8. 6', 'Kapitel 8.6', '8,6'])('normalises how the section number is written (%s)', async (raw) => {
+    const data = await run(`?section=${encodeURIComponent(raw)}`)
+    if (data.locked) throw new Error('expected unlocked')
+    expect(data.target).toEqual({ kind: 'section', sectionNo: '8.6' })
+    expect(data.notFound).toBeNull()
+  })
+
+  it('still says so when a section really does not exist', async () => {
+    const data = await run('?section=9.9.9.9')
+    if (data.locked) throw new Error('expected unlocked')
+    expect(data.notFound).toBe('9.9.9.9')
+    expect(data.focusLine).toBeNull()
+  })
+
   it('runs a free-text search, hits in document order', async () => {
     const data = await run('?q=Tank')
     if (data.locked) throw new Error('expected unlocked')
@@ -126,7 +156,7 @@ describe('/regelwerk/adr page load', () => {
     expect(data.toc.length).toBeGreaterThan(0)
   })
 
-  it.each(['?sv=abcdefghijklmnopqrst', '?un=12', '?section=1..1', `?q=${'x'.repeat(121)}`])(
+  it.each(['?sv=abcdefghijklmnopqrst', '?un=12', '?section=1.a', '?section=', `?q=${'x'.repeat(121)}`])(
     'rejects a malformed target %s with 400',
     async (search) => {
       await expect(run(search)).rejects.toMatchObject({ status: 400 })

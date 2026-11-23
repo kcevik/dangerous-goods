@@ -28,9 +28,13 @@ describe('heading anchors: index slug === rendered id', () => {
   })
 
   it('covers a bold heading, an entity heading and a duplicate heading in the fixture', () => {
+    const raw = fixtureIndex.headings.map(h => fixtureIndex.lines[h.line - 1]!)
+    expect(raw.some(t => /^#+ \*\*/.test(t))).toBe(true)
+    expect(raw.some(t => t.includes('&amp;'))).toBe(true)
+    // the labels are clean: no emphasis markers, entities decoded
     const texts = fixtureIndex.headings.map(h => h.text)
-    expect(texts.some(t => t.startsWith('**'))).toBe(true)
-    expect(texts.some(t => t.includes('&amp;'))).toBe(true)
+    expect(texts.filter(t => t.includes('*'))).toEqual([])
+    expect(texts).toContain('Übergangsvorschriften & Ausnahmen')
     expect(texts.filter(t => t === 'Verwendung von Verpackungen')).toHaveLength(2)
   })
 

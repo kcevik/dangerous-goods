@@ -59,9 +59,12 @@ describe('indexBook – headings', () => {
     expect(heading).toMatchObject({ level: 4, sectionNo: '1.1.1', slug: 'h-1-1-1' })
   })
 
-  it('falls back to a text slug when the heading carries no number', () => {
-    const heading = result.headings.find((h) => h.text === 'Kapitel 3.3')
-    expect(heading).toMatchObject({ sectionNo: null, slug: 'h-kapitel-3-3' })
+  it('falls back to a text slug when the heading does not start with a number', () => {
+    const heading = result.headings.find((h) => h.text.startsWith('Kapitel 3.3'))
+    // the chapter number is still its section number, so `?section=3.3` finds it
+    expect(heading).toMatchObject({ sectionNo: '3.3', slug: 'h-kapitel-3-3' })
+    const title = result.headings.find((h) => h.text === 'Tabelle B Alphabetisches Verzeichnis')
+    expect(title).toMatchObject({ sectionNo: null, slug: 'h-tabelle-b-alphabetisches-verzeichnis' })
   })
 
   it('de-duplicates identical heading texts so anchors never collide', () => {
@@ -82,6 +85,53 @@ describe('indexBook – headings', () => {
       'Kapitel 1.1',
       '1.1.2 Geltungsbereich',
       '1.1.2.1 Anwendung',
+    ])
+  })
+})
+
+describe('indexBook – structure despite the conversion’s heading levels', () => {
+  function heading(text: string) {
+    const found = result.headings.find((h) => h.text === text)
+    expect(found, `heading ${JSON.stringify(text)}`).toBeDefined()
+    return found!
+  }
+
+  it('cleans labels: no emphasis markers, no footnote markers', () => {
+    expect(heading('8.6.3 Tunnelbeschränkungscode').sectionNo).toBe('8.6.3')
+    expect(heading('1.1.3.3 Freistellungen für flüssige Brennstoffe').slug).toBe('h-1-1-3-3')
+    expect(result.headings.filter((h) => /[*<>]/.test(h.text))).toEqual([])
+  })
+
+  it('reads a chapter number from "Kapitel X.Y", bold or not', () => {
+    expect(heading('Kapitel 8.7 Zusätzliche Vorschriften')).toMatchObject({ sectionNo: '8.7', depth: 2 })
+    expect(heading('Kapitel 8.6 Beschränkungen für die Durchfahrt durch Straßentunnel')).toMatchObject({ sectionNo: '8.6', depth: 2 })
+  })
+
+  it('folds a chapter’s title line into its label and keeps the title line out of the TOC', () => {
+    const title = heading('Zusätzliche Vorschriften')
+    expect(title.inToc).toBe(false)
+    expect(heading('Kapitel 8.7 Zusätzliche Vorschriften').inToc).toBe(true)
+  })
+
+  it('ranks Teil, Kapitel and sections by their numbers, whatever their markdown level', () => {
+    // "## Teil 1" and "# Teil 8" are both Teile
+    expect(heading('Teil 1 Allgemeine Vorschriften').depth).toBe(1)
+    expect(heading('Teil 8 Vorschriften für die Fahrzeugbesatzungen').depth).toBe(1)
+    expect(heading('8.6.1 Allgemeine Vorschriften').depth).toBe(3)
+    expect(heading('8.6.3 Tunnelbeschränkungscode').depth).toBe(3)
+  })
+
+  it('never lets a stray top-level heading become the parent of later sections', () => {
+    // "# **Ätzende Stoffe …**" sits inside Kapitel 8.7, not above it
+    expect(heading('Ätzende Stoffe mit Nebengefahr(en)').path).toEqual([
+      'ADR',
+      'Teil 8 Vorschriften für die Fahrzeugbesatzungen',
+      'Kapitel 8.7 Zusätzliche Vorschriften',
+    ])
+    expect(heading('8.7.1 Anwendungsbereich').path).toEqual([
+      'ADR',
+      'Teil 8 Vorschriften für die Fahrzeugbesatzungen',
+      'Kapitel 8.7 Zusätzliche Vorschriften',
     ])
   })
 })

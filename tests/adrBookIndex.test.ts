@@ -70,6 +70,17 @@ describe('buildBookIndex', () => {
   })
 })
 
+describe('buildBookIndex – source repairs', () => {
+  it('repairs every line once, keeping the line count, so search and rendering see the same text', () => {
+    const source = FIXTURE.split('\n')
+    const index = buildBookIndex(source)
+    expect(index.lines).toHaveLength(source.length)
+    expect(index.lines.find(l => l.includes('8.6.3.2'))).toBe('- **8.6.3.2** Die Beschränkungen gelten für Beförderungseinheiten mit gefährlichen Gütern.')
+    expect(index.lines.find(l => l.includes('Aktivitätswert'))).toContain('A<sub>2</sub> -Wert und 1 × 10<sup>-1</sup> TBq')
+    expect(index.lines.join('\n')).not.toMatch(/\$[^$]+\$/)
+  })
+})
+
 describe('loadBookIndex', () => {
   it('reads a file and indexes it', () => {
     const path = tmpFile('ok.md', FIXTURE)

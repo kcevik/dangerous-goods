@@ -18,7 +18,7 @@ function hit(line: number, heading: TocEntry | null = null): BookHit {
     rank: 1,
     role: 'definition',
     context: `Kontext ${line}`,
-    heading: heading ? { ...heading, path: ['Teil 3'] } : null,
+    heading: heading ? { ...heading, depth: heading.level, inToc: true, path: ['Teil 3'] } : null,
   }
 }
 
@@ -118,8 +118,8 @@ describe('/regelwerk/adr page — active', () => {
     expect(container).not.toHaveTextContent('Strg+F')
 
     const input = screen.getByLabelText('Suchbegriff')
-    const toc = container.querySelector('aside details') as HTMLDetailsElement
-    const tocWasOpen = toc.open
+    const toc = screen.getByRole('button', { name: 'Inhaltsverzeichnis' })
+    const tocWasOpen = toc.getAttribute('aria-expanded')
     await fireEvent.keyDown(window, { key: 'F3' })
     await fireEvent.keyDown(window, { key: 'g', ctrlKey: true })
     await fireEvent.keyDown(window, { key: 'i', altKey: true })
@@ -127,7 +127,7 @@ describe('/regelwerk/adr page — active', () => {
     await fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
     await tick()
     expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Treffer 1 von 7')
-    expect(toc.open).toBe(tocWasOpen)
+    expect(toc.getAttribute('aria-expanded')).toBe(tocWasOpen)
     expect(input).toHaveValue('243')
   })
 
@@ -162,6 +162,31 @@ describe('/regelwerk/adr page — active', () => {
     const nav = screen.getByRole('navigation', { name: 'Inhaltsverzeichnis' })
     expect(nav).toHaveTextContent('3.3.1 Sondervorschriften')
     expect(nav).not.toHaveTextContent('zu tief')
+  })
+
+  it('folds the TOC away on phones behind a toggle, and closes it after a jump', async () => {
+    const { container } = renderPage(activeData())
+    const toggle = screen.getByRole('button', { name: 'Inhaltsverzeichnis' })
+    const panel = container.querySelector('#book-toc')!
+    expect(toggle.getAttribute('aria-controls')).toBe('book-toc')
+    // closed by default: hidden below md, while md:block keeps it on desktop
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(panel.className).toContain('hidden')
+    expect(panel.className).toContain('md:block')
+    expect(toggle.className).toContain('md:hidden')
+    await fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(panel.className.split(' ')).not.toContain('hidden')
+    await fireEvent.click(screen.getByRole('link', { name: '3.3.1 Sondervorschriften' }))
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('gives the field and the hit buttons 44px touch targets', () => {
+    renderPage(activeData())
+    expect(screen.getByLabelText('Suchbegriff').className).toContain('h-11')
+    for (const name of ['Vorheriger Treffer', 'Nächster Treffer']) {
+      expect(screen.getByRole('button', { name }).className).toMatch(/\bh-11\b.*\bw-11\b/)
+    }
   })
 
   it('has a skip link to a focusable main region in German', () => {
