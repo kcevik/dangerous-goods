@@ -25,6 +25,7 @@ Each feature is designed in a spec (`superpowers/specs/`) and built from a plan
 | 2026-09-29 | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 done (switched to Caddy 2026-10-12) | [spec](superpowers/specs/2026-09-29-prelaunch-deployment-design.md) | [plan](superpowers/plans/2026-09-29-prelaunch-deployment.md) |
 | 2026-11-08 | Legal pages (Impressum, Datenschutz, AGB, Widerruf) | 🟡 drafts live; built without a spec/plan | — | — |
 | 2026-11-08 | Stoffsuche gaps + regulatory variants (F-01) | ✅ done (browser check by the owner open) | [spec](superpowers/specs/2026-11-08-stoffsuche-variants-design.md) | [plan](superpowers/plans/2026-11-08-stoffsuche-variants.md) |
+| 2026-11-23 | Account page `/konto` (F-04) | ✅ done 2026-11-23 (migration applied, browser-checked; live deletion untested) | [spec](superpowers/specs/2026-11-23-account-page-design.md) | [plan](superpowers/plans/2026-11-23-account-page.md) |
 
 ## How we work
 

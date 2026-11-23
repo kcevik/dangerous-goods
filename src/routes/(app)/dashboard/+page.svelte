@@ -8,6 +8,7 @@
   const tools = [
     { title: 'Stoffsuche', description: 'UN-Nummer oder Stoffname suchen und alle Regelwerke vergleichen.', href: resolve('/(app)/suche') },
     { title: 'Regelwerksvergleich', description: 'ADR, RID, IMDG und ICAO nebeneinander – Abweichungen auf einen Blick (Beispiel UN 1203).', href: resolve('/(app)/un/[nummer]/vergleich', { nummer: '1203' }) },
+    { title: 'Konto', description: 'Passwort, Rechnungsanschrift und Abo verwalten.', href: resolve('/(app)/konto') },
   ]
 
   const upcoming = ['1000-Punkte-Rechner', 'Dokumentengenerator', 'LQ/EQ-Rechner']

@@ -25,6 +25,11 @@ describe('dashboard page', () => {
     expect(container).not.toHaveTextContent('Demnächst verfügbar')
   })
 
+  it('links to the account page', () => {
+    const { container } = renderDashboard(false)
+    expect(container.querySelector('a[href="/konto"]')).toHaveTextContent('Konto')
+  })
+
   it('shows the activation status', () => {
     const active = renderDashboard(true)
     expect(active.container).toHaveTextContent('Freigeschaltet')

@@ -10,6 +10,7 @@
   import Navbar from '$lib/landing/Navbar.svelte'
   import SeoContent from '$lib/landing/SeoContent.svelte'
   import Stats from '$lib/landing/Stats.svelte'
+  import { ACCOUNT_DELETED_MESSAGE } from '$lib/account/messages'
   import { FAQ_ITEMS } from '$lib/landing/faq'
   import { signupCtaLabel } from '$lib/prelaunch/copy'
   import {
@@ -60,6 +61,11 @@
 </svelte:head>
 
 <div class="min-h-screen overflow-x-clip bg-white antialiased">
+  {#if data?.accountDeleted}
+    <div role="status" class="bg-green-50 border-b border-green-200 text-green-900 text-sm">
+      <div class="max-w-5xl mx-auto px-4 py-3">{ACCOUNT_DELETED_MESSAGE}</div>
+    </div>
+  {/if}
   <Navbar {registrationOpen} />
   <Hero />
   <Stats />

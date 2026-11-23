@@ -460,6 +460,33 @@ RLS on with **no policies** and all privileges revoked from `anon`/`authenticate
 through `join_launch_list(p_email, p_consent_version)` — security definer, insert-only,
 `on conflict (email) do nothing`, returns nothing.
 
+### Table: `billing_addresses` (migration `20261123120000_account_page`)
+
+```sql
+user_id     uuid primary key references auth.users (id) on delete cascade,
+company     text,                 -- optional, 1–200
+first_name  text not null,        -- 1–100
+last_name   text not null,        -- 1–100
+street      text not null,        -- street + house number, 1–200
+postal_code text not null,        -- 2–10; the app checks DE 5 / AT, CH, LI 4 digits
+city        text not null,        -- 1–100
+country     text not null default 'DE',   -- ISO 3166-1 alpha-2
+vat_id      text,                 -- ^[A-Z]{2}[A-Z0-9]{2,13}$, only with company (check constraint)
+created_at  timestamptz not null default now(),
+updated_at  timestamptz not null default now()   -- trigger billing_addresses_touch
+```
+
+RLS on; policies `own address read|insert|update` (`(select auth.uid()) = user_id`) for
+`authenticated` only, no delete policy (the row cascades with the auth user). All privileges
+revoked from `anon`; `authenticated` holds select/insert/update. Written by the user's own client
+from `/konto` (upsert on `user_id`).
+
+### Function: `delete_own_account()` (same migration)
+
+Security definer, `search_path = ''`, returns void. Raises if `auth.uid()` is null, otherwise
+`delete from auth.users where id = auth.uid()` — `profiles` and `billing_addresses` cascade.
+Execute revoked from `public`/`anon`, granted to `authenticated`.
+
 ## 9. Cross-mode comparison
 
 The `un_comparison` view planned here was dropped in `20260904120000_auth_and_entitlement`.

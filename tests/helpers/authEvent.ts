@@ -32,6 +32,10 @@ export function makeAuthEvent(opts: {
   path?: string
   search?: string
   rpc?: ReturnType<typeof vi.fn>
+  /** table access mock (`supabase.from`) */
+  from?: ReturnType<typeof vi.fn>
+  /** the session user; defaults to u1 / k@example.de */
+  user?: { id: string, email?: string }
 } = {}) {
   const auth = opts.auth ?? createAuthMock()
   const rpc = opts.rpc ?? vi.fn(async () => ({ data: null, error: null }))
@@ -39,17 +43,19 @@ export function makeAuthEvent(opts: {
   for (const [k, v] of Object.entries(opts.fields ?? {})) formData.set(k, v)
   const url = new URL(`http://localhost${opts.path ?? '/'}${opts.search ?? ''}`)
   const request = new Request(url, { method: 'POST', body: formData })
+  const from = opts.from ?? vi.fn(() => { throw new Error('unexpected table access') })
   const session = opts.session ?? null
+  const user = opts.user ?? { id: 'u1', email: 'k@example.de' }
   const event = {
     request,
     url,
     getClientAddress: () => opts.ip ?? `10.1.0.${++ipCounter}`,
     locals: {
-      supabase: { auth, rpc },
+      supabase: { auth, rpc, from },
       safeGetSession: async () => session
-        ? { session, user: { id: 'u1', email: 'k@example.de' }, isActive: false }
+        ? { session, user, isActive: false }
         : { session: null, user: null, isActive: false },
     },
   } as unknown as RequestEvent
-  return { event, auth, rpc }
+  return { event, auth, rpc, from }
 }

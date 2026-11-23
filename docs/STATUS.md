@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-08 · **Tests:** 864 green (73 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK · nothing committed (the owner commits)
+**Last updated:** 2026-11-23 · **Tests:** 1011 green (84 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -13,6 +13,7 @@ every working session.
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | F-04 | Login, accounts, manual activation | ✅ done | Signup verified end-to-end on 2026-09-29 (built-in mail sender) |
+| F-04 | Account page (`/konto`) | ✅ done | Password change (re-auth), billing address, subscription status + disabled checkout placeholder, self-service deletion (spec 2026-11-23). Migration `20261123120000_account_page` applied 2026-11-23. Browser-checked 2026-11-23 at 320–1280 px with the E2E account (address save/reload, validation, wrong password, password change + restore, delete validation); actual deletion not yet tested live (no second test account) |
 | F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed |
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
@@ -48,6 +49,8 @@ than Stoffsuche still carry "Demnächst verfügbar". Un-gray a card when its too
 8. ~~Self-host Google Fonts~~ — done 2026-11-08 (`@fontsource-variable/plus-jakarta-sans`, guarded by `tests/self-hosted-fonts.test.ts`).
 
 ## Owner to-dos
+
+- Test the real account deletion on `/konto` with a throw-away account (needs a second test account).
 
 - Book the Strato VPS; DNS `app` → VPS (apex only in Phase C; never touch MX).
 - WordPress: move the blog to `blog.gefahrgut.org` (rollout Phase B); link the app's `/impressum` and give the blog its own privacy policy.
@@ -92,11 +95,11 @@ book indexed at startup and checked by `/healthz`.
 - "Tunnelcode" finds nothing in the book — the ADR says "Tunnelbeschränkungscode"; synonyms would help.
 - Book TOC has no marker for the section in view.
 - The landing page and auth pages have never had a visual pass in a real browser since the SvelteKit port.
-- Stripe later: a webhook sets `profiles.activated_at`; no schema change needed.
+- Stripe later: a webhook sets `profiles.activated_at`; no schema change needed. Hook points: `CHECKOUT_AVAILABLE` in `src/lib/account/subscription.ts` and a `?/subscribe` action on `/konto`. Account deletion must cancel a Stripe subscription first, and invoices (retention duty) will need a table that does not cascade with the user.
 
 ## Supabase project state (`nmigeqhrquzmdxjeuite`, eu-central-1)
 
-- Migrations applied through `20260929120000_launch_signups` (all via `execute_sql` + a `schema_migrations` row).
+- Migrations applied through `20260929120000_launch_signups` (all via `execute_sql` + a `schema_migrations` row). `20261123120000_account_page` applied 2026-11-23 (owner-approved).
 - Auth: email provider on, confirm email on, min password 10; URL config and email templates pasted (from `supabase/templates/`); built-in mail sender only.
 - One user (the owner), activated. `launch_signups` held 1 entry on 2026-09-29 (a test submission after the verification rows were deleted).
 - For the test deployment still to do: add `https://app.gefahrgut.org/**` to redirect URLs, disable new signups, create test users with "Auto Confirm".
