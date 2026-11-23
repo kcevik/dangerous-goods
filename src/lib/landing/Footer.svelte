@@ -31,7 +31,7 @@
 
 <footer class="bg-white border-t border-slate-200">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 sm:gap-8 mb-10">
       <!-- Brand -->
       <div class="col-span-2 md:col-span-1">
         <div class="flex items-center gap-2 mb-4">
@@ -49,12 +49,12 @@
 
       <!-- Link columns -->
       {#each linkColumns as col (col.heading)}
-        <div>
+        <div class="min-w-0">
           <h4 class="text-sm font-semibold mb-4" style="color: #0f2744;">{col.heading}</h4>
-          <ul class="space-y-2.5">
+          <ul class="lg:space-y-2.5">
             {#each col.links as link (link.label)}
               <li>
-                <a href={link.href} class="text-sm text-slate-500 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">{link.label}</a>
+                <a href={link.href} class="inline-flex min-h-11 min-w-11 lg:min-h-0 items-center lg:py-0.5 text-sm text-slate-500 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer break-words">{link.label}</a>
               </li>
             {/each}
           </ul>
@@ -62,7 +62,7 @@
       {/each}
     </div>
 
-    <div class="border-t border-slate-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="border-t border-slate-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
       <p class="text-xs text-slate-400">© 2026 gefahrgut.org. Datenbasis: BAM GEFAHRGUT, Lizenz dl-de/by-2-0.</p>
       <p class="text-xs text-slate-400">Kein Ersatz für rechtliche Beratung. Alle Angaben ohne Gewähr.</p>
     </div>

@@ -8,11 +8,11 @@
 </script>
 
 <section class="bg-white border-b border-slate-100" aria-label="Kennzahlen">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 sm:gap-8">
       {#each stats as stat (stat.label)}
-        <div class="text-center">
-          <div class="text-3xl font-bold mb-1" style="color: #0f2744;">{stat.value}</div>
+        <div class="min-w-0 text-center">
+          <div class="text-2xl sm:text-3xl font-bold mb-1 whitespace-nowrap" style="color: #0f2744;">{stat.value}</div>
           <div class="text-sm text-slate-500">{stat.label}</div>
         </div>
       {/each}

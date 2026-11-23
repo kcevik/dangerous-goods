@@ -77,6 +77,53 @@ describe('landing page', () => {
     expect(section.querySelector('a[href="/un/1203/vergleich"]')).toHaveTextContent('Vergleich ansehen')
   })
 
+  it('guards against horizontal scroll and uses one section rhythm on phones', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    expect(container.firstElementChild).toHaveClass('overflow-x-clip')
+    // the big content sections share one padding scale: 4rem on phones, 5rem from sm, 7rem from lg
+    for (const id of ['features', 'demo', 'comparison', 'faq']) {
+      expect(container.querySelector(`#${id}`)).toHaveClass('py-16', 'sm:py-20', 'lg:py-28')
+    }
+    expect(container.querySelector('#cta-heading')!.closest('section')).toHaveClass('py-16', 'sm:py-20', 'lg:py-28')
+    // one card column on phones, two from sm, three from lg
+    expect(container.querySelector('#features .grid')).toHaveClass('sm:grid-cols-2', 'lg:grid-cols-3')
+  })
+
+  it('inherits the self-hosted body font instead of resetting to Tailwind\'s default sans stack', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    expect(container.querySelector('.font-sans')).toBeNull()
+  })
+
+  it('lets every section heading break long German compounds at 320px', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const headings = container.querySelectorAll('h2')
+    expect(headings.length).toBeGreaterThanOrEqual(6)
+    // one type scale; 24px below 375px so "Gefahrgutbeauftragte" fits a 320px line unbroken
+    for (const h of headings) expect(h).toHaveClass('break-words', 'hyphens-auto', 'text-2xl', 'min-[375px]:text-3xl', 'sm:text-4xl')
+  })
+
+  it('breaks the hero headline only at its soft hyphen ("Gefahrgut-vorschriften", never "…vorschrif-ten")', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const h1 = container.querySelector('h1')!
+    expect(h1.textContent).toContain('Gefahrgut­vorschriften')
+    expect(h1).not.toHaveClass('hyphens-auto')
+    expect(h1).toHaveClass('break-words')
+  })
+
+  it('gives footer links a 44px touch target on phones and tablets', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const links = container.querySelectorAll('footer ul a')
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) expect(link).toHaveClass('min-h-11', 'min-w-11', 'lg:min-h-0')
+  })
+
+  it('keeps the comparison mockup scrollable inside its card instead of widening the page', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const table = container.querySelector('#comparison table')!
+    expect(table.parentElement).toHaveClass('overflow-x-auto')
+    expect(table.closest('.rounded-2xl')).toHaveClass('min-w-0')
+  })
+
   it('renders the embedded demo tool with UN 1203', () => {
     const { container } = render(LandingPage, { props: PROPS })
     expect(container.querySelector('#demo')).toHaveTextContent('UN 1203 · Verfügbarkeit in allen Modi')
