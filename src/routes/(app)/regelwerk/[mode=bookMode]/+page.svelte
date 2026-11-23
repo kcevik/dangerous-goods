@@ -1,6 +1,5 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
-  import LockNotice from '$lib/auth/LockNotice.svelte'
   import BookViewer from '$lib/regulations/BookViewer.svelte'
   import { createBookFetchers } from '$lib/regulations/bookFetch'
   import { getBookLabel } from '$lib/regulations/bookTypes'
@@ -25,7 +24,6 @@
 
 {#if data.locked}
   <div class="max-w-3xl mx-auto px-4 py-10 space-y-4">
-    <LockNotice />
     <p class="text-sm text-[#5a7a99]">{getBookLabel('de', 'lockedNotice')}</p>
   </div>
 {:else}

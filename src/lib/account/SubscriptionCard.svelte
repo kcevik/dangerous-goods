@@ -1,12 +1,22 @@
 <script lang="ts">
+  import { planPrice } from '$lib/legalPages/facts'
   import type { SubscriptionStatus } from './subscription'
 
   // Stripe later: when checkoutAvailable is true this becomes a form posting to ?/subscribe.
   let { status, checkoutAvailable }: { status: SubscriptionStatus, checkoutAvailable: boolean } = $props()
+
+  const price = planPrice()
 </script>
 
-<section aria-labelledby="subscription-heading" class="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6">
+<!-- id="abo": the sales modal and banner for locked accounts link to /konto#abo -->
+<section id="abo" aria-labelledby="subscription-heading" class="scroll-mt-4 rounded-2xl bg-white border border-slate-200 p-5 sm:p-6">
   <h2 id="subscription-heading" class="font-semibold text-lg mb-3 text-[#0f2744]">Abo</h2>
+
+  {#if price}
+    <p class="text-sm text-slate-600 mb-2">
+      Preis: <span class="font-semibold text-[#0f2744]" data-testid="plan-price">{price}</span>
+    </p>
+  {/if}
 
   <p class="text-sm text-slate-600 mb-4">
     Status:

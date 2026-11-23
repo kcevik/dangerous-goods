@@ -1,10 +1,21 @@
 import { fireEvent, render } from '@testing-library/svelte'
 import { createRawSnippet } from 'svelte'
-import { describe, expect, it } from 'vitest'
-import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { planPrice } from '$lib/legalPages/facts'
+import { UPSELL_STORAGE_KEY } from '$lib/upsell/upsellThrottle.svelte'
+import { polyfillDialog } from './helpers/dialog'
 import { APP_NAV_ITEMS } from '$lib/nav/appNav'
 import { load } from '../src/routes/(app)/+layout.server'
 import AppLayout from '../src/routes/(app)/+layout.svelte'
+
+const pageState = vi.hoisted(() => ({ url: new URL('http://localhost/dashboard') }))
+vi.mock('$app/state', () => ({ page: pageState }))
+
+beforeAll(polyfillDialog)
+beforeEach(() => {
+  pageState.url = new URL('http://localhost/dashboard')
+  localStorage.clear()
+})
 
 function renderShell(isActive: boolean) {
   const children = createRawSnippet(() => ({ render: () => '<p>page content</p>' }))
@@ -34,12 +45,32 @@ describe('(app) layout shell', () => {
     expect(container).toHaveTextContent('page content')
   })
 
-  it('shows the lock banner only for inactive accounts', () => {
+  it('shows the sales banner instead of the old lock banner, only for inactive accounts', () => {
     const locked = renderShell(false)
-    expect(locked.container).toHaveTextContent(LOCK_MESSAGE)
+    const banner = locked.getByTestId('upsell-banner')
+    expect(banner).toHaveTextContent('noch nicht freigeschaltet')
+    expect(banner).toHaveTextContent('Demo mit UN 1203')
+    expect(banner).toHaveTextContent(planPrice()!)
+    expect(banner.querySelector('a[href="/konto#abo"]')).toHaveTextContent('Jetzt freischalten')
+    // the banner is the one lock notice; pages no longer carry their own
+    expect(locked.container.querySelectorAll('[role="status"]')).toHaveLength(1)
     locked.unmount()
     const active = renderShell(true)
-    expect(active.container).not.toHaveTextContent(LOCK_MESSAGE)
+    expect(active.queryByTestId('upsell-banner')).toBeNull()
+    expect(active.container.querySelector('dialog')).toBeNull()
+  })
+
+  it('opens the sales modal on the first view of a locked user and stamps the time', () => {
+    const { container } = renderShell(false)
+    expect(container.querySelector('dialog')).toHaveAttribute('open')
+    expect(localStorage.getItem(UPSELL_STORAGE_KEY)).not.toBeNull()
+  })
+
+  it('does not open the sales modal on /konto, but keeps the banner', () => {
+    pageState.url = new URL('http://localhost/konto')
+    const { container, getByTestId } = renderShell(false)
+    expect(container.querySelector('dialog')).not.toHaveAttribute('open')
+    expect(getByTestId('upsell-banner')).toBeInTheDocument()
   })
 })
 

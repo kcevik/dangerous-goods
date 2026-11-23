@@ -69,9 +69,9 @@ function renderPage(data: Record<string, unknown>) {
 }
 
 describe('/regelwerk/adr page — locked', () => {
-  it('shows the lock notice and no book text or find bar', () => {
+  it('says the text needs activation, with no second lock notice, book text or find bar', () => {
     const { container } = renderPage({ locked: true, mode: 'adr', isActive: false })
-    expect(container.querySelector('[role="status"]')).not.toBeNull()
+    expect(container.querySelector('[role="status"]')).toBeNull()
     expect(container).toHaveTextContent('Der ADR-Volltext ist nach der Freischaltung verfügbar.')
     expect(container.querySelector('[role="search"]')).toBeNull()
     expect(container.querySelector('#book-content')).toBeNull()

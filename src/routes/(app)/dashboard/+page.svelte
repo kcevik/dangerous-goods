@@ -1,6 +1,5 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
-  import LockNotice from '$lib/auth/LockNotice.svelte'
 
   let { data } = $props()
 
@@ -24,10 +23,6 @@
     {data.user?.email} · Status:
     <span class="font-semibold" style="color: #0f2744;">{data.isActive ? 'Freigeschaltet' : 'Noch nicht freigeschaltet'}</span>
   </p>
-
-  {#if !data.isActive}
-    <div class="mb-8"><LockNotice /></div>
-  {/if}
 
   <div class="grid sm:grid-cols-2 gap-4 mb-10">
     {#each tools as tool (tool.title)}

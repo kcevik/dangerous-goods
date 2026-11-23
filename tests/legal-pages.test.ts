@@ -3,7 +3,7 @@ import { createRawSnippet } from 'svelte'
 import { afterEach, describe, expect, it } from 'vitest'
 import { IMPRESSUM } from '$lib/legalPages/impressum'
 import LegalPage from '$lib/legalPages/LegalPage.svelte'
-import { type LegalFacts, LEGAL_FACTS } from '$lib/legalPages/facts'
+import { type LegalFacts, LEGAL_FACTS, planPrice } from '$lib/legalPages/facts'
 import LegalLayout from '../src/routes/(legal)/+layout.svelte'
 import AgbPage from '../src/routes/(legal)/agb/+page.svelte'
 import DatenschutzPage from '../src/routes/(legal)/datenschutz/+page.svelte'
@@ -31,6 +31,28 @@ describe('legal pages', () => {
       expect(container).toHaveTextContent('Stand:')
     })
   }
+})
+
+describe('plan price', () => {
+  it('is set once in LEGAL_FACTS as the owner decided (125 € gross per month)', () => {
+    expect(LEGAL_FACTS.price).toBe('125 € pro Monat inkl. MwSt.')
+    expect(planPrice()).toBe(LEGAL_FACTS.price)
+    expect(LEGAL_FACTS.billingPeriod).toBe('monatlich im Voraus')
+  })
+
+  it('is null while the fact is unknown or not applicable', () => {
+    expect(planPrice({ ...LEGAL_FACTS, price: null })).toBeNull()
+    expect(planPrice({ ...LEGAL_FACTS, price: false })).toBeNull()
+    expect(planPrice({ ...LEGAL_FACTS, price: '' })).toBeNull()
+  })
+
+  it('fills the AGB from the facts and keeps the draft banner for the facts still unknown', () => {
+    const { container } = render(AgbPage)
+    expect(container).toHaveTextContent('(derzeit 125 € pro Monat inkl. MwSt.).')
+    expect(container).toHaveTextContent('monatlich im Voraus fällig')
+    expect(container).not.toHaveTextContent('[[Preis]]')
+    expect(container.querySelector('[role="note"]')).toHaveTextContent('Mindestlaufzeit')
+  })
 })
 
 describe('LegalPage draft state', () => {

@@ -15,8 +15,9 @@ IMDG, ICAO, ADN, UN) as a working tool, not a static reference.
 - **Core differentiator:** cross-mode comparison (ADR vs RID vs IMDG vs ICAO vs ADN) — Phase 1.
 - **Data source:** BAM GEFAHRGUT database, licence dl-de/by-2-0 (attribution required,
   modifications must be marked). The database is authoritative.
-- **Business model:** no free tier; exactly one paid plan (price TBD). No pricing section on the
-  landing page. Accounts start **locked** (demo data only) until the owner sets
+- **Business model:** no free tier; exactly one paid plan: **125 € pro Monat inkl. MwSt.** (owner, 2026-11-23),
+  set once in `LEGAL_FACTS.price` and read via `planPrice()`. No price and no pricing section on the
+  landing page (a test pins it). Accounts start **locked** (demo data only) until the owner sets
   `profiles.activated_at`; Stripe will later set the same column.
 - **Pre-launch:** `REGISTRATION_MODE` (fail-closed; only `open` opens sign-up). In `waitlist` mode
   `/registrieren` collects launch notifications into `launch_signups`; "Anmelden" always works.
@@ -86,9 +87,11 @@ src/
                           # specialProvisions.svelte.ts, MultimodalTool.svelte; F-10 side by side:
                           # compare.ts (COMPARE_FIELDS, buildComparison), comparisonView.svelte.ts,
                           # ComparisonView/ComparisonTable/ComparisonLegend/VariantPicker.svelte
-    auth/                 # safeNext, messages (German), AuthFormState, LockNotice
+    auth/                 # safeNext, messages (German), AuthFormState
     account/              # /konto: address + countries, messages, subscription (Stripe hook), form state, *Card.svelte
     prelaunch/            # consent.ts (CONSENT_VERSION), copy.ts, LaunchNotifyForm.svelte
+    upsell/               # sales modal + banner for locked accounts: upsellThrottle.svelte.ts, copy.ts,
+                          # UpsellModal.svelte, UpsellBanner.svelte
     landing/              # landing sections; faq.ts
     regulations/          # book viewer, client side: bookTypes (+ BOOK_LABELS), bookHighlighter,
                           # adrBookViewer.svelte.ts, bookFetch, Book*.svelte
@@ -178,7 +181,12 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **English identifiers**, camelCase fields and label keys. **User-visible copy is German and addresses the user with "du".**
 - **Internal links** use `resolve()` with route IDs including groups (`resolve('/(auth)/login')`, `resolve('/(app)/un/[nummer]', { nummer })`). Query strings are appended to the resolved path; the autofixer's "without resolve()" warning on those, and on external URLs from `lib/legal.ts`, is a known false positive.
 - **Tailwind v4 + `@apply`** needs `@reference "tailwindcss"` at the top of the `<style>` block.
-- **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`. `/konto` touches no regulation data and is fully usable while locked.
+- **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`. The `(app)` layout's `UpsellBanner` is the one lock notice;
+  pages add only page-specific hints (e.g. "UN 1090 ist erst nach der Freischaltung verfügbar"), the demo tools carry their DEMO badge.
+- **Sales modal (locked accounts):** only in the `(app)` layout; never for active accounts, never on `/konto`.
+  Opens on the first page view, then at most every 10 min on navigation (`UpsellThrottle`, localStorage key
+  `gefahrgut.upsell.lastShown`, storage failures just show it again); a banner covers the time in between.
+  Its CTA links to `/konto#abo` — the Abo card keeps `id="abo"`. Benefit facts follow the site facts. `/konto` touches no regulation data and is fully usable while locked.
 - **Account actions:** password change and deletion re-authenticate with the current password (`signInWithPassword` on the session email) first; their rate limits are keyed by user id. Deletion goes through the `delete_own_account()` RPC — the app still never uses the service-role key.
 
 ## Key Rules
