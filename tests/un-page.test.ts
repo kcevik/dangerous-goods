@@ -1,6 +1,5 @@
 import { render } from '@testing-library/svelte'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
 import { DEMO_DATA } from '$lib/multimodal/types'
 import UnPage from '../src/routes/(app)/un/[nummer]/+page.svelte'
 
@@ -54,13 +53,15 @@ describe('/un/[nummer] page (locked)', () => {
     const { container } = renderPage({ unNumber: '1203', locked: true, compareData: DEMO_DATA })
     const stub = container.querySelector('[data-testid="tool-stub"]')!
     expect(stub).toHaveAttribute('data-demo', 'true')
-    expect(container).not.toHaveTextContent(LOCK_MESSAGE)
+    // the (app) layout's banner is the only lock notice
+    expect(container.querySelector('[role="status"]')).toBeNull()
   })
 
-  it('renders the lock notice instead of the tool for other numbers', () => {
+  it('explains that other numbers need activation and links the demo instead of the tool', () => {
     const { container } = renderPage({ unNumber: '1090', locked: true, compareData: null })
     expect(container.querySelector('[data-testid="tool-stub"]')).toBeNull()
-    expect(container).toHaveTextContent(LOCK_MESSAGE)
+    expect(container).toHaveTextContent('UN 1090 ist erst nach der Freischaltung verfügbar.')
+    expect(container.querySelector('[role="status"]')).toBeNull()
     expect(container.querySelector('a[href="/un/1203"]')).not.toBeNull()
   })
 })

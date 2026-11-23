@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { fireEvent, render, screen } from '@testing-library/svelte'
 import { tick } from 'svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
+const LOCKED_HINT = 'Die Suche ist nach der Freischaltung verfügbar'
 import SearchPage from '../src/routes/(app)/suche/+page.svelte'
 
 vi.mock('$lib/multimodal/MultimodalTool.svelte', async () => ({
@@ -154,10 +154,10 @@ describe('/suche page (active account)', () => {
     expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
   })
 
-  it('does not show the lock notice or the demo tool', () => {
+  it('does not show the locked hint or the demo tool', () => {
     const { client } = stubSearch([])
     const { container } = renderPage(client)
-    expect(container).not.toHaveTextContent(LOCK_MESSAGE)
+    expect(container).not.toHaveTextContent(LOCKED_HINT)
     expect(container.querySelector('[data-testid="tool-stub"]')).toBeNull()
   })
 
@@ -209,10 +209,11 @@ describe('/suche page (locked account)', () => {
     vi.useRealTimers()
   })
 
-  it('shows the lock notice and the demo tool instead of the example chips', () => {
+  it('shows a search hint and the demo tool instead of the example chips, but no second lock notice', () => {
     const { client } = stubSearch([])
     const { container } = renderPage(client, false)
-    expect(container).toHaveTextContent(LOCK_MESSAGE)
+    expect(container).toHaveTextContent(LOCKED_HINT)
+    expect(container.querySelector('[role="status"]')).toBeNull()
     expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:1203')
     expect(container.querySelectorAll('.rounded-full')).toHaveLength(0)
   })
@@ -225,7 +226,7 @@ describe('/suche page (locked account)', () => {
     expect(from).not.toHaveBeenCalled()
     expect(container.querySelector('.space-y-2')).toBeNull()
     expect(container).not.toHaveTextContent('TOOL:1090')
-    expect(container).toHaveTextContent(LOCK_MESSAGE)
+    expect(container).toHaveTextContent(LOCKED_HINT)
     expect(container.querySelector('a[href$="/vergleich"]')).toBeNull()
   })
 })

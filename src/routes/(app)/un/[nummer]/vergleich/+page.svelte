@@ -1,6 +1,5 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
-  import LockNotice from '$lib/auth/LockNotice.svelte'
   import ComparisonView from '$lib/multimodal/ComparisonView.svelte'
   import QuickSearch from '$lib/search/QuickSearch.svelte'
   import { SITE_URL } from '$lib/seo/structuredData'
@@ -30,15 +29,11 @@
     {/if}
     {#key data.unNumber}
       {#if data.compareData}
-        {#if data.locked}
-          <div class="mb-4"><LockNotice /></div>
-        {/if}
         <ComparisonView unNumber={data.unNumber} data={data.compareData} reference={data.reference ?? []} demo={data.locked} />
       {:else}
         <div class="space-y-4">
-          <LockNotice />
           <p class="text-sm text-[#5a7a99]">
-            Die Demo findest du unter <a href={resolve('/(app)/un/[nummer]/vergleich', { nummer: '1203' })} class="underline hover:text-orange-500">UN 1203</a>.
+            Der Vergleich für UN {data.unNumber} ist erst nach der Freischaltung verfügbar. Die Demo findest du unter <a href={resolve('/(app)/un/[nummer]/vergleich', { nummer: '1203' })} class="underline hover:text-orange-500">UN 1203</a>.
           </p>
         </div>
       {/if}

@@ -1,7 +1,6 @@
 import { fireEvent, render } from '@testing-library/svelte'
 import { createRawSnippet } from 'svelte'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
 import { planPrice } from '$lib/legalPages/facts'
 import { UPSELL_STORAGE_KEY } from '$lib/upsell/upsellThrottle.svelte'
 import { polyfillDialog } from './helpers/dialog'
@@ -53,7 +52,8 @@ describe('(app) layout shell', () => {
     expect(banner).toHaveTextContent('Demo mit UN 1203')
     expect(banner).toHaveTextContent(planPrice()!)
     expect(banner.querySelector('a[href="/konto#abo"]')).toHaveTextContent('Jetzt freischalten')
-    expect(locked.container).not.toHaveTextContent(LOCK_MESSAGE)
+    // the banner is the one lock notice; pages no longer carry their own
+    expect(locked.container.querySelectorAll('[role="status"]')).toHaveLength(1)
     locked.unmount()
     const active = renderShell(true)
     expect(active.queryByTestId('upsell-banner')).toBeNull()

@@ -37,7 +37,8 @@ describe('dashboard page', () => {
     active.unmount()
     const locked = renderDashboard(false)
     expect(locked.container).toHaveTextContent('Noch nicht freigeschaltet')
-    expect(locked.container.querySelector('[role="status"]')).not.toBeNull()
+    // the (app) layout's banner is the one lock notice
+    expect(locked.container.querySelector('[role="status"]')).toBeNull()
   })
 
   it('lets a long e-mail address wrap on phones', () => {

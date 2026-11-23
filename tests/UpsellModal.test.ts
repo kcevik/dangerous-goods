@@ -2,7 +2,7 @@ import { fireEvent, render } from '@testing-library/svelte'
 import { tick } from 'svelte'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { planPrice } from '$lib/legalPages/facts'
-import { UPSELL_BENEFITS, UPSELL_TITLE, upsellEligible, upsellHref } from '$lib/upsell/copy'
+import { UPSELL_BANNER_PITCH, UPSELL_BANNER_PITCH_SHORT, UPSELL_BENEFITS, UPSELL_TITLE, upsellEligible, upsellHref } from '$lib/upsell/copy'
 import UpsellBanner from '$lib/upsell/UpsellBanner.svelte'
 import UpsellModal from '$lib/upsell/UpsellModal.svelte'
 import { polyfillDialog } from './helpers/dialog'
@@ -115,6 +115,9 @@ describe('UpsellBanner', () => {
     const banner = getByTestId('upsell-banner')
     expect(banner).toHaveTextContent('noch nicht freigeschaltet')
     expect(banner).toHaveTextContent('UN 1203')
+    // phones get a short pitch, wider screens the full one
+    expect(banner).toHaveTextContent(UPSELL_BANNER_PITCH_SHORT)
+    expect(banner).toHaveTextContent(UPSELL_BANNER_PITCH)
     expect(banner).toHaveTextContent(planPrice()!)
     expect(getByRole('link', { name: 'Jetzt freischalten' })).toHaveAttribute('href', '/konto#abo')
   })

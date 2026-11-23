@@ -32,3 +32,6 @@ export const UPSELL_LATER = 'Später'
 
 /** the banner's short pitch, shown between two modals */
 export const UPSELL_BANNER_PITCH = 'Dein Konto ist noch nicht freigeschaltet – du siehst nur die Demo mit UN 1203.'
+
+/** the banner's pitch on phones, where it shares one row with the button */
+export const UPSELL_BANNER_PITCH_SHORT = 'Noch nicht freigeschaltet – nur Demo (UN 1203).'

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
   import { untrack } from 'svelte'
-  import LockNotice from '$lib/auth/LockNotice.svelte'
   import MultimodalTool from '$lib/multimodal/MultimodalTool.svelte'
   import { SearchState } from '$lib/search/search.svelte'
 
@@ -61,7 +60,7 @@
 
     {#if search.locked}
       <!-- Locked preview: no live queries, only the hardcoded demo -->
-      <div class="mb-6"><LockNotice /></div>
+      <p class="mb-6 text-sm text-[#5a7a99]">Die Suche ist nach der Freischaltung verfügbar – bis dahin siehst du hier die Demo mit UN 1203.</p>
       <MultimodalTool demo />
     {:else if search.belowMinimum}
       <!-- Empty state -->

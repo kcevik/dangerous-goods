@@ -1,6 +1,5 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
-  import LockNotice from '$lib/auth/LockNotice.svelte'
   import MultimodalTool from '$lib/multimodal/MultimodalTool.svelte'
   import QuickSearch from '$lib/search/QuickSearch.svelte'
   import { MODALS } from '$lib/multimodal/types'
@@ -51,9 +50,8 @@
         <MultimodalTool demo />
       {:else if data.locked}
         <div class="space-y-4">
-          <LockNotice />
           <p class="text-sm text-[#5a7a99]">
-            Die Demo findest du unter <a href={resolve('/(app)/un/[nummer]', { nummer: '1203' })} class="underline hover:text-orange-500">UN 1203</a>.
+            UN {data.unNumber} ist erst nach der Freischaltung verfügbar. Die Demo findest du unter <a href={resolve('/(app)/un/[nummer]', { nummer: '1203' })} class="underline hover:text-orange-500">UN 1203</a>.
           </p>
         </div>
       {:else}

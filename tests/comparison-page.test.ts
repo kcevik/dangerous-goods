@@ -2,7 +2,6 @@ import { render } from '@testing-library/svelte'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('$app/navigation', () => ({ goto: vi.fn() }))
-import { LOCK_MESSAGE } from '$lib/auth/LockNotice.svelte'
 import { DEMO_DATA } from '$lib/multimodal/types'
 import ComparisonPage from '../src/routes/(app)/un/[nummer]/vergleich/+page.svelte'
 
@@ -23,16 +22,18 @@ describe('/un/[nummer]/vergleich page', () => {
     expect(document.title).toBe('Regelwerksvergleich UN 1203 | gefahrgut.org')
   })
 
-  it('shows the demo with the lock notice for a locked account on UN 1203', () => {
+  it('shows the marked demo for a locked account on UN 1203, without a second lock notice', () => {
     const { container } = renderPage({ unNumber: '1203', locked: true, compareData: DEMO_DATA, reference: null })
-    expect(container).toHaveTextContent(LOCK_MESSAGE)
+    // the (app) layout's banner is the one lock notice
+    expect(container).not.toHaveTextContent(/nicht freigeschaltet|Freischaltung/)
     expect(container).toHaveTextContent('DEMO')
     expect(container.querySelector('table')).not.toBeNull()
   })
 
-  it('shows only the lock notice and a demo link for a locked account elsewhere', () => {
+  it('explains the activation and links the demo for a locked account elsewhere', () => {
     const { container } = renderPage({ unNumber: '1090', locked: true, compareData: null, reference: null })
-    expect(container).toHaveTextContent(LOCK_MESSAGE)
+    expect(container).toHaveTextContent('Der Vergleich für UN 1090 ist erst nach der Freischaltung verfügbar.')
+    expect(container.querySelector('[role="status"]')).toBeNull()
     expect(container.querySelector('table')).toBeNull()
     expect(container.querySelector('a[href="/un/1203/vergleich"]')).not.toBeNull()
   })
