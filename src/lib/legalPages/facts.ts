@@ -32,7 +32,7 @@ export interface LegalFacts {
    * through `planPrice()`, never retype it
    */
   price: string | null | false
-  /** e.g. "jährlich im Voraus" */
+  /** e.g. "monatlich im Voraus" */
   billingPeriod: string | null | false
   /** minimum term, e.g. "einen Monat" */
   minimumTerm: string | null | false
@@ -54,9 +54,9 @@ export const LEGAL_FACTS: LegalFacts = {
   contentResponsible: null,
   mailProvider: null,
   logRetention: null,
-  // owner decision 2026-11-23: 125 € gross per year
-  price: '125 € pro Jahr inkl. MwSt.',
-  billingPeriod: 'jährlich im Voraus',
+  // owner decision 2026-11-23: 125 € gross per month
+  price: '125 € pro Monat inkl. MwSt.',
+  billingPeriod: 'monatlich im Voraus',
   minimumTerm: null,
 }
 

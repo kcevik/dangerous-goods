@@ -15,7 +15,7 @@ IMDG, ICAO, ADN, UN) as a working tool, not a static reference.
 - **Core differentiator:** cross-mode comparison (ADR vs RID vs IMDG vs ICAO vs ADN) — Phase 1.
 - **Data source:** BAM GEFAHRGUT database, licence dl-de/by-2-0 (attribution required,
   modifications must be marked). The database is authoritative.
-- **Business model:** no free tier; exactly one paid plan: **125 € pro Jahr inkl. MwSt.** (owner, 2026-11-23),
+- **Business model:** no free tier; exactly one paid plan: **125 € pro Monat inkl. MwSt.** (owner, 2026-11-23),
   set once in `LEGAL_FACTS.price` and read via `planPrice()`. No price and no pricing section on the
   landing page (a test pins it). Accounts start **locked** (demo data only) until the owner sets
   `profiles.activated_at`; Stripe will later set the same column.

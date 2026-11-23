@@ -60,7 +60,7 @@ describe('UpsellModal', () => {
 
   it('shows the price from LEGAL_FACTS', () => {
     const { getByTestId } = renderModal()
-    expect(planPrice()).toBe('125 € pro Jahr inkl. MwSt.')
+    expect(planPrice()).toBe('125 € pro Monat inkl. MwSt.')
     expect(getByTestId('upsell-price')).toHaveTextContent(planPrice()!)
   })
 

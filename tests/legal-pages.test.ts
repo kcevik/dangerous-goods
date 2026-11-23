@@ -34,10 +34,10 @@ describe('legal pages', () => {
 })
 
 describe('plan price', () => {
-  it('is set once in LEGAL_FACTS as the owner decided (125 € gross per year)', () => {
-    expect(LEGAL_FACTS.price).toBe('125 € pro Jahr inkl. MwSt.')
+  it('is set once in LEGAL_FACTS as the owner decided (125 € gross per month)', () => {
+    expect(LEGAL_FACTS.price).toBe('125 € pro Monat inkl. MwSt.')
     expect(planPrice()).toBe(LEGAL_FACTS.price)
-    expect(LEGAL_FACTS.billingPeriod).toBe('jährlich im Voraus')
+    expect(LEGAL_FACTS.billingPeriod).toBe('monatlich im Voraus')
   })
 
   it('is null while the fact is unknown or not applicable', () => {
@@ -48,8 +48,8 @@ describe('plan price', () => {
 
   it('fills the AGB from the facts and keeps the draft banner for the facts still unknown', () => {
     const { container } = render(AgbPage)
-    expect(container).toHaveTextContent('(derzeit 125 € pro Jahr inkl. MwSt.).')
-    expect(container).toHaveTextContent('jährlich im Voraus fällig')
+    expect(container).toHaveTextContent('(derzeit 125 € pro Monat inkl. MwSt.).')
+    expect(container).toHaveTextContent('monatlich im Voraus fällig')
     expect(container).not.toHaveTextContent('[[Preis]]')
     expect(container.querySelector('[role="note"]')).toHaveTextContent('Mindestlaufzeit')
   })
