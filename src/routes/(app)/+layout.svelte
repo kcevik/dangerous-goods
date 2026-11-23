@@ -14,8 +14,8 @@
   <meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="min-h-screen flex flex-col bg-[#e8eef5]">
-  <header class="relative bg-[#0f2744] text-white">
+<div class="min-h-screen flex flex-col bg-[#e8eef5] print:bg-white print:min-h-0">
+  <header class="relative bg-[#0f2744] text-white print:hidden">
     <div class="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
       <a href={resolve('/(app)/dashboard')} class="inline-flex items-center min-h-11 font-bold text-base shrink-0">gefahrgut<span style="color: #f97316;">.org</span></a>
       <nav class="hidden md:flex items-center gap-4 text-sm" aria-label="Hauptnavigation">
@@ -50,15 +50,17 @@
   </header>
 
   {#if !data.isActive}
-    <UpsellBanner />
-    <UpsellModal isActive={data.isActive} pathname={page.url.pathname} />
+    <div class="print:hidden">
+      <UpsellBanner />
+      <UpsellModal isActive={data.isActive} pathname={page.url.pathname} />
+    </div>
   {/if}
 
   <div class="flex-1">
     {@render children()}
   </div>
 
-  <footer class="border-t border-[#c8d6e5] py-2 px-4">
+  <footer class="border-t border-[#c8d6e5] py-2 px-4 print:hidden">
     <LegalLinks />
   </footer>
 </div>

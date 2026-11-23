@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { fetchCompareForUn, fetchUnReference } from '$lib/multimodal/mappers'
+import { fetchAdrEntries, fetchCompareForUn, fetchUnReference } from '$lib/multimodal/mappers'
 
 type TableResponse = { data: Record<string, unknown>[] | null, error: unknown }
 
@@ -183,6 +183,28 @@ describe('fetchUnReference', () => {
   it('returns no rows for a blank UN number without querying', async () => {
     const { client, from } = createClient({})
     expect(await fetchUnReference(client, '  ')).toEqual([])
+    expect(from).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetchAdrEntries', () => {
+  it('reads only adr_entries for the trimmed UN number and maps the rows', async () => {
+    const { client, from, eqCalls } = createClient({ adr_entries: { data: [ADR_ROW], error: null } })
+    const rows = await fetchAdrEntries(client, ' 1203 ')
+    expect(from).toHaveBeenCalledTimes(1)
+    expect(from).toHaveBeenCalledWith('adr_entries')
+    expect(eqCalls.adr_entries).toBe('1203')
+    expect(rows[0]).toMatchObject({ unNumber: '1203', name: 'BENZIN', transportCategory: '2', classificationCode: 'F1' })
+  })
+
+  it('throws on a query error instead of returning no rows', async () => {
+    const { client } = createClient({ adr_entries: { data: null, error: { message: 'down' } } })
+    await expect(fetchAdrEntries(client, '1203')).rejects.toEqual({ message: 'down' })
+  })
+
+  it('returns no rows for a blank UN number without querying', async () => {
+    const { client, from } = createClient({})
+    expect(await fetchAdrEntries(client, '  ')).toEqual([])
     expect(from).not.toHaveBeenCalled()
   })
 })

@@ -162,6 +162,15 @@ export async function fetchUnReference(supabase: SupabaseClient, unNumber: strin
   return (data ?? []).map(mapUn)
 }
 
+/** ADR rows of one UN number (1000-Punkte-Rechner); throws on failure — never "no data" */
+export async function fetchAdrEntries(supabase: SupabaseClient, unNumber: string): Promise<Entry[]> {
+  const cleaned = unNumber.trim()
+  if (!cleaned) return []
+  const { data, error } = await supabase.from('adr_entries').select('*').eq('un_number', cleaned).order('sequence_number')
+  if (error) throw error
+  return (data ?? []).map(mapAdr)
+}
+
 export async function fetchCompareForUn(
   supabase: SupabaseClient,
   unNumber: string,
