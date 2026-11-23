@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const LOCKED_HINT = 'Die Suche ist nach der Freischaltung verfügbar'
 import SearchPage from '../src/routes/(app)/suche/+page.svelte'
 
+const { replaceState } = vi.hoisted(() => ({ replaceState: vi.fn() }))
+vi.mock('$app/navigation', () => ({ replaceState }))
+
 vi.mock('$lib/multimodal/MultimodalTool.svelte', async () => ({
   default: (await import('./stubs/ToolStub.svelte')).default,
 }))
@@ -18,22 +21,38 @@ const ROW = {
   packing_group: 'II',
 }
 
-function stubSearch(data: Record<string, unknown>[] | Record<string, Record<string, unknown>[]>, errors: Record<string, unknown> = {}) {
+/**
+ * Every name search answers with `data` (or `nameRows` when given); detail loads (.in) answer with
+ * the rows of the requested UN numbers. `errors.phase = 'detail'` fails only the detail load.
+ */
+function stubSearch(
+  data: Record<string, unknown>[] | Record<string, Record<string, unknown>[]>,
+  errors: Record<string, unknown> = {},
+  nameRows?: Record<string, Record<string, unknown>[]>,
+) {
   const from = vi.fn((table: string) => {
     const rows = Array.isArray(data) ? data : (data[table] ?? [])
+    let inList: string[] | null = null
     const builder = {
       select: () => builder,
       or: () => builder,
+      neq: () => builder,
+      in: (_column: string, values: string[]) => { inList = values; return builder },
       order: () => builder,
-      limit: () => Promise.resolve(errors[table] ? { data: null, error: errors[table] } : { data: rows, error: null }),
+      limit: () => {
+        const error = errors[table] && (errors.phase !== 'detail' || inList) ? errors[table] : null
+        if (error) return Promise.resolve({ data: null, error })
+        if (inList) return Promise.resolve({ data: rows.filter(r => inList!.includes(String(r.un_number))), error: null })
+        return Promise.resolve({ data: nameRows ? (nameRows[table] ?? []) : rows, error: null })
+      },
     }
     return builder
   })
   return { client: { from } as unknown as SupabaseClient, from }
 }
 
-function renderPage(client: SupabaseClient, isActive = true) {
-  return render(SearchPage, { props: { data: { supabase: client, cookies: [], isActive } as never } })
+function renderPage(client: SupabaseClient, isActive = true, q = '') {
+  return render(SearchPage, { props: { data: { supabase: client, cookies: [], isActive, q } as never } })
 }
 
 async function typeAndDebounce(container: HTMLElement, text: string) {
@@ -228,5 +247,123 @@ describe('/suche page (locked account)', () => {
     expect(container).not.toHaveTextContent('TOOL:1090')
     expect(container).toHaveTextContent(LOCKED_HINT)
     expect(container.querySelector('a[href$="/vergleich"]')).toBeNull()
+  })
+})
+
+describe('/suche page: synonyms, ?q=, truncation, errors', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    replaceState.mockClear()
+    history.replaceState(null, '', '/suche')
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('prefills the field from ?q= and runs the search at once', async () => {
+    const { client, from } = stubSearch({ adr_entries: [{ ...ROW, un_number: '1202', name: 'DIESELKRAFTSTOFF' }] })
+    const { container } = renderPage(client, true, 'Diesel')
+    expect(container.querySelector('input')).toHaveValue('Diesel')
+    await vi.advanceTimersByTimeAsync(0)
+    await tick()
+    expect(from).toHaveBeenCalled()
+    expect(container).toHaveTextContent('UN 1202')
+    expect(container).toHaveTextContent('DIESELKRAFTSTOFF')
+  })
+
+  it('opens the tool for ?q=UN3373', async () => {
+    const { client, from } = stubSearch([])
+    const { container } = renderPage(client, true, 'UN3373')
+    await tick()
+    expect(from).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="tool-stub"]')).toHaveTextContent('TOOL:3373')
+  })
+
+  it('keeps ?q= in sync with the field', async () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Natron lauge')
+    expect(replaceState).toHaveBeenLastCalledWith('/suche?q=Natron+lauge', {})
+    history.replaceState(null, '', '/suche?q=Natron+lauge')
+    await typeAndDebounce(container, '')
+    expect(replaceState).toHaveBeenLastCalledWith('/suche', {})
+  })
+
+  it('never queries for ?q= on a locked account', async () => {
+    const { client, from } = stubSearch([ROW])
+    const { container } = renderPage(client, false, 'Benzin')
+    await vi.advanceTimersByTimeAsync(300)
+    await tick()
+    expect(from).not.toHaveBeenCalled()
+    expect(container).toHaveTextContent(LOCKED_HINT)
+  })
+
+  it('marks a synonym hit and keeps it below the official match', async () => {
+    const official = { ...ROW, un_number: '1798', name: 'GEMISCHE AUS SALPETERSÄURE UND SALZSÄURE', hazard_class: '8' }
+    const synonymRow = { ...ROW, un_number: '1789', name: 'CHLORWASSERSTOFFSÄURE', hazard_class: '8' }
+    const { client } = stubSearch({ adr_entries: [official, synonymRow] }, {}, { adr_entries: [official] })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Salzsäure')
+    const cards = screen.getAllByTestId('result-card')
+    expect(cards).toHaveLength(2)
+    expect(cards[0]).toHaveTextContent('UN 1798')
+    expect(cards[1]).toHaveTextContent('UN 1789')
+    expect(cards[0]!.querySelector('[data-testid="synonym-notice"]')).toBeNull()
+    expect(cards[1]!.querySelector('[data-testid="synonym-notice"]')).toHaveTextContent(
+      'Über Synonym „Salzsäure“ gefunden – Einstufung anhand des Sicherheitsdatenblatts (Abschnitt 14) prüfen',
+    )
+  })
+
+  it('shows every mode with data as a badge, not only the matching one', async () => {
+    const adr = { ...ROW, un_number: '1830', name: 'SCHWEFELSÄURE' }
+    const { client } = stubSearch(
+      { adr_entries: [adr], icao_entries: [{ un_number: '1830', name: 'Sulphuric acid', hazard_class: '8', packing_group: 'II' }] },
+      {},
+      { adr_entries: [adr] },
+    )
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Schwefelsäure')
+    const badges = [...container.querySelectorAll('[data-testid="mode-badge"]')].map(b => b.textContent?.trim())
+    expect(badges).toEqual(['ADR', 'ICAO'])
+  })
+
+  it('shows a "not dangerous goods" hint for such synonyms', async () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'AdBlue')
+    expect(screen.getByTestId('search-hints')).toHaveTextContent('„AdBlue“: in der Regel kein Gefahrgut – Sicherheitsdatenblatt Abschnitt 14 prüfen')
+    expect(container).toHaveTextContent('Keine Ergebnisse für')
+  })
+
+  it('never presents a cut list as complete: counts, then loads more', async () => {
+    const rows = Array.from({ length: 25 }, (_, i) => ({ ...ROW, un_number: String(3000 + i), name: 'ACID' }))
+    const { client } = stubSearch({ adr_entries: rows })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'acid')
+    expect(screen.getAllByTestId('result-card')).toHaveLength(20)
+    expect(screen.getByTestId('result-count')).toHaveTextContent('20 von 25 UN-Nummern')
+    await fireEvent.click(screen.getByRole('button', { name: /Weitere Treffer laden/ }))
+    expect(screen.getAllByTestId('result-card')).toHaveLength(25)
+    expect(screen.queryByRole('button', { name: /Weitere Treffer laden/ })).toBeNull()
+    expect(screen.queryByTestId('refine-hint')).toBeNull()
+  })
+
+  it('asks to refine when more matched than could be ranked', async () => {
+    const rows = Array.from({ length: 501 }, (_, i) => ({ ...ROW, un_number: String(1000 + i), name: 'ACID' }))
+    const { client } = stubSearch({ adr_entries: rows })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'acid')
+    expect(screen.getByTestId('result-count')).toHaveTextContent('20 von mehr als 60 UN-Nummern')
+    for (let i = 0; i < 2; i++) await fireEvent.click(screen.getByRole('button', { name: /Weitere Treffer laden/ }))
+    expect(screen.getByTestId('refine-hint')).toHaveTextContent('Weitere Treffer – Suche verfeinern')
+  })
+
+  it('shows an error, not "Keine Ergebnisse", when the detail load fails', async () => {
+    const { client } = stubSearch({ adr_entries: [ROW] }, { icao_entries: { message: 'down' }, phase: 'detail' })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'Benzin')
+    expect(container.querySelector('[role="alert"]')).toHaveTextContent('Die Suche ist fehlgeschlagen')
+    expect(container).not.toHaveTextContent('Keine Ergebnisse')
   })
 })

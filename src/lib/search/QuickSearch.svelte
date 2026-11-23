@@ -2,7 +2,9 @@
   import type { SupabaseClient } from '@supabase/supabase-js'
   import { goto } from '$app/navigation'
   import { untrack } from 'svelte'
+  import SearchHints from './SearchHints.svelte'
   import { SearchState } from './search.svelte'
+  import SynonymNotice from './SynonymNotice.svelte'
 
   interface Props {
     supabase: SupabaseClient
@@ -58,8 +60,11 @@
           <button type="button" class="ml-2 min-h-11 underline" onclick={() => search.retry()}>Erneut versuchen</button>
         </div>
       {:else if search.results.length > 0}
+        {#if search.hints.length > 0}
+          <div class="px-3 pt-3"><SearchHints hints={search.hints} /></div>
+        {/if}
         <ul>
-          {#each search.results as r (r.unNumber)}
+          {#each search.visibleResults as r (r.unNumber)}
             <li>
               <a href={hrefFor(r.unNumber)} onclick={close} class="block px-4 py-3 hover:bg-orange-50 focus-visible:bg-orange-50 focus-visible:outline-none border-t border-slate-100 first:border-t-0">
                 <span class="font-mono text-sm font-bold text-[#0f2744]">UN {r.unNumber}</span>
@@ -67,11 +72,20 @@
                 {#if r.hazardClass}
                   <span class="ml-2 text-xs text-[#5a7a99]">Kl. {r.hazardClass}</span>
                 {/if}
+                {#if r.synonym}
+                  <SynonymNotice synonym={r.synonym} compact />
+                {/if}
               </a>
             </li>
           {/each}
         </ul>
+        {#if search.hasMore || search.incomplete}
+          <p data-testid="refine-hint" class="px-4 py-3 text-sm text-[#5a7a99] border-t border-slate-100">Weitere Treffer – Suche verfeinern</p>
+        {/if}
       {:else}
+        {#if search.hints.length > 0}
+          <div class="px-3 pt-3"><SearchHints hints={search.hints} /></div>
+        {/if}
         <p class="px-4 py-3 text-sm text-[#5a7a99]">Keine Ergebnisse für „{search.query}“</p>
       {/if}
     </div>

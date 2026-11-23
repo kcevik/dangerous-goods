@@ -102,7 +102,7 @@ src/
                           # adrBookViewer.svelte.ts, bookFetch, Book*.svelte
     points/               # 1000-Punkte-Rechner (ADR 1.1.3.6): points.ts (rules), duties.ts (1.1.3.6.2 duties + refs),
                           # pointsCalculator.svelte.ts, Points*.svelte (incl. print sheet)
-    search/               # SearchState, QuickSearch.svelte (UN jump on /un/:nummer and the comparison)
+    search/               # SearchState, normalize, results (ranking), synonyms, QuickSearch.svelte (UN jump on /un/:nummer and the comparison)
     seo/                  # SITE_URL + JSON-LD builders
     legal.ts              # IMPRINT/PRIVACY/TERMS/WITHDRAWAL_URL, LEGAL_LINKS, BLOG_URL — the only place for legal links
     legalPages/           # legal texts: facts.ts (LEGAL_FACTS), document.ts (fillDocument), impressum/datenschutz/agb/widerruf.ts,
@@ -220,6 +220,12 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
   "Keine Angabe in der Quelle (BAM)" where only the feed lacks it (RID Kemler), "→" where another row carries it.
   ICAO "FORBIDDEN" (read from the PI columns — `icao_entries.prohibited` is BAM's N_VERBOT, 1 = permitted) is always
   a critical finding. IMDG/UN IBC instructions (col. 10) join the packing instructions. The landing mockup is computed from `DEMO_DATA`.
+- **Stoffsuche:** `lib/search/` — `normalize.ts` (case/umlaut/ß/separator folding, `UN3373` → UN number, ILIKE
+  patterns), `results.ts` (ranking + cards), `synonyms.ts` (curated trade names; owner-reviewed, every UN number checked
+  by SQL, table in `docs/research/synonyms-review.md`). Synonym hits always come after official-name hits and are
+  marked; mode badges come from a detail load of all rows (not from the rows whose name matched); the ICAO placeholder
+  UN 9999 is excluded; a possibly cut list is flagged (`incomplete`) and never shown as complete. `/suche?q=` prefills
+  and stays in sync via `replaceState`.
 - **Legal pages:** texts live in `lib/legalPages/*.ts`; operator and plan facts only in `LEGAL_FACTS`
   (`null` = unknown → `[[label]]` + draft banner + `noindex`; `false` = does not apply → block dropped). Bump
   `LEGAL_UPDATED` with every content change. The Datenschutzerklärung must change whenever a new service touches

@@ -1,13 +1,32 @@
 <script lang="ts">
+  import { replaceState } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { untrack } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import MultimodalTool from '$lib/multimodal/MultimodalTool.svelte'
+  import SearchHints from '$lib/search/SearchHints.svelte'
+  import SynonymNotice from '$lib/search/SynonymNotice.svelte'
   import { SearchState } from '$lib/search/search.svelte'
 
   let { data } = $props()
 
+  /** keep `?q=` in step with the field so a search can be shared or reloaded */
+  function syncUrl(q: string) {
+    const params = new URLSearchParams(location.search)
+    if (q) params.set('q', q)
+    else params.delete('q')
+    const queryString = params.toString()
+    const target = resolve('/(app)/suche') + (queryString ? `?${queryString}` : '')
+    if (target !== location.pathname + location.search) replaceState(target, {})
+  }
+
   // the layout's Supabase client and activation state are stable for the page's lifetime
-  const search = untrack(() => new SearchState(data.supabase, { locked: !data.isActive }))
+  const search = untrack(() => new SearchState(data.supabase, {
+    locked: !data.isActive,
+    initialQuery: data.q ?? '',
+    onCommit: syncUrl,
+  }))
+
+  onMount(() => search.start())
 
   const EXAMPLES = [
     { un: '1203', label: 'Benzin' },
@@ -15,7 +34,6 @@
     { un: '2794', label: 'Batterien' },
     { un: '1017', label: 'Chlor' },
   ]
-
 </script>
 
 <svelte:head>
@@ -92,10 +110,15 @@
     {:else if search.results.length > 0}
       <!-- Results list: one card per UN number -->
       <div class="space-y-2">
-        <p class="text-xs text-[#5a7a99] mb-3">
-          {search.results.length} {search.results.length === 1 ? 'UN-Nummer' : 'UN-Nummern'}
+        <SearchHints hints={search.hints} />
+        <p data-testid="result-count" class="text-xs text-[#5a7a99] mb-3">
+          {#if search.hasMore || search.incomplete}
+            {search.visibleResults.length} von {search.incomplete ? 'mehr als ' : ''}{search.results.length} UN-Nummern
+          {:else}
+            {search.results.length} {search.results.length === 1 ? 'UN-Nummer' : 'UN-Nummern'}
+          {/if}
         </p>
-        {#each search.results as r (r.unNumber)}
+        {#each search.visibleResults as r (r.unNumber)}
           <button
             type="button"
             data-testid="result-card"
@@ -110,6 +133,9 @@
                 <p data-testid="result-name" class="text-sm text-[#0f2744] mt-0.5 break-words hyphens-auto">{r.primaryName}</p>
                 {#if r.otherNames.length > 0}
                   <p class="text-xs text-[#5a7a99] mt-0.5 line-clamp-2 break-words hyphens-auto">{r.otherNames.join(' · ')}</p>
+                {/if}
+                {#if r.synonym}
+                  <SynonymNotice synonym={r.synonym} />
                 {/if}
                 <div class="flex flex-wrap gap-1 mt-2">
                   {#each r.modes as mode (mode)}
@@ -132,9 +158,19 @@
             </div>
           </button>
         {/each}
+        {#if search.hasMore}
+          <button
+            type="button"
+            class="w-full min-h-11 mt-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#c0cfe0] bg-white text-[#0f2744] hover:border-orange-400 hover:text-orange-600 transition-colors"
+            onclick={() => search.showMore()}
+          >Weitere Treffer laden ({search.results.length - search.visibleResults.length}{search.incomplete ? '+' : ''})</button>
+        {:else if search.incomplete}
+          <p data-testid="refine-hint" class="mt-3 text-sm text-[#5a7a99]">Weitere Treffer – Suche verfeinern</p>
+        {/if}
       </div>
     {:else if search.answered && !search.selectedUn}
       <!-- No results: only after every table answered successfully -->
+      <SearchHints hints={search.hints} />
       <div class="text-center py-10 sm:py-16">
         <p class="text-[#5a7a99] text-sm break-words">Keine Ergebnisse für „{search.query}"</p>
       </div>

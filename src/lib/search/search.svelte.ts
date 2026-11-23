@@ -1,159 +1,75 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { type Modal, MODALS } from '$lib/multimodal/types'
+import type { Modal } from '$lib/multimodal/types'
+import { matchSynonyms } from './matchSynonyms'
+import { namePatterns, parseUnNumber, PLACEHOLDER_UN, searchableLength, unPrefix } from './normalize'
+import {
+  buildSearchResults,
+  DETAIL_LIMIT,
+  DETAIL_ROW_LIMIT,
+  MIN_QUERY_LENGTH,
+  NAME_ROW_LIMIT,
+  PAGE_SIZE,
+  rankSearchRows,
+  type Row,
+  type RowsByMode,
+  type SearchResult,
+  SEARCH_TABLES,
+  type SearchTable,
+  synonymHitsFor,
+} from './results'
+import type { Synonym } from './synonyms'
 
-export interface SearchResult {
-  unNumber: string
-  /** the name that matched the query best; the first name when only the UN number matched */
-  primaryName: string
-  /** every other name of the UN number, case-insensitively de-duplicated */
-  otherNames: string[]
-  hazardClass: string | null
-  /** distinct, I < II < III */
-  packingGroups: string[]
-  /** modes with at least one matching row, in MODALS order */
-  modes: Modal[]
-}
+export * from './results'
 
-interface SearchTable {
-  mode: Modal
-  table: string
-  nameColumns: readonly string[]
-}
-
-/** ADN has no BAM table; un_entries is deliberately not searched (spec decision 4) */
-export const SEARCH_TABLES: readonly SearchTable[] = [
-  { mode: 'ADR', table: 'adr_entries', nameColumns: ['name', 'name_en', 'name_fr'] },
-  { mode: 'RID', table: 'rid_entries', nameColumns: ['name', 'name_en', 'name_fr'] },
-  { mode: 'IMDG', table: 'imdg_entries', nameColumns: ['name', 'name_en'] },
-  { mode: 'ICAO', table: 'icao_entries', nameColumns: ['name'] },
-]
-
-const UN_NUMBER_RE = /^\d{4}$/
-export const MIN_QUERY_LENGTH = 2
-export const MAX_RESULTS = 20
-const PER_TABLE_LIMIT = 50
 const DEBOUNCE_MS = 300
-const PG_ORDER = ['I', 'II', 'III']
 
-type Row = Record<string, unknown>
-
-/** PostgREST filter delimiters, quotes and LIKE wildcards would change what the filter means */
-function sanitize(q: string): string {
-  return q.trim().replace(/[,()"%*_\\]/g, '')
-}
-
-const NO_MATCH = 3
-
-function nameRank(name: string, needle: string): number {
-  const lower = name.toLowerCase()
-  if (lower.startsWith(needle)) return 1
-  if (lower.includes(needle)) return 2
-  return NO_MATCH
-}
-
-function pgIndex(pg: string): number {
-  const i = PG_ORDER.indexOf(pg)
-  return i === -1 ? PG_ORDER.length : i
-}
-
-interface Accumulator {
-  unNumber: string
-  unMatch: boolean
-  bestNameRank: number
-  primaryName: string | null
-  names: string[]
-  hazardClass: string | null
-  packingGroups: Set<string>
-  modes: Set<Modal>
+export interface SearchOptions {
+  locked?: boolean
+  /** the query the page was opened with (`/suche?q=…`); applied by start() */
+  initialQuery?: string
+  /** called (debounced) with the trimmed query once it settles — the page keeps `?q=` in sync */
+  onCommit?: (query: string) => void
 }
 
 /**
- * Merges the rows of all mode tables into one result per UN number.
- * Rank: 0 UN-number prefix, 1 a name starts with the query, 2 a name contains it; ties by UN number.
- */
-export function mergeSearchRows(q: string, rowsByMode: Partial<Record<Modal, Row[]>>): SearchResult[] {
-  const needle = q.toLowerCase()
-  const numeric = /^\d+$/.test(q)
-  const byUn = new Map<string, Accumulator>()
-
-  for (const { mode, nameColumns } of SEARCH_TABLES) {
-    for (const row of rowsByMode[mode] ?? []) {
-      const unNumber = String(row.un_number)
-      let acc = byUn.get(unNumber)
-      if (!acc) {
-        acc = {
-          unNumber,
-          unMatch: numeric && unNumber.startsWith(q),
-          bestNameRank: NO_MATCH,
-          primaryName: null,
-          names: [],
-          hazardClass: null,
-          packingGroups: new Set(),
-          modes: new Set(),
-        }
-        byUn.set(unNumber, acc)
-      }
-      acc.modes.add(mode)
-      if (acc.hazardClass == null && row.hazard_class) acc.hazardClass = String(row.hazard_class)
-      if (row.packing_group) acc.packingGroups.add(String(row.packing_group))
-
-      for (const column of nameColumns) {
-        const name = row[column]
-        if (typeof name !== 'string' || !name) continue
-        if (!acc.names.some(n => n.toLowerCase() === name.toLowerCase())) acc.names.push(name)
-        const rank = nameRank(name, needle)
-        if (rank < acc.bestNameRank) {
-          acc.bestNameRank = rank
-          acc.primaryName = name
-        }
-      }
-    }
-  }
-
-  return [...byUn.values()]
-    .map((acc) => {
-      const primaryName = acc.primaryName ?? acc.names[0] ?? ''
-      const result: SearchResult = {
-        unNumber: acc.unNumber,
-        primaryName,
-        otherNames: acc.names.filter(n => n.toLowerCase() !== primaryName.toLowerCase()),
-        hazardClass: acc.hazardClass,
-        packingGroups: [...acc.packingGroups].sort((a, b) => pgIndex(a) - pgIndex(b)),
-        modes: MODALS.filter(m => acc.modes.has(m)),
-      }
-      return { rank: acc.unMatch ? 0 : acc.bestNameRank, result }
-    })
-    .sort((a, b) => a.rank - b.rank || a.result.unNumber.localeCompare(b.result.unNumber))
-    .slice(0, MAX_RESULTS)
-    .map(x => x.result)
-}
-
-/**
- * Live search state for /suche. Setting `query` debounces a name search across the ADR, RID,
- * IMDG and ICAO tables; a 4-digit UN number selects immediately without querying.
- * A failed table fails the whole search (`searchError`) — never shown as "no results".
+ * Live search state for /suche and QuickSearch. Setting `query` debounces a name search across
+ * the ADR, RID, IMDG and ICAO tables plus the curated synonyms; a UN number ("1203", "UN1203",
+ * "un-1203") selects immediately without querying.
+ * A failed request fails the whole search (`searchError`) — never shown as "no results" — and a
+ * list that may be cut is flagged (`incomplete`), never presented as complete.
  */
 export class SearchState {
   #query = $state('')
   results = $state<SearchResult[]>([])
+  /** synonyms without UN numbers that the query hit ("in der Regel kein Gefahrgut") */
+  hints = $state<Synonym[]>([])
+  /** the result list may miss matches (a table hit its row limit or too many UN numbers matched) */
+  incomplete = $state(false)
+  visibleCount = $state(PAGE_SIZE)
   selectedUn = $state<string | null>(null)
   isLoading = $state(false)
   searchError = $state(false)
   /** a successful search for the current query has finished — only then is "no results" true */
   answered = $state(false)
-  /** too short to search once stripped characters are removed — the page shows its empty state */
-  readonly belowMinimum: boolean = $derived(sanitize(this.#query).length < MIN_QUERY_LENGTH)
+  /** too short to search once separators and stripped characters are removed */
+  readonly belowMinimum: boolean = $derived(searchableLength(this.#query) < MIN_QUERY_LENGTH)
+  readonly visibleResults: SearchResult[] = $derived(this.results.slice(0, this.visibleCount))
+  readonly hasMore: boolean = $derived(this.results.length > this.visibleCount)
 
   /** Locked accounts (not yet activated) never query; the page shows a lock notice instead. */
   readonly locked: boolean
 
   readonly #supabase: SupabaseClient
+  readonly #onCommit: ((query: string) => void) | undefined
   #debounceTimer: ReturnType<typeof setTimeout> | null = null
+  #commitTimer: ReturnType<typeof setTimeout> | null = null
   #requestId = 0
 
-  constructor(supabase: SupabaseClient, options: { locked?: boolean } = {}) {
+  constructor(supabase: SupabaseClient, options: SearchOptions = {}) {
     this.#supabase = supabase
     this.locked = options.locked ?? false
+    this.#onCommit = options.onCommit
+    this.#query = options.initialQuery ?? ''
   }
 
   get query(): string {
@@ -161,6 +77,15 @@ export class SearchState {
   }
 
   set query(value: string) {
+    this.#apply(value, false)
+  }
+
+  /** run the initial query (from `?q=`) at once — call it in the browser, after mount */
+  start(): void {
+    if (this.#query) this.#apply(this.#query, true)
+  }
+
+  #apply(value: string, immediate: boolean): void {
     this.#query = value
     if (this.locked) return
     // every query change invalidates in-flight responses (review fix 2026-11-08)
@@ -168,27 +93,48 @@ export class SearchState {
     this.isLoading = false
     this.searchError = false
     this.answered = false
-    const trimmed = value.trim()
     if (this.#debounceTimer) clearTimeout(this.#debounceTimer)
+    this.#scheduleCommit(value, immediate)
 
-    // 4-digit UN number: load tool immediately, skip debounce
-    if (UN_NUMBER_RE.test(trimmed)) {
-      this.results = []
-      this.selectedUn = trimmed
+    const un = parseUnNumber(value)
+    if (un && un !== PLACEHOLDER_UN) {
+      this.#clearResults()
+      this.selectedUn = un
       return
     }
 
     this.selectedUn = null
-    if (sanitize(value).length < MIN_QUERY_LENGTH) {
-      this.results = []
+    if (searchableLength(value) < MIN_QUERY_LENGTH) {
+      this.#clearResults()
       return
     }
-    this.#debounceTimer = setTimeout(() => this.#search(value), DEBOUNCE_MS)
+    if (immediate) void this.#search(value)
+    else this.#debounceTimer = setTimeout(() => this.#search(value), DEBOUNCE_MS)
+  }
+
+  #scheduleCommit(value: string, immediate: boolean): void {
+    const onCommit = this.#onCommit
+    if (!onCommit) return
+    if (this.#commitTimer) clearTimeout(this.#commitTimer)
+    if (immediate) onCommit(value.trim())
+    else this.#commitTimer = setTimeout(() => onCommit(value.trim()), DEBOUNCE_MS)
+  }
+
+  #clearResults(): void {
+    this.results = []
+    this.hints = []
+    this.incomplete = false
+    this.visibleCount = PAGE_SIZE
   }
 
   select(unNumber: string): void {
     this.selectedUn = unNumber
-    this.results = []
+    this.#clearResults()
+  }
+
+  /** show the next page of an already loaded result list */
+  showMore(): void {
+    this.visibleCount += PAGE_SIZE
   }
 
   /** re-run the current query at once (after a failure) */
@@ -197,43 +143,83 @@ export class SearchState {
     void this.#search(this.#query)
   }
 
-  #queryTable({ table, nameColumns }: SearchTable, q: string) {
-    const filters = nameColumns.map(column => `${column}.ilike.%${q}%`)
-    if (/^\d+$/.test(q)) filters.push(`un_number.ilike.${q}%`)
+  #queryNames({ table, nameColumns }: SearchTable, patterns: string[], prefix: string | null) {
+    const filters = patterns.flatMap(p => nameColumns.map(column => `${column}.ilike.${p}`))
+    if (prefix) filters.push(`un_number.like.${prefix}%`)
+    return this.#supabase
+      .from(table)
+      .select(['un_number', ...nameColumns].join(', '))
+      .or(filters.join(','))
+      .neq('un_number', PLACEHOLDER_UN)
+      .order('un_number')
+      .limit(NAME_ROW_LIMIT + 1)
+  }
+
+  #queryDetails({ table, nameColumns }: SearchTable, unNumbers: string[]) {
     return this.#supabase
       .from(table)
       .select(['un_number', 'hazard_class', 'packing_group', ...nameColumns].join(', '))
-      .or(filters.join(','))
-      .order('un_number')
-      .limit(PER_TABLE_LIMIT)
+      .in('un_number', unNumbers)
+      .limit(DETAIL_ROW_LIMIT)
   }
 
   async #search(q: string): Promise<void> {
-    const trimmed = sanitize(q)
-    if (trimmed.length < MIN_QUERY_LENGTH) {
-      this.results = []
+    if (searchableLength(q) < MIN_QUERY_LENGTH) {
+      this.#clearResults()
       return
     }
+    const patterns = namePatterns(q)
+    const prefix = unPrefix(q)
 
     const currentRequest = ++this.#requestId
     this.isLoading = true
     try {
-      const responses = await Promise.all(SEARCH_TABLES.map(t => this.#queryTable(t, trimmed)))
+      const nameResponses = await Promise.all(SEARCH_TABLES.map(t => this.#queryNames(t, patterns, prefix)))
       if (currentRequest !== this.#requestId) return
 
-      const rowsByMode: Partial<Record<Modal, Row[]>> = {}
+      let incomplete = false
+      const nameRows: RowsByMode = {}
       SEARCH_TABLES.forEach(({ mode }, i) => {
-        const { data, error } = responses[i]!
+        const { data, error } = nameResponses[i]!
         if (error) throw error
-        rowsByMode[mode] = (data ?? []) as unknown as Row[]
+        let rows = (data ?? []) as unknown as Row[]
+        if (rows.length > NAME_ROW_LIMIT) {
+          incomplete = true
+          rows = rows.slice(0, NAME_ROW_LIMIT)
+        }
+        nameRows[mode] = rows
       })
-      this.results = mergeSearchRows(trimmed, rowsByMode)
+
+      const ranked = rankSearchRows(q, nameRows)
+      if (ranked.length > DETAIL_LIMIT) incomplete = true
+      const top = ranked.slice(0, DETAIL_LIMIT)
+      const synonyms = matchSynonyms(q)
+      const synonymHits = synonymHitsFor(synonyms, top.map(h => h.unNumber))
+      const unNumbers = [...top.map(h => h.unNumber), ...synonymHits.map(h => h.unNumber)]
+
+      const detail: RowsByMode = {}
+      if (unNumbers.length > 0) {
+        const detailResponses = await Promise.all(SEARCH_TABLES.map(t => this.#queryDetails(t, unNumbers)))
+        if (currentRequest !== this.#requestId) return
+        SEARCH_TABLES.forEach(({ mode }, i) => {
+          const { data, error } = detailResponses[i]!
+          if (error) throw error
+          const rows = (data ?? []) as unknown as Row[]
+          if (rows.length >= DETAIL_ROW_LIMIT) incomplete = true
+          detail[mode] = rows
+        })
+      }
+
+      this.results = buildSearchResults(top, synonymHits, detail)
+      this.hints = synonyms.filter(s => s.unNumbers.length === 0)
+      this.incomplete = incomplete
+      this.visibleCount = PAGE_SIZE
       this.searchError = false
       this.answered = true
     }
     catch {
       if (currentRequest === this.#requestId) {
-        this.results = []
+        this.#clearResults()
         this.searchError = true
       }
     }
