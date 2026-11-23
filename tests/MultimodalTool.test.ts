@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { fireEvent, render, screen } from '@testing-library/svelte'
 import { describe, expect, it, vi } from 'vitest'
@@ -247,5 +249,46 @@ describe('MultimodalTool — variants', () => {
     const { client } = stubSupabase({})
     const { container } = render(MultimodalTool, { props: { unNumber: '9999', initialData: data, supabase: client } })
     expect(container.querySelector('[data-testid="overview-IMDG"]')).toHaveTextContent('?')
+  })
+})
+
+describe('MultimodalTool — phone layout', () => {
+  const source = readFileSync(join(process.cwd(), 'src/lib/multimodal/MultimodalTool.svelte'), 'utf-8')
+
+  it('keeps the mode tabs in one scrollable row with 44px touch targets', () => {
+    const { container } = render(MultimodalTool, { props: { demo: true } })
+    expect(screen.getByTestId('mode-tabs')).toHaveClass('flex', 'overflow-x-auto')
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs).toHaveLength(5)
+    for (const tab of tabs) expect(tab).toHaveClass('min-h-11', 'shrink-0', 'whitespace-nowrap')
+    for (const lang of ['DE', 'EN', 'FR', 'TR']) {
+      expect(screen.getByRole('button', { name: lang })).toHaveClass('min-h-11', 'min-w-11')
+    }
+    // three overview cards per row on phones, five from sm
+    expect(container.querySelector('[data-testid="overview-grid"]')).toHaveClass('grid-cols-3', 'sm:grid-cols-5')
+  })
+
+  it('gives every variant button a 44px touch target on phones', () => {
+    const { client } = stubSupabase({})
+    render(MultimodalTool, { props: { unNumber: '1993', initialData: UN_1993 as Record<string, Entry[]>, supabase: client } })
+    const buttons = screen.getByRole('group', { name: 'Variante' }).querySelectorAll('button')
+    expect(buttons.length).toBeGreaterThan(1)
+    for (const button of buttons) expect(button).toHaveClass('min-h-11', 'sm:min-h-0', 'max-w-full', 'truncate')
+  })
+
+  it('lets long substance names wrap and hyphenate instead of overflowing', () => {
+    render(MultimodalTool, { props: { demo: true } })
+    expect(screen.getByTestId('entry-names')).toHaveClass('min-w-0', 'break-words', 'hyphens-auto')
+  })
+
+  it('stacks field labels above their values below sm (style block)', () => {
+    const label = source.match(/\.field-label\s*\{([^}]*)\}/)![1]!
+    const value = source.match(/\.field-value\s*\{([^}]*)\}/)![1]!
+    expect(label).toContain('max-sm:block')
+    expect(label).toContain('max-sm:w-auto')
+    expect(label).toContain('max-sm:whitespace-normal')
+    expect(value).toContain('max-sm:block')
+    // long codes (segregation, stowage) must not push the table wider than the screen
+    expect(value).toContain('wrap-anywhere')
   })
 })

@@ -16,18 +16,18 @@
   const deviations = summarizeDeviations(rows)
 </script>
 
-<section id="comparison" class="py-20 lg:py-28" style="background: #f8fafc;" aria-labelledby="comparison-heading">
+<section id="comparison" class="py-16 sm:py-20 lg:py-28" style="background: #f8fafc;" aria-labelledby="comparison-heading">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
       <!-- Left: copy -->
-      <div class="mb-12 lg:mb-0">
+      <div class="mb-10 lg:mb-0">
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border" style="color: #f97316; background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2);">
           Einzigartiges Feature
         </div>
         <h2 id="comparison-heading" class="text-3xl sm:text-4xl font-bold mb-6" style="color: #0f2744;">
           Alle Regelwerke auf einen Blick – automatisch verglichen
         </h2>
-        <p class="text-lg text-slate-500 mb-8 leading-relaxed">
+        <p class="text-base sm:text-lg text-slate-500 mb-8 leading-relaxed">
           ADR, RID, IMDG und ICAO nebeneinander – Abweichungen zwischen den Regelwerken werden automatisch erkannt und farblich hervorgehoben.
         </p>
         <ul class="space-y-4 mb-8">
@@ -44,7 +44,7 @@
         </ul>
         <a
           href={resolve('/(app)/un/[nummer]/vergleich', { nummer: '1203' })}
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-150 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
+          class="inline-flex w-full sm:w-auto min-h-11 items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-150 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
           style="background: #0f2744;"
           onmouseenter={(e) => { e.currentTarget.style.background = '#1e3a5f' }}
           onmouseleave={(e) => { e.currentTarget.style.background = '#0f2744' }}
@@ -57,8 +57,8 @@
       </div>
 
       <!-- Right: comparison table mockup -->
-      <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-xl bg-white">
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between" style="background: #0f2744;">
+      <div class="min-w-0 rounded-2xl overflow-hidden border border-slate-200 shadow-xl bg-white">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-x-4 gap-y-1" style="background: #0f2744;">
           <div class="flex items-center gap-2">
             <span class="text-white font-semibold text-sm">UN 1203</span>
             <span class="text-slate-400 text-xs">Benzin (Petrol)</span>
@@ -69,19 +69,19 @@
           <table class="w-full text-xs" aria-label="Regelwerksvergleich Beispiel UN 1203">
             <thead>
               <tr class="border-b border-slate-100" style="background: #f8fafc;">
-                <th class="text-left px-4 py-3 text-slate-500 font-medium" scope="col">Regelwerk</th>
+                <th class="text-left px-3 sm:px-4 py-3 text-slate-500 font-medium whitespace-nowrap" scope="col">Regelwerk</th>
                 {#each columns as col (col.field)}
-                  <th class="text-left px-4 py-3 text-slate-500 font-medium" scope="col">{getL('de', col.labelKey)}</th>
+                  <th class="text-left px-3 sm:px-4 py-3 text-slate-500 font-medium whitespace-nowrap" scope="col">{getL('de', col.labelKey)}</th>
                 {/each}
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               {#each modes as mode (mode)}
                 <tr class="hover:bg-slate-50 transition-colors">
-                  <td class="px-4 py-3 font-semibold" style="color: #0f2744;">{mode}</td>
+                  <td class="px-3 sm:px-4 py-3 font-semibold" style="color: #0f2744;">{mode}</td>
                   {#each columns as col (col.field)}
                     {@const cell = col.cells[mode]}
-                    <td class="px-4 py-3">
+                    <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
                       {#if cell.deviates}
                         <span class="px-1.5 py-0.5 rounded text-xs font-medium" style="background: rgba(249,115,22,0.12); color: #ea580c;">{cell.raw}</span>
                       {:else}

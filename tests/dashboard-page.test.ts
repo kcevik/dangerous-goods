@@ -34,4 +34,9 @@ describe('dashboard page', () => {
     expect(locked.container).toHaveTextContent('Noch nicht freigeschaltet')
     expect(locked.container.querySelector('[role="status"]')).not.toBeNull()
   })
+
+  it('lets a long e-mail address wrap on phones', () => {
+    const { container } = renderDashboard(true)
+    expect(container.querySelector('h1 + p')).toHaveClass('wrap-anywhere')
+  })
 })

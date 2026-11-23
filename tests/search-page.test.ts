@@ -167,6 +167,28 @@ describe('/suche page (active account)', () => {
     await typeAndDebounce(container, '1203')
     expect(container.querySelector('a[href="/un/1203/vergleich"]')).toHaveTextContent('Alle Modi vergleichen')
   })
+
+  it('stacks result cards on phones and wraps long substance names instead of cutting them off', async () => {
+    const name = 'NITROCELLULOSEMISCHUNG MIT EINEM STICKSTOFFGEHALT VON HÖCHSTENS 12,6 %'
+    const { client } = stubSearch({ adr_entries: [{ ...ROW, un_number: '3270', name, packing_group: 'II' }] })
+    const { container } = renderPage(client)
+    await typeAndDebounce(container, 'nitro')
+
+    const card = screen.getByTestId('result-card')
+    expect(card.firstElementChild).toHaveClass('flex-col', 'sm:flex-row')
+    const title = screen.getByTestId('result-name')
+    expect(title).toHaveTextContent(name)
+    expect(title).toHaveClass('break-words', 'hyphens-auto')
+    expect(title).not.toHaveClass('truncate')
+    expect(screen.getByTestId('result-badges')).toHaveClass('flex-wrap')
+  })
+
+  it('gives the example chips and the search field 44px touch targets', () => {
+    const { client } = stubSearch([])
+    const { container } = renderPage(client)
+    expect(container.querySelector('input')).toHaveClass('min-h-11')
+    for (const chip of container.querySelectorAll('.rounded-full')) expect(chip).toHaveClass('min-h-11')
+  })
 })
 
 describe('/suche page (locked account)', () => {

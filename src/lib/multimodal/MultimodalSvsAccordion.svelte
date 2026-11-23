@@ -59,7 +59,7 @@
 
 {#if nrs.length}
   <div class="mt-5">
-    <div class="font-mono text-[10px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mb-2 pb-1.5 border-b border-[#c8d6e5]">
+    <div class="font-mono text-[10px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mb-2 pb-1.5 border-b border-[#c8d6e5] wrap-anywhere">
       {label} ({svs})
     </div>
     <div class="flex flex-col gap-1.5">
@@ -68,10 +68,10 @@
           <div class="flex items-stretch">
           <button
             type="button"
-            class="flex flex-1 min-w-0 items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[#dce8f2] transition-colors cursor-pointer select-none"
+            class="flex flex-1 min-w-0 min-h-11 items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[#dce8f2] transition-colors cursor-pointer select-none"
             onclick={() => toggle(nr)}
           >
-            <span class="font-mono text-xs font-bold text-orange-500 min-w-[44px]">SV {nr}</span>
+            <span class="font-mono text-xs font-bold text-orange-500 min-w-[44px] shrink-0">SV {nr}</span>
             <span class="flex-1 text-[11px] text-[#5a7a99] truncate">{preview(nr)}</span>
             <span
               class={['font-mono text-[11px] text-[#5a7a99] flex-shrink-0 transition-transform duration-200', { 'rotate-180': open[nr] }]}
@@ -84,12 +84,12 @@
               rel="noopener"
               aria-label={formatBookLabel(lang, 'openSvInBook', { code: nr })}
               title={formatBookLabel(lang, 'openSvInBook', { code: nr })}
-              class="flex shrink-0 items-center px-3 font-mono text-[11px] text-[#3d5a78] border-l border-[#c8d6e5] hover:bg-[#dce8f2] hover:text-orange-600 transition-colors"
-            >{getBookLabel(lang, 'openInBook')} ↗</a>
+              class="flex shrink-0 items-center justify-center min-w-11 px-3 font-mono text-[11px] text-[#3d5a78] border-l border-[#c8d6e5] hover:bg-[#dce8f2] hover:text-orange-600 transition-colors"
+            ><span data-testid="book-link-label" class="max-sm:sr-only">{getBookLabel(lang, 'openInBook')}&nbsp;</span>↗</a>
           {/if}
           </div>
           {#if open[nr]}
-            <div class="px-3.5 py-3 border-t border-[#c8d6e5] text-[13px] leading-relaxed text-[#2d5070] whitespace-pre-wrap">{text(nr)}</div>
+            <div class="px-3.5 py-3 border-t border-[#c8d6e5] text-[13px] leading-relaxed text-[#2d5070] whitespace-pre-wrap break-words hyphens-auto">{text(nr)}</div>
           {/if}
         </div>
       {/each}

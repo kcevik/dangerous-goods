@@ -1,10 +1,10 @@
-<section class="py-20 lg:py-28 bg-[#f6f8fb]" aria-labelledby="about-heading">
+<section class="py-16 sm:py-20 lg:py-28 bg-[#f6f8fb]" aria-labelledby="about-heading">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 id="about-heading" class="text-3xl sm:text-4xl font-bold mb-10 text-center" style="color: #0f2744;">
+    <h2 id="about-heading" class="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10 text-center" style="color: #0f2744;">
       Die Arbeitsplattform für Gefahrgutbeauftragte
     </h2>
 
-    <div class="space-y-8 text-slate-600 text-[15px] leading-relaxed">
+    <div class="space-y-6 sm:space-y-8 text-slate-600 text-[15px] leading-relaxed hyphens-auto">
       <div>
         <h3 class="font-semibold mb-2" style="color: #0f2744;">Multimodaler Regelwerksvergleich</h3>
         <p>

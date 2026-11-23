@@ -70,6 +70,25 @@ describe('landing page', () => {
     expect(section.querySelector('a[href="/un/1203/vergleich"]')).toHaveTextContent('Vergleich ansehen')
   })
 
+  it('guards against horizontal scroll and uses one section rhythm on phones', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    expect(container.firstElementChild).toHaveClass('overflow-x-clip')
+    // the big content sections share one padding scale: 4rem on phones, 5rem from sm, 7rem from lg
+    for (const id of ['features', 'demo', 'comparison', 'faq']) {
+      expect(container.querySelector(`#${id}`)).toHaveClass('py-16', 'sm:py-20', 'lg:py-28')
+    }
+    expect(container.querySelector('#cta-heading')!.closest('section')).toHaveClass('py-16', 'sm:py-20', 'lg:py-28')
+    // one card column on phones, two from sm, three from lg
+    expect(container.querySelector('#features .grid')).toHaveClass('sm:grid-cols-2', 'lg:grid-cols-3')
+  })
+
+  it('keeps the comparison mockup scrollable inside its card instead of widening the page', () => {
+    const { container } = render(LandingPage, { props: PROPS })
+    const table = container.querySelector('#comparison table')!
+    expect(table.parentElement).toHaveClass('overflow-x-auto')
+    expect(table.closest('.rounded-2xl')).toHaveClass('min-w-0')
+  })
+
   it('renders the embedded demo tool with UN 1203', () => {
     const { container } = render(LandingPage, { props: PROPS })
     expect(container.querySelector('#demo')).toHaveTextContent('UN 1203 · Verfügbarkeit in allen Modi')

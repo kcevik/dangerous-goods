@@ -6,30 +6,30 @@
   <!-- Subtle grid pattern -->
   <div class="absolute inset-0 opacity-5" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 40px 40px;"></div>
 
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 lg:pt-28 lg:pb-32">
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 sm:pt-20 sm:pb-24 lg:pt-28 lg:pb-32">
     <div class="max-w-3xl">
       <!-- Badge -->
-      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 border" style="background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.3); color: #fdba74;">
-        <span class="w-1.5 h-1.5 rounded-full bg-[#f97316] animate-pulse"></span>
+      <div class="inline-flex max-w-full items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 border" style="background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.3); color: #fdba74;">
+        <span class="w-1.5 h-1.5 shrink-0 rounded-full bg-[#f97316] animate-pulse"></span>
         Neu: Regelwerksvergleich ADR · RID · IMDG · ICAO
       </div>
 
       <!-- Headline -->
-      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+      <h1 class="text-3xl min-[400px]:text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6 break-words hyphens-auto">
         Alle Gefahrgut&shy;vorschriften.<br />
         <span style="color: #f97316;">Ein Werkzeug.</span>
       </h1>
 
       <!-- Subtext -->
-      <p class="text-lg sm:text-xl text-slate-300 leading-relaxed mb-10 max-w-2xl">
+      <p class="text-base sm:text-xl text-slate-300 leading-relaxed mb-8 sm:mb-10 max-w-2xl">
         Die Arbeitsplattform für Gefahrgutbeauftragte – alle Regelwerke, alle Werkzeuge, alle Dokumente. Zentral, schnell und immer aktuell.
       </p>
 
       <!-- CTA -->
-      <div class="mb-10">
+      <div class="mb-8 sm:mb-10">
         <a
           href="#demo"
-          class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold text-white transition-all duration-150 cursor-pointer shadow-lg hover:shadow-xl active:scale-95"
+          class="inline-flex w-full sm:w-auto min-h-11 items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold text-white transition-all duration-150 cursor-pointer shadow-lg hover:shadow-xl active:scale-95"
           style="background: #f97316;"
           onmouseenter={(e) => { e.currentTarget.style.background = '#ea580c' }}
           onmouseleave={(e) => { e.currentTarget.style.background = '#f97316' }}
@@ -42,10 +42,10 @@
       </div>
 
       <!-- Trust signals -->
-      <div class="flex flex-wrap items-center gap-6 text-sm text-slate-400">
+      <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-6 gap-y-2 text-sm text-slate-400">
         {#each trustSignals as signal (signal)}
           <div class="flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <svg class="w-4 h-4 shrink-0 text-green-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
             </svg>
             {signal}
@@ -56,7 +56,7 @@
   </div>
 
   <!-- Wave divider -->
-  <div class="relative h-16 overflow-hidden">
+  <div class="relative h-10 sm:h-16 overflow-hidden">
     <svg viewBox="0 0 1440 64" preserveAspectRatio="none" class="absolute bottom-0 w-full h-full" fill="white" aria-hidden="true">
       <path d="M0,32 C360,64 1080,0 1440,32 L1440,64 L0,64 Z"/>
     </svg>

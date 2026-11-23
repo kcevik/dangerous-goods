@@ -44,7 +44,7 @@
         type="button"
         aria-pressed={tool.overrides[mode] === i}
         title={label}
-        class={['max-w-full sm:max-w-xs truncate px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.overrides[mode] === i
+        class={['max-w-full sm:max-w-xs truncate min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.overrides[mode] === i
           ? 'bg-amber-400 border-amber-500 text-black'
           : 'bg-white border-amber-400 text-[#0f2744] hover:border-orange-500']}
         onclick={() => tool.overrideVariant(mode, i)}
@@ -57,9 +57,9 @@
   <div class="max-w-5xl mx-auto">
 
     <!-- Info banner -->
-    <div class="flex items-start gap-3 px-4 py-3 mb-4 text-sm border border-l-4 bg-[#f4f7fa] border-[#c8d6e5] border-l-orange-500">
-      <span class="text-xl flex-shrink-0 mt-0.5">🌐</span>
-      <span class="text-[#2d5070] leading-relaxed">
+    <div class="flex items-start gap-3 px-3 sm:px-4 py-3 mb-4 text-sm border border-l-4 bg-[#f4f7fa] border-[#c8d6e5] border-l-orange-500">
+      <span class="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">🌐</span>
+      <span class="min-w-0 text-[#2d5070] leading-relaxed break-words">
         <strong>{tool.L('bannerTitle')}</strong>{tool.L('bannerSub')}
       </span>
       {#if demo}
@@ -70,16 +70,16 @@
     </div>
 
     <!-- Toolbar: subject + language -->
-    <div class="flex flex-wrap items-center gap-2.5 px-4 py-3.5 mb-4 bg-[#f4f7fa] border border-[#c8d6e5] border-t-[3px] border-t-orange-500">
+    <div class="flex flex-wrap items-center gap-2.5 px-3 sm:px-4 py-3 sm:py-3.5 mb-4 bg-[#f4f7fa] border border-[#c8d6e5] border-t-[3px] border-t-orange-500">
       <!-- the page owns the search; this only names what is shown (owner, 2026-11-08) -->
-      <p data-testid="tool-subject" class="flex-1 min-w-[200px] font-mono text-sm font-semibold text-[#0f2744] truncate">{tool.searchDisplay}</p>
+      <p data-testid="tool-subject" class="flex-1 min-w-0 basis-48 font-mono text-sm font-semibold text-[#0f2744] truncate">{tool.searchDisplay}</p>
 
       <!-- Language toggle -->
       <div class="flex overflow-hidden border-[1.5px] border-[#b0c4d8]">
         {#each LANGS as lang (lang)}
           <button
             type="button"
-            class={['px-3.5 py-2 font-mono text-[11px] font-bold tracking-[0.5px] transition-colors', tool.currentLang === lang
+            class={['min-h-11 min-w-11 sm:min-h-0 px-3.5 py-2 font-mono text-[11px] font-bold tracking-[0.5px] transition-colors', tool.currentLang === lang
               ? 'bg-orange-500 text-black'
               : 'bg-[#dce8f2] text-[#5a7a99] hover:bg-[#d4e2ef]']}
             onclick={() => tool.setLang(lang)}
@@ -108,9 +108,9 @@
         <div
           role="group"
           aria-label={tool.L('variant')}
-          class="flex flex-wrap items-center gap-2 px-4 py-3 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8]"
+          class="flex flex-wrap items-center gap-2 px-3 sm:px-4 py-3 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8]"
         >
-          <span class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mr-1">
+          <span class="w-full sm:w-auto font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mr-1">
             {tool.L('variant')} · {anchor}
           </span>
           {#each tool.anchorVariants as variant, i (variant.key)}
@@ -119,7 +119,7 @@
               type="button"
               aria-pressed={tool.selectedVariantIndex === i}
               title={label}
-              class={['max-w-full sm:max-w-xs truncate px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.selectedVariantIndex === i
+              class={['max-w-full sm:max-w-xs truncate min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1 font-mono text-[11px] font-bold border transition-colors', tool.selectedVariantIndex === i
                 ? 'bg-orange-500 border-orange-500 text-black'
                 : 'bg-[#dce8f2] border-[#b0c4d8] text-[#0f2744] hover:border-orange-400']}
               onclick={() => tool.selectVariant(i)}
@@ -129,17 +129,17 @@
       {/if}
 
       <!-- Compare overview -->
-      <div class="px-4 py-3.5 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8] border-t-[3px] border-t-orange-500">
+      <div class="px-3 sm:px-4 py-3.5 mb-0.5 bg-[#f4f7fa] border border-[#b0c4d8] border-t-[3px] border-t-orange-500">
         <div class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mb-2.5">
           UN {tool.currentUnNumber} · {tool.L('availability')}
         </div>
-        <div class="grid grid-cols-5 gap-2 max-sm:grid-cols-3">
+        <div data-testid="overview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {#each tool.MODALS as modal (modal)}
             {@const entry = tool.getEntry(modal)}
             {@const rows = tool.hasRows(modal)}
             <div
               data-testid={`overview-${modal}`}
-              class={['p-2.5 border bg-[#f4f7fa] transition-all', rows
+              class={['min-w-0 break-words p-2 sm:p-2.5 border bg-[#f4f7fa] transition-all', rows
                 ? ['cursor-pointer', 'hover:border-orange-400',
                    modal === tool.currentModal
                      ? 'border-orange-500 border-t-[3px]'
@@ -187,13 +187,13 @@
       </div>
 
       <!-- Modal tabs -->
-      <div class="flex overflow-x-auto border-b-2 border-[#b0c4d8]" role="tablist">
+      <div data-testid="mode-tabs" class="flex overflow-x-auto overscroll-x-contain border-b-2 border-[#b0c4d8]" role="tablist">
         {#each tool.MODALS as modal (modal)}
           {@const entry = tool.getEntry(modal)}
           {@const rows = tool.hasRows(modal)}
           <button
             type="button"
-            class={['flex items-center gap-1.5 px-4 py-2.5 font-mono text-[11px] font-bold tracking-[0.5px] whitespace-nowrap mr-0.5 relative top-px border border-b-0 transition-all', modal === tool.currentModal
+            class={['flex flex-1 sm:flex-none shrink-0 items-center justify-center gap-1.5 min-h-11 px-3 sm:px-4 py-2.5 font-mono text-[11px] font-bold tracking-[0.5px] whitespace-nowrap mr-0.5 relative top-px border border-b-0 transition-all', modal === tool.currentModal
               ? 'bg-[#f4f7fa] text-[#0f2744] border-[#b0c4d8] border-b-2 border-b-[#f4f7fa]'
               : rows
                 ? 'bg-[#dce8f2] text-[#0f2744] border-[#b0c4d8] hover:bg-[#d4e2ef] cursor-pointer'
@@ -210,28 +210,28 @@
       </div>
 
       <!-- Detail panel -->
-      <div class="bg-[#f4f7fa] border border-[#b0c4d8] border-t-0 p-5" role="tabpanel">
+      <div class="bg-[#f4f7fa] border border-[#b0c4d8] border-t-0 p-3 sm:p-5" role="tabpanel">
         {#if tool.currentEntry}
           {@const currentEntry = tool.currentEntry}
           {@const names = tool.variantNames(tool.currentModal)}
           {@const specs = tool.variantSpecs(tool.currentModal)}
 
           <!-- UN header -->
-          <div class="flex flex-wrap items-start gap-3.5 pb-4 mb-4 border-b border-[#c8d6e5]">
+          <div class="flex flex-wrap items-start gap-x-3.5 gap-y-2 pb-4 mb-4 border-b border-[#c8d6e5]">
             {#if tool.currentModal === 'ADR' && !demo}
               <a
                 href={`${resolve('/(app)/regelwerk/[mode=bookMode]', { mode: 'adr' })}?un=${currentEntry.unNumber}`}
                 target="_blank"
                 rel="noopener"
                 title={formatBookLabel(tool.currentLang, 'openUnInBook', { code: currentEntry.unNumber })}
-                class="font-mono text-3xl font-bold text-orange-500 leading-none flex-shrink-0 underline decoration-orange-300 decoration-2 underline-offset-4 hover:decoration-orange-500"
+                class="font-mono text-2xl sm:text-3xl font-bold text-orange-500 leading-none flex-shrink-0 underline decoration-orange-300 decoration-2 underline-offset-4 hover:decoration-orange-500"
               >UN {currentEntry.unNumber}</a>
             {:else}
-              <div class="font-mono text-3xl font-bold text-orange-500 leading-none flex-shrink-0">
+              <div class="font-mono text-2xl sm:text-3xl font-bold text-orange-500 leading-none flex-shrink-0">
                 UN {currentEntry.unNumber}
               </div>
             {/if}
-            <div>
+            <div data-testid="entry-names" class="min-w-0 flex-1 basis-48 break-words hyphens-auto">
               <div class="text-base font-semibold text-[#0f2744]">{names.primary}</div>
               {#if names.others.length > 0}
                 <div class="text-sm text-[#5a7a99] mt-0.5">
@@ -255,7 +255,7 @@
           {/if}
 
           <!-- Fields table -->
-          <table class="w-full text-sm border-collapse">
+          <table data-testid="fields-table" class="w-full text-sm border-collapse">
             <tbody>
               {#if currentEntry.hazardClass}
                 <tr class="even:bg-[#dce8f2]">
@@ -433,7 +433,7 @@
       </div>
     {:else}
       <!-- Initial empty state (no search yet) -->
-      <div class="bg-[#f4f7fa] border border-[#b0c4d8] p-14 text-center text-[#5a7a99]">
+      <div class="bg-[#f4f7fa] border border-[#b0c4d8] p-8 sm:p-14 text-center text-[#5a7a99]">
         <div class="text-5xl mb-3 opacity-30">🌍</div>
         <p class="text-sm leading-relaxed">
           <strong class="text-[#0f2744]">{tool.L('searchPlaceholder')}</strong><br />
@@ -448,11 +448,12 @@
 <style>
   @reference "tailwindcss";
 
+  /* phones: label above value (one column); from sm: two table columns */
   .field-label {
-    @apply font-mono text-[10px] font-bold tracking-[0.5px] uppercase text-[#5a7a99] py-2 px-2.5 border-b border-[#c8d6e5] align-top whitespace-nowrap w-[150px];
+    @apply font-mono text-[10px] font-bold tracking-[0.5px] uppercase text-[#5a7a99] py-2 px-2.5 border-b border-[#c8d6e5] align-top whitespace-nowrap w-[150px] max-sm:block max-sm:w-auto max-sm:whitespace-normal max-sm:pb-0.5 max-sm:border-b-0;
   }
   .field-value {
-    @apply py-2 px-2.5 border-b border-[#c8d6e5] align-top text-[#2d5070];
+    @apply py-2 px-2.5 border-b border-[#c8d6e5] align-top text-[#2d5070] wrap-anywhere hyphens-auto max-sm:block max-sm:pt-0.5;
   }
   .badge {
     @apply inline-block font-mono text-[10px] font-bold px-2 py-0.5 tracking-[0.3px];
