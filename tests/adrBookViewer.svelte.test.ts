@@ -9,8 +9,8 @@ import type { BookHeading, BookHit, HitListResult, RenderedWindow } from '$lib/r
 
 // ── fixtures ─────────────────────────────────────────────────
 
-function heading(text: string, path: string[]): BookHeading {
-  return { level: path.length + 1, text, sectionNo: null, slug: `h-${text}`, line: 1, path }
+function heading(text: string, path: string[], sectionNo: string | null = null): BookHeading {
+  return { level: path.length + 1, depth: path.length, inToc: true, text, sectionNo, slug: `h-${text}`, line: 1, path }
 }
 
 const TABLE_A = heading('Kapitel 3.2', ['Teil 3'])
@@ -306,15 +306,39 @@ describe('AdrBookViewerState', () => {
     expect(viewer.isOverloaded).toBe(false)
   })
 
-  it('groups hits by the first two heading levels, keeping each hit index', () => {
+  it('groups hits by their Kapitel, keeping each hit index', () => {
     const hits = [hit(100, TABLE_A), hit(110, TABLE_A), hit(900, CH_33), hit(120, null)]
     const viewer = new AdrBookViewerState(makeInit({ hits, totalHits: 4 }), makeDeps())
     expect(viewer.hitsByChapter.map(g => [g.label, g.count])).toEqual([
-      ['Teil 3 › Kapitel 3.2', 2],
-      ['Teil 3 › Kapitel 3.3', 1],
+      ['Kapitel 3.2', 2],
+      ['Kapitel 3.3', 1],
       ['Ohne Kapitel', 1],
     ])
     expect(viewer.hitsByChapter[1]!.entries[0]!.index).toBe(2)
+  })
+
+  it('names the Kapitel however deep the hit sits, and the hit’s own section number', () => {
+    // tester report: "Ätzende Stoffe … › 2.2.9.1.10.3" — the label must be the chapter
+    const deep = heading('2.2.9.1.10.3 Prüfung', ['ADR', 'Teil 2 Klassifizierung', 'Kapitel 2.2 Besondere Vorschriften', '2.2.9 Klasse 9'], '2.2.9.1.10.3')
+    const teilOnly = heading('Vorbemerkung', ['ADR', 'Teil 4 Verwendung'])
+    const viewer = new AdrBookViewerState(makeInit({ hits: [hit(100, deep), hit(200, teilOnly)], totalHits: 2 }), makeDeps())
+    expect(viewer.hitsByChapter.map(g => g.label)).toEqual(['Kapitel 2.2 Besondere Vorschriften', 'Teil 4 Verwendung'])
+    expect(viewer.hitsByChapter[0]!.entries[0]!.section).toBe('2.2.9.1.10.3')
+    expect(viewer.hitsByChapter[1]!.entries[0]!.section).toBeNull()
+  })
+
+  it('has one status text for the counter, loading included, so no stale text can linger', async () => {
+    const pending = deferred<RenderedWindow>()
+    const deps = makeDeps({ fetchWindow: vi.fn(() => pending.promise) })
+    const viewer = new AdrBookViewerState(makeInit({ windows: [win(1, 150)] }), deps)
+    expect(viewer.statusLabel).toBe('Treffer 1 von 7')
+    const moving = viewer.goTo(6)
+    expect(viewer.statusLabel).toBe('Wird geladen…')
+    pending.resolve(win(200, 260))
+    await moving
+    expect(viewer.statusLabel).toBe('Treffer 7 von 7')
+    await viewer.next()
+    expect(viewer.statusLabel).toBe('Treffer 1 von 7 · Am Ende fortgesetzt')
   })
 
   it('goTo jumps to a hit by index', async () => {

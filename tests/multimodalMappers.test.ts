@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { fetchCompareForUn, fetchUnReference } from '$lib/multimodal/mappers'
+import { fetchAdrEntries, fetchCompareForUn, fetchUnReference } from '$lib/multimodal/mappers'
 
 type TableResponse = { data: Record<string, unknown>[] | null, error: unknown }
 
@@ -175,6 +175,13 @@ describe('fetchUnReference', () => {
     }])
   })
 
+  it('maps the UN portable tank instructions for the reference column, "(M)" kept with its code', async () => {
+    const un = { un_number: '1005', sequence_number: 1, hazard_class: '2.3', un_tank_codes: ['T50', '(M)'] }
+    const { client } = createClient({ un_entries: { data: [un], error: null } })
+    const [row] = await fetchUnReference(client, '1005')
+    expect(row!.portableTankInstr).toBe('T50 (M)')
+  })
+
   it('throws on a query error instead of returning no rows', async () => {
     const { client } = createClient({ un_entries: { data: null, error: { message: 'down' } } })
     await expect(fetchUnReference(client, '1203')).rejects.toEqual({ message: 'down' })
@@ -184,5 +191,130 @@ describe('fetchUnReference', () => {
     const { client, from } = createClient({})
     expect(await fetchUnReference(client, '  ')).toEqual([])
     expect(from).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetchAdrEntries', () => {
+  it('reads only adr_entries for the trimmed UN number and maps the rows', async () => {
+    const { client, from, eqCalls } = createClient({ adr_entries: { data: [ADR_ROW], error: null } })
+    const rows = await fetchAdrEntries(client, ' 1203 ')
+    expect(from).toHaveBeenCalledTimes(1)
+    expect(from).toHaveBeenCalledWith('adr_entries')
+    expect(eqCalls.adr_entries).toBe('1203')
+    expect(rows[0]).toMatchObject({ unNumber: '1203', name: 'BENZIN', transportCategory: '2', classificationCode: 'F1' })
+  })
+
+  it('throws on a query error instead of returning no rows', async () => {
+    const { client } = createClient({ adr_entries: { data: null, error: { message: 'down' } } })
+    await expect(fetchAdrEntries(client, '1203')).rejects.toEqual({ message: 'down' })
+  })
+
+  it('returns no rows for a blank UN number without querying', async () => {
+    const { client, from } = createClient({})
+    expect(await fetchAdrEntries(client, '  ')).toEqual([])
+    expect(from).not.toHaveBeenCalled()
+  })
+})
+
+// real column values of UN 1005 / 1203 / 3077 (BAM 2025), checked against the live tables 2026-11-23
+const ADR_DETAIL_ROW = {
+  ...ADR_ROW,
+  packing_sv_codes: ['BB2'],
+  co_packing: ['MP19'],
+  un_tank_codes: ['T50', '(M)'],
+  un_tank_sv_codes: ['TP1'],
+  tank_codes: ['PxBH(M)'],
+  tank_sv_codes: ['TA4', 'TT8', 'TT9'],
+  tank_vehicle: 'AT',
+  package_sv_codes: ['V12'],
+  bulk_sv_codes: ['VC1', 'VC2'],
+  handling_sv_codes: ['CV9', 'CV10', 'CV36'],
+  operation_sv_codes: ['S2', 'S20'],
+  security_level: 1,
+  security_qty_tank: '3000',
+  security_qty_bulk: 'a)',
+  security_qty_packages: 'b)',
+  n_mark: '+',
+  compatibility_group: null,
+  prohibited: true,
+}
+
+describe('fetchCompareForUn — ADR/RID/IMDG detail columns (persona test 2026-11-23)', () => {
+  it('maps the ADR Table A columns 9a–19 and the 1.10 / N-mark columns', async () => {
+    const { client } = createClient({ adr_entries: { data: [ADR_DETAIL_ROW], error: null } })
+    const { ADR } = await fetchCompareForUn(client, '1005')
+    expect(ADR[0]).toMatchObject({
+      packingSv: 'BB2',
+      coPacking: 'MP19',
+      // "(M)" is a marker of the instruction before it, never a code of its own
+      portableTankInstr: 'T50 (M)',
+      portableTankSv: 'TP1',
+      tankCodes: 'PxBH(M)',
+      tankSv: 'TA4, TT8, TT9',
+      tankVehicle: 'AT',
+      packageSv: 'V12',
+      bulkSv: 'VC1, VC2',
+      handlingSv: 'CV9, CV10, CV36',
+      operationSv: 'S2, S20',
+      securityLevel: '1',
+      securityQtyTank: '3000',
+      securityQtyBulk: 'a)',
+      securityQtyPackages: 'b)',
+      envHazard: '+',
+    })
+    expect(ADR[0]!.compatibilityGroup).toBeUndefined()
+    // BAM N_VERBOT is "1 = permitted": the imported `prohibited` column is never mapped
+    expect(ADR[0]).not.toHaveProperty('prohibited')
+  })
+
+  it('keeps security level 0 (a value, not an absence)', async () => {
+    const { client } = createClient({ adr_entries: { data: [{ ...ADR_DETAIL_ROW, security_level: 0 }], error: null } })
+    const { ADR } = await fetchCompareForUn(client, '1203')
+    expect(ADR[0]!.securityLevel).toBe('0')
+  })
+
+  it('maps the RID equivalents, including express freight (CE), and no ADR-only columns', async () => {
+    const rid = {
+      ...ADR_DETAIL_ROW,
+      tank_sv_codes: ['TU38', 'TE22', 'TM6'],
+      package_sv_codes: ['W12'],
+      handling_sv_codes: ['CW9'],
+      operation_sv_codes: null,
+      tank_vehicle: null,
+      express_freight: ['CE4'],
+    }
+    const { client } = createClient({ rid_entries: { data: [rid], error: null } })
+    const { RID } = await fetchCompareForUn(client, '1005')
+    expect(RID[0]).toMatchObject({
+      tankCodes: 'PxBH(M)',
+      tankSv: 'TU38, TE22, TM6',
+      packageSv: 'W12',
+      handlingSv: 'CW9',
+      expressFreight: 'CE4',
+      securityLevel: '1',
+      envHazard: '+',
+    })
+    expect(RID[0]!.operationSv).toBeUndefined()
+    expect(RID[0]!.tankVehicle).toBeUndefined()
+  })
+
+  it('maps the IMDG tank, handling and segregation-group columns; IBC provisions join the packing provisions', async () => {
+    const imdg = {
+      un_number: '3077', sequence_number: 1, hazard_class: '9',
+      packing_instructions: ['P002', 'LP02'], ibc_instructions: 'IBC08',
+      packing_sv_codes: ['PP12'], ibc_sv_codes: ['B3'],
+      un_tank_codes: ['T1', 'BK1', 'BK2', 'BK3'], tank_sv_codes: ['TP33'],
+      handling_codes: ['H1'], segregation_groups: ['SGG1'],
+    }
+    const { client } = createClient({ imdg_entries: { data: [imdg], error: null } })
+    const { IMDG } = await fetchCompareForUn(client, '3077')
+    expect(IMDG[0]).toMatchObject({
+      packingSv: 'PP12, B3',
+      portableTankInstr: 'T1, BK1, BK2, BK3',
+      portableTankSv: 'TP33',
+      imdgHandling: 'H1',
+      segregationGroups: 'SGG1',
+    })
+    expect(IMDG[0]!.tankCodes).toBeUndefined()
   })
 })

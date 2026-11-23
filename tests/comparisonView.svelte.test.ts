@@ -104,7 +104,7 @@ describe('ComparisonViewState', () => {
     expect(view.deviationLabel(lq, lq.cells.IMDG)).toBe('Kritische Abweichung')
     expect(view.deviationLabel(lq, lq.cells.ADR)).toBeUndefined()
     expect(cellTone(lq, lq.cells.IMDG)).toContain('bg-orange-100')
-    expect(view.cardModes(lq)).toEqual(['ADR', 'RID', 'IMDG'])
+    expect(view.cardModes(lq)).toEqual(['ADR', 'RID', 'IMDG', 'ICAO']) // ICAO LQ = Y instruction (persona test 2026-11-23)
     expect(view.cardModes(rowOf(view, 'tunnelCode'))).toEqual(['ADR'])
   })
 })

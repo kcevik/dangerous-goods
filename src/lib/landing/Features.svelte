@@ -1,53 +1,64 @@
 <script lang="ts">
-  // Only the Stoffsuche is live; the rest render as grayed-out "Demnächst verfügbar" cards.
+  import { SITE_FACTS } from './siteFacts'
+
+  // Shipped tools render as live cards; tools still being built keep the grayed-out
+  // "Demnächst verfügbar" card. Descriptions say only what the tool does today.
   const features = [
     {
       title: 'Stoffsuche',
       available: true,
-      description: '2.347+ Stoffe sofort abrufbar – nach UN-Nummer, Name oder Synonym, mit vollständigen Regelwerksdaten.',
+      description: `Alle ${SITE_FACTS.unNumbers} UN-Nummern nach Nummer oder Stoffbezeichnung durchsuchen – mit den Angaben aus ADR, RID, IMDG und ICAO.`,
       icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
       color: '#15779b',
       bgColor: 'rgba(21,119,155,0.1)',
     },
     {
-      title: 'Rechenwerkzeuge',
-      available: false,
-      description: 'Rechenwerkzeuge für Freistellungen, Beförderungskategorien und Mengengrenzen – zuverlässig und normkonform.',
+      title: 'Regelwerksvergleich',
+      available: true,
+      description: 'Eine UN-Nummer, vier Regelwerke nebeneinander – Abweichungen bei Klasse, Verpackungsgruppe, Mengengrenzen und mehr werden markiert.',
+      icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2',
+      color: '#f97316',
+      bgColor: 'rgba(249,115,22,0.1)',
+    },
+    {
+      title: 'ADR im Volltext',
+      available: true,
+      description: 'Das ADR als durchsuchbarer Lesetext, mit Sprung zu Sondervorschriften. Hilfsmittel, kein rechtsverbindlicher Text – maßgeblich ist die amtliche Fassung.',
+      icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+      color: '#15779b',
+      bgColor: 'rgba(21,119,155,0.1)',
+    },
+    {
+      title: '1000-Punkte-Rechner',
+      available: true,
+      description: 'Punkte einer gemischten Ladung nach ADR 1.1.3.6 berechnen – Beförderungskategorie und Faktor aus den BAM-Daten, Ergebnis je Beförderungseinheit und ein Ausdruck für die Akte.',
       icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z',
+      color: '#f97316',
+      bgColor: 'rgba(249,115,22,0.1)',
+    },
+    {
+      title: 'Konto',
+      available: true,
+      description: 'Passwort ändern, Rechnungsadresse hinterlegen, Abo-Status einsehen und das Konto selbst löschen.',
+      icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+      color: '#15779b',
+      bgColor: 'rgba(21,119,155,0.1)',
+    },
+    {
+      title: 'LQ/EQ-Rechner',
+      available: false,
+      description: 'Prüfung begrenzter und freigestellter Mengen (LQ/EQ) je Verpackung und Versandstück.',
+      icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
       color: '#f97316',
       bgColor: 'rgba(249,115,22,0.1)',
     },
     {
       title: 'Dokumentengenerator',
       available: false,
-      description: 'Transportdokumente auf Knopfdruck – rechtssicher, vollständig und sofort exportierbar.',
+      description: 'Beförderungspapiere aus den Stoffdaten vorbereiten – als Entwurf, den du vor dem Versand prüfst.',
       icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
       color: '#15779b',
       bgColor: 'rgba(21,119,155,0.1)',
-    },
-    {
-      title: 'Freistellungsrechner',
-      available: false,
-      description: 'LQ, EQ und weitere Freistellungstatbestände direkt prüfen – trägerübergreifend und regelwerkskonform.',
-      icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-      color: '#f97316',
-      bgColor: 'rgba(249,115,22,0.1)',
-    },
-    {
-      title: 'Änderungsmonitor',
-      available: false,
-      description: 'Regelwerksänderungen im Blick – automatisch, strukturiert und mit direktem Bezug zu betroffenen Stoffen.',
-      icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-      color: '#15779b',
-      bgColor: 'rgba(21,119,155,0.1)',
-    },
-    {
-      title: 'Favoritenliste',
-      available: false,
-      description: 'Häufig genutzte Stoffe und Dokumente merken – für schnellen Zugriff ohne erneute Suche.',
-      icon: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z',
-      color: '#f97316',
-      bgColor: 'rgba(249,115,22,0.1)',
     },
   ]
 </script>
@@ -59,10 +70,10 @@
         Funktionen
       </div>
       <h2 id="features-heading" class="text-2xl min-[375px]:text-3xl sm:text-4xl font-bold mb-4 break-words hyphens-auto" style="color: #0f2744;">
-        Eine Plattform. Alle Werkzeuge.
+        Eine Plattform für deine Gefahrgutarbeit
       </h2>
       <p class="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto">
-        Spezialisierte Tools für jeden Aspekt der Gefahrgutarbeit – nahtlos integriert in einer Oberfläche.
+        Was heute schon geht – und was als Nächstes kommt.
       </p>
     </div>
 
@@ -70,7 +81,7 @@
       {#each features as feature (feature.title)}
         {#if feature.available}
           <div
-            class={['group rounded-2xl p-6 sm:p-8 border border-slate-200 hover:shadow-lg transition-all duration-200 cursor-pointer', `hover:border-[${feature.color}]`]}
+            class={['group rounded-2xl p-6 sm:p-8 border border-slate-200 hover:shadow-lg transition-all duration-200', `hover:border-[${feature.color}]`]}
           >
             <div
               class={['w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-200', `group-hover:bg-[${feature.color}]`]}

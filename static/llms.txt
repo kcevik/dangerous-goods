@@ -7,28 +7,40 @@
 
 ## Datenbasis
 
-- Quelle: GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und -prüfung (BAM)
-- Umfang: 16.730 Einträge — ADR 2025 (3.374), RID 2025 (3.350), IMDG Amdt. 42-24 (3.246),
-  ICAO 2025 (3.528), UN-Modellvorschriften (3.232); dazu ca. 1.350 Sondervorschriften im
-  Volltext (DE/EN/FR, soweit amtlich verfügbar)
+- Quelle: BAM-Datenbank GEFAHRGUT der Bundesanstalt für Materialforschung und -prüfung (BAM),
+  eine amtliche Quelle
+- Umfang: 2.347 UN-Nummern, 16.730 Einträge — ADR 2025 (3.374), RID 2025 (3.350),
+  IMDG Amdt. 42-24 (3.246), ICAO 2025 (3.528), UN-Modellvorschriften als Referenz (3.232);
+  dazu 1.354 Sondervorschriften im Volltext (DE/EN/FR, soweit amtlich verfügbar)
+- ADN (Binnenschifffahrt): nicht enthalten, die BAM veröffentlicht dafür keine Daten
 - Lizenz: Datenlizenz Deutschland — Namensnennung — Version 2.0 (dl-de/by-2-0);
   Änderungen gegenüber der Quelle werden gekennzeichnet
 
-## Funktionen (bei Launch)
+## Funktionen (verfügbar)
 
-- UN-Nummern- und Stoffnamen-Suche über alle Verkehrsträger
-- Multimodaler Regelwerksvergleich (ADR / RID / IMDG / ICAO nebeneinander)
-- Sondervorschriften im Volltext, mehrsprachig (DE/EN/FR/TR-Oberfläche)
-- 1000-Punkte-Rechner nach ADR 1.1.3.6, Dokumentengenerator, Prüflisten
+- UN-Nummern- und Stoffnamen-Suche über ADR, RID, IMDG und ICAO
+- Multimodaler Regelwerksvergleich (ADR / RID / IMDG / ICAO nebeneinander, Abweichungen markiert)
+- Sondervorschriften im Volltext; Oberfläche des Vergleichs auf DE/EN/FR/TR
+- ADR als durchsuchbarer Lesetext (kein rechtsverbindlicher Text)
+- 1000-Punkte-Rechner nach ADR 1.1.3.6 (Freistellung bei nicht mehr als 1.000 Punkten je
+  Beförderungseinheit), mit Ausdruck
+- Konto: Passwort, Rechnungsadresse, Abo-Status, Selbstlöschung
+
+## Geplant
+
+- Dokumentengenerator für Beförderungspapiere
+- Rechner für begrenzte und freigestellte Mengen (LQ/EQ)
 
 ## Preise und Zugang
 
-Ein Tarif mit vollem Funktionsumfang; der Preis steht noch nicht fest. Vor dem Start ist keine
-Registrierung möglich: Unter /registrieren kann man sich per E-Mail zur Benachrichtigung zum
-Start eintragen. Suche und Regelwerksvergleich erfordern ein freigeschaltetes Konto.
+Ein Tarif mit vollem Funktionsumfang; den Preis nennen die AGB (https://gefahrgut.org/agb).
+Vor dem Start ist keine Registrierung möglich: Unter /registrieren kann man sich per E-Mail zur
+Benachrichtigung zum Start eintragen. Suche und Regelwerksvergleich erfordern ein
+freigeschaltetes Konto.
 
 ## Links
 
 - Startseite: https://gefahrgut.org/
 - Benachrichtigung zum Start: https://gefahrgut.org/registrieren
+- Datenbasis: https://gefahrgut.org/#datenbasis
 - Blog (Fachartikel zu Gefahrstofflagerung, TRGS 510, ADR): https://gefahrgut.org/blog/

@@ -11,6 +11,46 @@ function str(v: unknown): string | undefined {
   return String(v)
 }
 
+/**
+ * A code column in which BAM stores a bracketed marker as its own item ("T50", "(M)"):
+ * the marker belongs to the code before it ("T50 (M)", MEGC permitted).
+ */
+function joinCodes(arr: unknown): string | undefined {
+  if (!Array.isArray(arr)) return undefined
+  const codes: string[] = []
+  for (const item of arr.filter(Boolean).map(String)) {
+    if (/^\(.*\)$/.test(item) && codes.length > 0) codes[codes.length - 1] += ` ${item}`
+    else codes.push(item)
+  }
+  return codes.length > 0 ? codes.join(', ') : undefined
+}
+
+/** a list column plus a second list column, joined like `joinArr` (IMDG cols. 9 + 11) */
+function joinBoth(a: unknown, b: unknown): string | undefined {
+  const list = [a, b].flatMap(v => (Array.isArray(v) ? v.filter(Boolean).map(String) : []))
+  return list.length > 0 ? list.join(', ') : undefined
+}
+
+/** list column plus a single extra value (IBC column 10 of IMDG / UN), joined like `joinArr` */
+function joinWith(arr: unknown, extra: unknown): string | undefined {
+  const list = Array.isArray(arr) ? arr.filter(Boolean).map(String) : []
+  const more = str(extra)
+  if (more && !list.includes(more)) list.push(more)
+  return list.length > 0 ? list.join(', ') : undefined
+}
+
+/**
+ * ICAO limited quantity: the "Y" packing instruction and the max net quantity per package
+ * (Technical Instructions, Table 3-1 cols. 10/11), e.g. "Y341 · max 1 L". Not the same concept as
+ * the ADR/RID/IMDG LQ per inner packaging, so the comparison shows it but never compares it.
+ */
+function icaoLimitedQty(pi: unknown, maxNet: unknown): string | undefined {
+  const instruction = str(pi)
+  const max = str(maxNet)
+  if (instruction && max) return `${instruction} · max ${max}`
+  return instruction ?? (max ? `max ${max}` : undefined)
+}
+
 type RawAdr = Record<string, unknown>
 type RawRid = Record<string, unknown>
 type RawImdg = Record<string, unknown>
@@ -37,6 +77,24 @@ function mapAdr(r: RawAdr): Entry {
     kemlerNumber: str(r.kemler_number),
     tunnelCode: str(r.tunnel_code),
     packingInstructions: joinArr(r.packing_instructions),
+    // Table A cols. 9a–19, display only (details.ts); `prohibited` (BAM N_VERBOT, 1 = permitted) is never read
+    packingSv: joinArr(r.packing_sv_codes),
+    coPacking: joinArr(r.co_packing),
+    portableTankInstr: joinCodes(r.un_tank_codes),
+    portableTankSv: joinArr(r.un_tank_sv_codes),
+    tankCodes: joinArr(r.tank_codes),
+    tankSv: joinArr(r.tank_sv_codes),
+    tankVehicle: str(r.tank_vehicle),
+    packageSv: joinArr(r.package_sv_codes),
+    bulkSv: joinArr(r.bulk_sv_codes),
+    handlingSv: joinArr(r.handling_sv_codes),
+    operationSv: joinArr(r.operation_sv_codes),
+    securityLevel: str(r.security_level),
+    securityQtyTank: str(r.security_qty_tank),
+    securityQtyBulk: str(r.security_qty_bulk),
+    securityQtyPackages: str(r.security_qty_packages),
+    envHazard: str(r.n_mark),
+    compatibilityGroup: str(r.compatibility_group),
     remark: str(r.remark),
     specialProvisions: joinArr(r.special_provision_codes),
   }
@@ -61,6 +119,23 @@ function mapRid(r: RawRid): Entry {
     transportCategory: str(r.transport_category),
     multiplier: str(r.multiplier),
     packingInstructions: joinArr(r.packing_instructions),
+    // Table A cols. 9a–19, display only (details.ts); `prohibited` (BAM N_VERBOT, 1 = permitted) is never read
+    packingSv: joinArr(r.packing_sv_codes),
+    coPacking: joinArr(r.co_packing),
+    portableTankInstr: joinCodes(r.un_tank_codes),
+    portableTankSv: joinArr(r.un_tank_sv_codes),
+    tankCodes: joinArr(r.tank_codes),
+    tankSv: joinArr(r.tank_sv_codes),
+    packageSv: joinArr(r.package_sv_codes),
+    bulkSv: joinArr(r.bulk_sv_codes),
+    handlingSv: joinArr(r.handling_sv_codes),
+    expressFreight: joinArr(r.express_freight),
+    securityLevel: str(r.security_level),
+    securityQtyTank: str(r.security_qty_tank),
+    securityQtyBulk: str(r.security_qty_bulk),
+    securityQtyPackages: str(r.security_qty_packages),
+    envHazard: str(r.n_mark),
+    compatibilityGroup: str(r.compatibility_group),
     remark: str(r.remark),
     specialProvisions: joinArr(r.special_provision_codes),
   }
@@ -79,13 +154,19 @@ function mapImdg(r: RawImdg): Entry {
     hazardLabels: joinArr(r.subsidiary_risks) ?? str(r.hazard_class),
     exceptedQty: str(r.excepted_qty),
     limitedQty: str(r.limited_qty),
-    packingInstructions: joinArr(r.packing_instructions),
+    // ADR/RID list P, IBC, LP and R instructions in one column; IMDG splits IBC into column 10
+    packingInstructions: joinWith(r.packing_instructions, r.ibc_instructions),
     ems1: str(r.ems_fire),
     ems2: str(r.ems_spill),
     stowageCategory: str(r.stowage_category),
     stowage: joinArr(r.stowage_codes),
     segregation: joinArr(r.segregation_codes),
     marpol: str(r.marpol),
+    packingSv: joinBoth(r.packing_sv_codes, r.ibc_sv_codes),
+    portableTankInstr: joinCodes(r.un_tank_codes),
+    portableTankSv: joinArr(r.tank_sv_codes),
+    imdgHandling: joinArr(r.handling_codes),
+    segregationGroups: joinArr(r.segregation_groups),
     remark: str(r.remark),
     specialProvisions: joinArr(r.special_provision_codes),
   }
@@ -101,10 +182,12 @@ function mapIcao(r: RawIcao): Entry {
     packingGroup: str(r.packing_group),
     hazardLabels: joinArr(r.hazard_labels),
     exceptedQty: str(r.excepted_qty),
+    limitedQty: icaoLimitedQty(r.packing_instr_passenger_y, r.max_net_passenger_y),
     packingInstrPassenger: str(r.packing_instr_passenger),
     packingInstrCargo: str(r.packing_instr_cargo),
     maxNetPassenger: str(r.max_net_passenger),
     maxNetCargo: str(r.max_net_cargo),
+    stateVariations: joinArr(r.state_variations),
     remark: str(r.remark),
     specialProvisions: joinArr(r.special_provision_codes),
   }
@@ -124,7 +207,8 @@ function mapUn(r: RawUn): Entry {
     hazardLabels: joinArr(r.subsidiary_risks),
     exceptedQty: str(r.excepted_qty),
     limitedQty: str(r.limited_qty),
-    packingInstructions: joinArr(r.packing_instructions),
+    packingInstructions: joinWith(r.packing_instructions, r.ibc_instructions),
+    portableTankInstr: joinCodes(r.un_tank_codes),
     specialProvisions: joinArr(r.special_provision_codes),
     remark: str(r.remark),
   }
@@ -137,6 +221,15 @@ export async function fetchUnReference(supabase: SupabaseClient, unNumber: strin
   const { data, error } = await supabase.from('un_entries').select('*').eq('un_number', cleaned).order('sequence_number')
   if (error) throw error
   return (data ?? []).map(mapUn)
+}
+
+/** ADR rows of one UN number (1000-Punkte-Rechner); throws on failure — never "no data" */
+export async function fetchAdrEntries(supabase: SupabaseClient, unNumber: string): Promise<Entry[]> {
+  const cleaned = unNumber.trim()
+  if (!cleaned) return []
+  const { data, error } = await supabase.from('adr_entries').select('*').eq('un_number', cleaned).order('sequence_number')
+  if (error) throw error
+  return (data ?? []).map(mapAdr)
 }
 
 export async function fetchCompareForUn(

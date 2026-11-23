@@ -7,6 +7,7 @@
 | [`schema-diagram.html`](schema-diagram.html) | ER diagram of the regulation tables (open in a browser). Predates the auth work: it still shows the dropped `un_comparison` view and lacks `profiles` / `launch_signups` |
 | [`go-live-readiness-2026-09-28.md`](go-live-readiness-2026-09-28.md) | Historical snapshot of 2026-09-28; its open points now live in `STATUS.md` |
 | [`deploy/README.md`](deploy/README.md) | Server runbook (Caddy, `app.gefahrgut.org`); the plan's `concepts.md` page was never written |
+| [`research/2026-11-23-persona-tests/`](research/2026-11-23-persona-tests/README.md) | Persona test 2026-11-23: five simulated dangerous goods officers tried the product in a real browser; summary + five reports (hypotheses, not customer interviews) |
 
 ## Designs and plans
 
@@ -26,6 +27,7 @@ Each feature is designed in a spec (`superpowers/specs/`) and built from a plan
 | 2026-11-08 | Legal pages (Impressum, Datenschutz, AGB, Widerruf) | 🟡 drafts live; built without a spec/plan | — | — |
 | 2026-11-08 | Stoffsuche gaps + regulatory variants (F-01) | ✅ done (browser check by the owner open) | [spec](superpowers/specs/2026-11-08-stoffsuche-variants-design.md) | [plan](superpowers/plans/2026-11-08-stoffsuche-variants.md) |
 | 2026-11-23 | Account page `/konto` (F-04) | ✅ done 2026-11-23 (migration applied, browser-checked; live deletion untested) | [spec](superpowers/specs/2026-11-23-account-page-design.md) | [plan](superpowers/plans/2026-11-23-account-page.md) |
+| 2026-11-23 | 1000-Punkte-Rechner (F-02, ADR 1.1.3.6) | ✅ done 2026-11-23 (branch `feat/1000-punkte-rechner`) | [spec](superpowers/specs/2026-11-23-1000-punkte-rechner-design.md) | [plan](superpowers/plans/2026-11-23-1000-punkte-rechner.md) |
 
 ## How we work
 

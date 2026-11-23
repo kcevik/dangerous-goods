@@ -1,25 +1,28 @@
 <script lang="ts">
+  import { resolve } from '$app/paths'
   import { BLOG_URL, LEGAL_LINKS } from '$lib/legal'
+  import { signupCtaLabel } from '$lib/prelaunch/copy'
+  import { DATA_SOURCE_LABEL } from './siteFacts'
 
   let { registrationOpen = false }: { registrationOpen?: boolean } = $props()
 
+  // every link has a real target: an in-page section, an app route, the blog or a legal page
   const linkColumns = $derived([
     {
       heading: 'Produkt',
       links: [
         { label: 'Funktionen', href: '#features' },
-        { label: registrationOpen ? 'Registrieren' : 'Zum Launch benachrichtigen', href: '/registrieren' },
+        { label: signupCtaLabel(registrationOpen), href: resolve('/(auth)/registrieren') },
         { label: 'Regelwerksvergleich', href: '#comparison' },
-        { label: 'Änderungsmonitor', href: '#' },
+        { label: 'Demo', href: '#demo' },
       ],
     },
     {
       heading: 'Ressourcen',
       links: [
-        { label: 'Dokumentation', href: '#' },
-        { label: 'ADR-Leitfaden', href: '#' },
+        { label: 'Häufige Fragen', href: '#faq' },
+        { label: 'Datenbasis', href: '#datenbasis' },
         { label: 'Blog', href: BLOG_URL },
-        { label: 'BAM-Datenbasis', href: '#' },
       ],
     },
     {
@@ -63,7 +66,7 @@
     </div>
 
     <div class="border-t border-slate-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-      <p class="text-xs text-slate-400">© 2026 gefahrgut.org. Datenbasis: BAM GEFAHRGUT, Lizenz dl-de/by-2-0.</p>
+      <p class="text-xs text-slate-400">© 2026 gefahrgut.org. Datenbasis: {DATA_SOURCE_LABEL}, Lizenz dl-de/by-2-0.</p>
       <p class="text-xs text-slate-400">Kein Ersatz für rechtliche Beratung. Alle Angaben ohne Gewähr.</p>
     </div>
   </div>

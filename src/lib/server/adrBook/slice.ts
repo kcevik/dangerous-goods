@@ -205,8 +205,10 @@ function compactTableRepeats(lines: string[]): string[] {
     }
 
     if (isTableRow(line)) {
-      // filler rows with no content in any cell are never wanted
-      if (isEmptyRow(line)) continue
+      // filler rows with no content in any cell are never wanted — unless the row
+      // is the header itself (the radionuclide tables have an empty one): without
+      // it the alignment row comes first and the table renders as raw `|…|`
+      if (isEmptyRow(line) && !isAlignmentRow(lines[i + 1] ?? '')) continue
       if (!inTable && headerBlockLength(lines, i) > 0) currentHeader = line
       out.push(line)
       inTable = true

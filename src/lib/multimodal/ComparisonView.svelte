@@ -22,7 +22,8 @@
   const view = untrack(() => new ComparisonViewState(data, reference))
 </script>
 
-<div class="space-y-3">
+<!-- lang follows the switcher, so the browser uppercases Turkish labels correctly (i → İ) -->
+<div class="space-y-3" lang={view.currentLang}>
   <div class="flex flex-wrap items-start justify-between gap-3 px-3 py-3 sm:px-4 sm:py-3.5 bg-[#f4f7fa] border border-[#c8d6e5] border-t-[3px] border-t-orange-500">
     <div class="min-w-0">
       <div class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99]">
@@ -36,7 +37,7 @@
         <p class="text-xs text-[#5a7a99] wrap-break-word">{view.title.others.join(' · ')}</p>
       {/if}
     </div>
-    <div role="group" aria-label="Sprache" class="flex border-[1.5px] border-[#b0c4d8]">
+    <div role="group" aria-label={view.L('language')} class="flex border-[1.5px] border-[#b0c4d8]">
       {#each LANGS as lang (lang)}
         <button
           type="button"
@@ -84,21 +85,23 @@
       role="status"
       class={['border p-3 text-sm', view.deviations.length > 0 ? 'border-orange-300 bg-orange-50 text-orange-900' : 'border-[#c8d6e5] bg-[#f4f7fa] text-[#2d5070]']}
     >
-      {#if view.comparedModes.length < 2 && view.unresolvedModes.length === 0}
-        {view.L('nothingToCompare')}
-      {:else if view.deviations.length === 0}
-        {#if view.unresolvedModes.length === 0}
-          {view.L('noDeviations')}
-        {:else if view.comparedModes.length >= 2}
-          {view.L('noDeviationsBetween').replace('{modes}', view.joinModes(view.comparedModes))}
-        {/if}
-      {:else}
+      {#if view.deviations.length > 0}
         <p class="font-semibold mb-1">{view.L('deviationsTitle')}</p>
         <ul class="space-y-0.5">
-          {#each view.deviations as row (row.field)}
+          {#if view.prohibitionNotice}
+            <!-- an air prohibition answers "can this go by every mode?" before any value does -->
+            <li data-testid="air-prohibition" class="font-bold wrap-break-word"><span class="mr-1" aria-hidden="true">▲</span>{view.prohibitionNotice}</li>
+          {/if}
+          {#each view.listedDeviations as row (row.field)}
             <li class="wrap-break-word">{view.L(row.labelKey)}: <span class="font-mono">{view.deviationText(row)}</span></li>
           {/each}
         </ul>
+      {:else if view.comparedModes.length < 2 && view.unresolvedModes.length === 0}
+        {view.L('nothingToCompare')}
+      {:else if view.unresolvedModes.length === 0}
+        {view.L('noDeviations')}
+      {:else if view.comparedModes.length >= 2}
+        {view.L('noDeviationsBetween').replace('{modes}', view.joinModes(view.comparedModes))}
       {/if}
       {#if view.unresolvedModes.length > 0}
         <p class="mt-1">{view.L('uncomparedModes').replace('{modes}', view.joinModes(view.unresolvedModes))}</p>
@@ -116,6 +119,8 @@
       <div class="lg:hidden"><ComparisonCards {view} /></div>
       <div class="hidden lg:block"><ComparisonTable {view} /></div>
     {/if}
+    <!-- ADN is empty by design (no BAM data): one note instead of an empty column -->
+    <p data-testid="adn-note" class="px-1 text-xs italic text-[#5a7a99]">{view.L('noAdnData')}</p>
     <ComparisonLegend {view} />
   {/if}
 </div>

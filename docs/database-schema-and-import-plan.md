@@ -314,7 +314,7 @@ CREATE INDEX idx_adr_sv_codes ON adr_entries USING gin(special_provision_codes);
 | `S_SPEZIFIKATION_FR` | `specification_fr` | |
 | `S_BEMERKUNG` | `remark` | |
 | `N_MULTIPLIKATOR` | `multiplier` | For 1000-point calculator |
-| `N_VERBOT` | `prohibited` | 1 = true |
+| `N_VERBOT` | `prohibited` | 1 = true. **Misleading name:** BAM defines `0` forbidden, `1` permitted, `2` not subject to the regulations ("Tabellenbeschreibung ADR", 17 June 2025), so `true` means *permitted* and `false` covers both forbidden and not subject. Not read by the app |
 
 ---
 

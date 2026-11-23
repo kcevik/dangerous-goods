@@ -259,9 +259,10 @@ describe('MultimodalTool — phone layout', () => {
     const { container } = render(MultimodalTool, { props: { demo: true } })
     expect(screen.getByTestId('mode-tabs')).toHaveClass('flex', 'overflow-x-auto')
     const tabs = screen.getAllByRole('tab')
-    expect(tabs).toHaveLength(5)
+    // ADR, RID, IMDG, ICAO — no ADN tab: BAM ships no ADN data
+    expect(tabs.map(t => t.textContent?.trim())).toEqual(['ADR', 'RID', 'IMDG', 'ICAO'])
     for (const tab of tabs) expect(tab).toHaveClass('min-h-11', 'shrink-0', 'whitespace-nowrap')
-    // narrow padding below 375px so all five tabs fit a 320px screen without scrolling
+    // narrow padding below 375px so all tabs fit a 320px screen without scrolling
     for (const tab of tabs) expect(tab).toHaveClass('px-2', 'min-[375px]:px-3')
     // touch targets hold up to tablet width (768px is still a finger, not a mouse)
     for (const lang of ['DE', 'EN', 'FR', 'TR']) {
@@ -269,8 +270,8 @@ describe('MultimodalTool — phone layout', () => {
     }
     // the tool inherits the self-hosted body font
     expect(container.querySelector('.font-sans')).toBeNull()
-    // three overview cards per row on phones, five from sm
-    expect(container.querySelector('[data-testid="overview-grid"]')).toHaveClass('grid-cols-3', 'sm:grid-cols-5')
+    // two overview cards per row on phones, all four from sm
+    expect(container.querySelector('[data-testid="overview-grid"]')).toHaveClass('grid-cols-2', 'sm:grid-cols-4')
   })
 
   it('gives every variant button a 44px touch target on phones', () => {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import ComparisonCellValue from './ComparisonCellValue.svelte'
   import { cellTone, type ComparisonViewState } from './comparisonView.svelte'
-  import { MODALS } from './types'
+  import { DATA_MODES } from './types'
 
   let { view }: { view: ComparisonViewState } = $props()
 </script>
@@ -15,7 +15,7 @@
     <thead>
       <tr>
         <th scope="col" class="sticky left-0 z-20 bg-[#0f2744] px-3 py-2.5 text-left align-bottom font-mono text-[10px] font-bold uppercase tracking-[1px] text-slate-300">{view.L('field')}</th>
-        {#each MODALS as mode (mode)}
+        {#each DATA_MODES as mode (mode)}
           <th scope="col" class="bg-[#0f2744] px-3 py-2.5 text-left align-bottom">
             <span class="block font-mono text-xs font-bold text-white">{mode}</span>
             <span class="block text-[10px] font-normal text-slate-400">{view.modalDesc(mode)}</span>
@@ -30,22 +30,16 @@
       </tr>
     </thead>
     <tbody>
-      {#each view.visibleRows as row, i (row.field)}
+      {#each view.visibleRows as row (row.field)}
         <tr data-field={row.field} data-status={row.status} class="border-t border-[#c8d6e5]">
           <th scope="row" class="sticky left-0 z-10 bg-[#f4f7fa] px-3 py-2 text-left align-top font-mono text-[10px] font-bold uppercase tracking-[0.5px] text-[#5a7a99] whitespace-nowrap">
             {view.L(row.labelKey)}{#if row.critical}<span class="ml-1 text-orange-500" title={view.L('criticalField')} aria-hidden="true">*</span><span class="sr-only">({view.L('criticalField')})</span>{/if}
           </th>
-          {#each MODALS as mode (mode)}
+          {#each DATA_MODES as mode (mode)}
             {@const cell = row.cells[mode]}
-            {#if mode === 'ADN'}
-              {#if i === 0}
-                <td data-mode="ADN" rowspan={view.visibleRows.length} class="px-3 py-2 align-top text-xs italic text-[#5a7a99] bg-[#eef2f6]">{view.L('noAdnData')}</td>
-              {/if}
-            {:else}
-              <td data-mode={mode} data-deviates={cell.deviates} title={view.cellHint(cell)} class={['px-3 py-2 align-top font-mono text-[13px] wrap-break-word', cellTone(row, cell)]}>
-                <ComparisonCellValue {view} {row} {cell} />
-              </td>
-            {/if}
+            <td data-mode={mode} data-deviates={cell.deviates} data-forbidden={cell.forbidden} title={view.cellHint(cell, false, row)} class={['px-3 py-2 align-top font-mono text-[13px] wrap-break-word', cellTone(row, cell)]}>
+              <ComparisonCellValue {view} {row} {cell} />
+            </td>
           {/each}
           {#if view.hasReference}
             <td data-mode="UN" title={row.reference ? view.cellHint(row.reference, true) : undefined} class="px-3 py-2 align-top font-mono text-[13px] text-slate-500 bg-slate-50 wrap-break-word">
