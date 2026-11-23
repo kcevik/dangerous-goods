@@ -41,7 +41,7 @@
     placeholder="UN-Nummer oder Stoffname …"
     aria-label={label}
     autocomplete="off"
-    class="w-full px-3.5 py-2.5 rounded-lg text-sm border border-[#b0c4d8] bg-white text-[#0f2744] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 [&::-webkit-search-cancel-button]:hidden"
+    class="w-full min-h-11 px-3.5 py-2.5 rounded-lg text-sm border border-[#b0c4d8] bg-white text-[#0f2744] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 [&::-webkit-search-cancel-button]:hidden"
   />
 
   {#if search.selectedUn}
@@ -55,13 +55,13 @@
       {#if search.searchError}
         <div role="alert" class="px-4 py-3 text-sm text-red-800 bg-red-50">
           Die Suche ist fehlgeschlagen.
-          <button type="button" class="ml-2 underline" onclick={() => search.retry()}>Erneut versuchen</button>
+          <button type="button" class="ml-2 min-h-11 underline" onclick={() => search.retry()}>Erneut versuchen</button>
         </div>
       {:else if search.results.length > 0}
         <ul>
           {#each search.results as r (r.unNumber)}
             <li>
-              <a href={hrefFor(r.unNumber)} onclick={close} class="block px-4 py-2.5 hover:bg-orange-50 border-t border-slate-100 first:border-t-0">
+              <a href={hrefFor(r.unNumber)} onclick={close} class="block px-4 py-3 hover:bg-orange-50 focus-visible:bg-orange-50 focus-visible:outline-none border-t border-slate-100 first:border-t-0">
                 <span class="font-mono text-sm font-bold text-[#0f2744]">UN {r.unNumber}</span>
                 <span class="ml-2 text-sm text-[#2d5070]">{r.primaryName}</span>
                 {#if r.hazardClass}

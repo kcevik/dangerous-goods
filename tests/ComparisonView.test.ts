@@ -9,7 +9,7 @@ const cell = (container: HTMLElement, field: string, mode: string) =>
   container.querySelector(`tr[data-field="${field}"] td[data-mode="${mode}"]`)!
 
 describe('ComparisonView', () => {
-  it('shows every mode side by side, ADN as "no data", inside its own scroll container', () => {
+  it('shows every mode side by side, ADN as "no data", inside its own scroll container (desktop table)', () => {
     const { container } = render(ComparisonView, { props: { unNumber: '1203', data: DEMO_DATA } })
     const heads = [...container.querySelectorAll('thead th')].map(th => th.textContent?.trim().split(/\s/)[0])
     expect(heads).toEqual(['Angabe', 'ADR', 'RID', 'IMDG', 'ICAO', 'ADN'])
@@ -95,6 +95,73 @@ describe('ComparisonView', () => {
     const { container } = render(ComparisonView, { props: { unNumber: '0000', data: { ADR: [], RID: [], IMDG: [], ICAO: [], ADN: [] } } })
     expect(container).toHaveTextContent('Für diese UN-Nummer gibt es in keinem Regelwerk einen Eintrag.')
     expect(container.querySelector('table')).toBeNull()
+  })
+
+  it('says in German that nothing differs instead of showing an empty table (F-10 minor)', async () => {
+    const data = { ADR: [e({ packingGroup: 'II', limitedQty: '1 L' })], RID: [e({ packingGroup: 'II', limitedQty: '1 L' })] }
+    const { container } = render(ComparisonView, { props: { unNumber: '9999', data } })
+    expect(screen.queryByTestId('no-differences')).toBeNull()
+    await fireEvent.click(screen.getByLabelText('Nur Abweichungen zeigen'))
+    expect(screen.getByTestId('no-differences')).toHaveTextContent('Keine Abweichungen – alle verglichenen Angaben stimmen überein.')
+    expect(container.querySelector('table')).toBeNull()
+    expect(screen.queryByTestId('comparison-cards')).toBeNull()
+  })
+
+  it('reads cell hints and deviations out as text, not only via title (F-10 minor)', () => {
+    const data = { ADR: [e({ limitedQty: '5 L' })], RID: [e({ limitedQty: '5 L' })], IMDG: [e({ limitedQty: '1 L' })] }
+    const { container } = render(ComparisonView, { props: { unNumber: '1286', data } })
+    const srText = (el: Element) => [...el.querySelectorAll('.sr-only')].map(s => s.textContent).join(' ')
+    expect(srText(cell(container, 'limitedQty', 'IMDG'))).toContain('Kritische Abweichung')
+    expect(srText(cell(container, 'limitedQty', 'ADR'))).not.toContain('Abweichung')
+    const demo = render(ComparisonView, { props: { unNumber: '1203', data: DEMO_DATA } }).container
+    expect(srText(cell(demo, 'tunnelCode', 'IMDG'))).toContain('In diesem Regelwerk nicht vorgesehen')
+    expect(cell(demo, 'tunnelCode', 'IMDG').querySelector('[aria-hidden="true"]')).toHaveTextContent('—')
+    expect(srText(cell(demo, 'specialProvisions', 'IMDG'))).toContain('Nicht verglichen: abweichende Systematik')
+  })
+
+  it('reads "?" out as "Keine eindeutige Variante"', () => {
+    const data = {
+      ADR: [e({ packingGroup: 'II', limitedQty: '1 L' })],
+      IMDG: [e({ sequenceNumber: 1, packingGroup: 'II', specificationEn: 'A', specification: 'A', limitedQty: '1 L' }), e({ sequenceNumber: 2, packingGroup: 'II', specificationEn: 'B', specification: 'B', limitedQty: '5 L' })],
+    }
+    const { container } = render(ComparisonView, { props: { unNumber: '9999', data } })
+    expect(cell(container, 'limitedQty', 'IMDG').querySelector('.sr-only')).toHaveTextContent('Keine eindeutige Variante')
+  })
+
+  it('renders the table for desktop and one card per field for phones', () => {
+    const reference = [e({ packingGroup: 'II', limitedQty: '1 L', specialProvisions: '243' })]
+    const { container } = render(ComparisonView, { props: { unNumber: '1203', data: DEMO_DATA, reference } })
+    expect(container.querySelector('table')!.closest('.hidden.lg\\:block')).not.toBeNull()
+    const cards = screen.getByTestId('comparison-cards')
+    expect(cards.closest('.lg\\:hidden')).not.toBeNull()
+    const tableFields = [...container.querySelectorAll('tbody tr')].map(tr => tr.getAttribute('data-field'))
+    expect([...cards.querySelectorAll('li[data-field]')].map(li => li.getAttribute('data-field'))).toEqual(tableFields)
+    // a card lists only the modes that have the field; road-only fields have one line
+    const tunnel = cards.querySelector('li[data-field="tunnelCode"]')!
+    expect([...tunnel.querySelectorAll('[data-mode]')].map(d => d.getAttribute('data-mode'))).toEqual(['ADR'])
+    const sv = cards.querySelector('li[data-field="specialProvisions"]')!
+    expect(sv.querySelector('[data-mode="UN"]')).toHaveTextContent('243')
+    expect(sv.querySelector('[data-mode="UN"] dt')).toHaveTextContent('UN-Modellvorschriften')
+    expect(cards).toHaveTextContent('Die BAM veröffentlicht keine ADN-Daten.')
+  })
+
+  it('marks a differing field on its card and the deviating mode line', () => {
+    const data = { ADR: [e({ limitedQty: '5 L' })], RID: [e({ limitedQty: '5 L' })], IMDG: [e({ limitedQty: '1 L' })] }
+    render(ComparisonView, { props: { unNumber: '1286', data } })
+    const card = screen.getByTestId('comparison-cards').querySelector('li[data-field="limitedQty"]')!
+    expect(card).toHaveAttribute('data-status', 'differs')
+    expect(card.querySelector('h2')!.nextElementSibling).toHaveTextContent('Kritische Abweichung')
+    expect(card.querySelector('[data-mode="IMDG"]')).toHaveAttribute('data-deviates', 'true')
+    expect(card.querySelector('[data-mode="ADR"]')).toHaveAttribute('data-deviates', 'false')
+  })
+
+  it('gives variant and language buttons 44px targets and a visible focus style', () => {
+    render(ComparisonView, { props: { unNumber: '1993', data: UN_1993 as Record<string, Entry[]> } })
+    const buttons = [...screen.getByRole('group', { name: 'Variante' }).querySelectorAll('button'), screen.getByRole('button', { name: 'EN' })]
+    for (const b of buttons) {
+      expect(b).toHaveClass('min-h-11')
+      expect(b).toHaveClass('focus-visible:outline-2')
+    }
   })
 
   it('carries the BAM attribution', () => {

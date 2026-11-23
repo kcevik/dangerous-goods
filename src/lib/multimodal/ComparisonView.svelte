@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte'
+  import ComparisonCards from './ComparisonCards.svelte'
   import ComparisonLegend from './ComparisonLegend.svelte'
   import ComparisonTable from './ComparisonTable.svelte'
   import { ComparisonViewState } from './comparisonView.svelte'
@@ -22,25 +23,25 @@
 </script>
 
 <div class="space-y-3">
-  <div class="flex flex-wrap items-start justify-between gap-3 px-4 py-3.5 bg-[#f4f7fa] border border-[#c8d6e5] border-t-[3px] border-t-orange-500">
+  <div class="flex flex-wrap items-start justify-between gap-3 px-3 py-3 sm:px-4 sm:py-3.5 bg-[#f4f7fa] border border-[#c8d6e5] border-t-[3px] border-t-orange-500">
     <div class="min-w-0">
       <div class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99]">
         {view.L('compareTitle')}{#if demo}<span class="ml-2 px-1.5 py-0.5 bg-orange-500 text-black">DEMO</span>{/if}
       </div>
-      <h1 class="font-mono text-2xl font-bold text-orange-500 mt-1">UN {unNumber}</h1>
+      <h1 class="font-mono text-xl sm:text-2xl font-bold text-orange-500 mt-1">UN {unNumber}</h1>
       {#if view.title.primary}
-        <p class="text-sm font-semibold text-[#0f2744]">{view.title.primary}</p>
+        <p class="text-sm font-semibold text-[#0f2744] wrap-break-word">{view.title.primary}</p>
       {/if}
       {#if view.title.others.length > 0}
-        <p class="text-xs text-[#5a7a99]">{view.title.others.join(' · ')}</p>
+        <p class="text-xs text-[#5a7a99] wrap-break-word">{view.title.others.join(' · ')}</p>
       {/if}
     </div>
-    <div class="flex overflow-hidden border-[1.5px] border-[#b0c4d8]">
+    <div role="group" aria-label="Sprache" class="flex border-[1.5px] border-[#b0c4d8]">
       {#each LANGS as lang (lang)}
         <button
           type="button"
           aria-pressed={view.currentLang === lang}
-          class={['px-3 py-1.5 font-mono text-[11px] font-bold transition-colors', view.currentLang === lang ? 'bg-[#0f2744] text-white' : 'bg-[#dce8f2] text-[#5a7a99] hover:text-[#0f2744]']}
+          class={['min-h-11 min-w-11 px-3 font-mono text-[11px] font-bold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-orange-500', view.currentLang === lang ? 'bg-[#0f2744] text-white' : 'bg-[#dce8f2] text-[#5a7a99] hover:text-[#0f2744]']}
           onclick={() => view.setLang(lang)}
         >{lang.toUpperCase()}</button>
       {/each}
@@ -52,7 +53,7 @@
   {:else}
     {@const anchor = view.anchorMode}
     {#if view.anchorVariants.length > 1}
-      <div class="px-4 py-3 bg-[#f4f7fa] border border-[#b0c4d8]">
+      <div class="px-3 py-3 sm:px-4 bg-[#f4f7fa] border border-[#b0c4d8]">
         <div class="font-mono text-[9px] font-bold tracking-[1.5px] uppercase text-[#5a7a99] mb-2">{view.L('variant')} · {anchor}</div>
         <VariantPicker
           variants={view.anchorVariants}
@@ -95,7 +96,7 @@
         <p class="font-semibold mb-1">{view.L('deviationsTitle')}</p>
         <ul class="space-y-0.5">
           {#each view.deviations as row (row.field)}
-            <li>{view.L(row.labelKey)}: <span class="font-mono">{view.deviationText(row)}</span></li>
+            <li class="wrap-break-word">{view.L(row.labelKey)}: <span class="font-mono">{view.deviationText(row)}</span></li>
           {/each}
         </ul>
       {/if}
@@ -104,12 +105,17 @@
       {/if}
     </div>
 
-    <label class="inline-flex items-center gap-2 text-sm text-[#2d5070]">
-      <input type="checkbox" bind:checked={view.onlyDifferences} class="accent-orange-500" />
+    <label class="inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-sm text-[#2d5070]">
+      <input type="checkbox" bind:checked={view.onlyDifferences} class="size-5 accent-orange-500" />
       {view.L('onlyDifferences')}
     </label>
 
-    <ComparisonTable {view} />
+    {#if view.visibleRows.length === 0}
+      <p role="status" data-testid="no-differences" class="border border-[#c8d6e5] bg-[#f4f7fa] p-4 text-sm text-[#2d5070]">{view.L('noDifferencesShown')}</p>
+    {:else}
+      <div class="lg:hidden"><ComparisonCards {view} /></div>
+      <div class="hidden lg:block"><ComparisonTable {view} /></div>
+    {/if}
     <ComparisonLegend {view} />
   {/if}
 </div>
