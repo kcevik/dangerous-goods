@@ -26,11 +26,11 @@
 <div class="min-h-screen bg-[#e8eef5]">
   <!-- Top bar -->
   <div class="bg-[#0f2744] px-4 py-4">
-    <div class="max-w-5xl mx-auto flex items-center gap-4">
-      <a href={resolve('/(app)/dashboard')} class="text-slate-400 hover:text-white transition-colors text-sm font-mono shrink-0">
-        ← zurück
+    <div class="max-w-5xl mx-auto flex items-center gap-3 sm:gap-4">
+      <a href={resolve('/(app)/dashboard')} aria-label="zurück zum Dashboard" class="inline-flex min-h-11 min-w-11 items-center text-slate-400 hover:text-white transition-colors text-sm font-mono shrink-0">
+        <span aria-hidden="true">←</span><span class="max-sm:sr-only">&nbsp;zurück</span>
       </a>
-      <div class="flex-1 relative">
+      <div class="flex-1 min-w-0 relative">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -40,8 +40,8 @@
           bind:value={search.query}
           {@attach (node) => { node.focus() }}
           type="search"
-          placeholder="UN-Nummer oder Stoffname suchen …"
-          class="w-full pl-9 pr-9 py-2.5 rounded-lg text-sm bg-white/10 border border-white/20 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white/15 transition-all [&::-webkit-search-cancel-button]:hidden"
+          placeholder="UN-Nummer oder Stoffname"
+          class="w-full min-h-11 pl-9 pr-9 py-2.5 rounded-lg text-base sm:text-sm bg-white/10 border border-white/20 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white/15 transition-all [&::-webkit-search-cancel-button]:hidden"
           aria-label="Gefahrgut suchen"
         />
         {#if search.isLoading}
@@ -57,7 +57,7 @@
   </div>
 
   <!-- Content area -->
-  <div class="max-w-5xl mx-auto px-4 py-8">
+  <div class="max-w-5xl mx-auto px-4 py-6 sm:py-8">
 
     {#if search.locked}
       <!-- Locked preview: no live queries, only the hardcoded demo -->
@@ -65,13 +65,13 @@
       <MultimodalTool demo />
     {:else if search.belowMinimum}
       <!-- Empty state -->
-      <div class="text-center py-16">
+      <div class="text-center py-10 sm:py-16">
         <p class="text-[#5a7a99] text-sm mb-4">Gib eine UN-Nummer oder einen Stoffnamen ein</p>
         <div class="flex flex-wrap justify-center gap-2">
           {#each EXAMPLES as example (example.un)}
             <button
               type="button"
-              class="px-3 py-1.5 rounded-full text-xs font-mono border border-[#c0cfe0] text-[#5a7a99] hover:border-orange-400 hover:text-orange-500 transition-colors"
+              class="inline-flex min-h-11 items-center px-4 py-2 rounded-full text-xs font-mono border border-[#c0cfe0] text-[#5a7a99] hover:border-orange-400 hover:text-orange-500 transition-colors"
               onclick={() => { search.query = example.un }}
             >
               {example.un} · {example.label}
@@ -81,11 +81,11 @@
       </div>
     {:else if search.searchError}
       <!-- a failed search must never read as "no results" -->
-      <div role="alert" class="bg-red-50 border border-red-200 rounded-xl p-8 text-center text-red-800">
+      <div role="alert" class="bg-red-50 border border-red-200 rounded-xl p-6 sm:p-8 text-center text-red-800">
         <p class="text-sm mb-4">Die Suche ist fehlgeschlagen. Bitte versuche es erneut.</p>
         <button
           type="button"
-          class="px-4 py-2 text-sm font-semibold rounded-lg border border-red-300 bg-white hover:bg-red-100 transition-colors"
+          class="min-h-11 px-4 py-2 text-sm font-semibold rounded-lg border border-red-300 bg-white hover:bg-red-100 transition-colors"
           disabled={search.isLoading}
           onclick={() => search.retry()}
         >Erneut versuchen</button>
@@ -99,17 +99,18 @@
         {#each search.results as r (r.unNumber)}
           <button
             type="button"
-            class="w-full text-left bg-white rounded-xl px-5 py-4 shadow-sm border border-transparent hover:border-orange-300 hover:shadow-md transition-all group"
+            data-testid="result-card"
+            class="w-full text-left bg-white rounded-xl px-4 sm:px-5 py-4 shadow-sm border border-transparent hover:border-orange-300 hover:shadow-md transition-all group"
             onclick={() => search.select(r.unNumber)}
           >
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div class="min-w-0 flex-1">
                 <span class="font-mono font-bold text-[#0f2744] text-sm group-hover:text-orange-600 transition-colors">
                   UN {r.unNumber}
                 </span>
-                <p class="text-sm text-[#0f2744] mt-0.5 truncate">{r.primaryName}</p>
+                <p data-testid="result-name" class="text-sm text-[#0f2744] mt-0.5 break-words hyphens-auto">{r.primaryName}</p>
                 {#if r.otherNames.length > 0}
-                  <p class="text-xs text-[#5a7a99] mt-0.5 line-clamp-2">{r.otherNames.join(' · ')}</p>
+                  <p class="text-xs text-[#5a7a99] mt-0.5 line-clamp-2 break-words hyphens-auto">{r.otherNames.join(' · ')}</p>
                 {/if}
                 <div class="flex flex-wrap gap-1 mt-2">
                   {#each r.modes as mode (mode)}
@@ -117,7 +118,7 @@
                   {/each}
                 </div>
               </div>
-              <div class="flex items-center gap-2 shrink-0">
+              <div data-testid="result-badges" class="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
                 {#if r.hazardClass}
                   <span class="px-2 py-0.5 rounded text-xs font-semibold bg-[#e8eef5] text-[#0f2744]">
                     Kl. {r.hazardClass}
@@ -135,8 +136,8 @@
       </div>
     {:else if search.answered && !search.selectedUn}
       <!-- No results: only after every table answered successfully -->
-      <div class="text-center py-16">
-        <p class="text-[#5a7a99] text-sm">Keine Ergebnisse für „{search.query}"</p>
+      <div class="text-center py-10 sm:py-16">
+        <p class="text-[#5a7a99] text-sm break-words">Keine Ergebnisse für „{search.query}"</p>
       </div>
     {/if}
 
@@ -144,9 +145,9 @@
     {#if !search.locked && search.selectedUn}
       <a
         href={resolve('/(app)/un/[nummer]/vergleich', { nummer: search.selectedUn })}
-        class="inline-block mt-6 text-sm font-semibold text-orange-600 hover:text-orange-500"
+        class="inline-flex min-h-11 items-center mt-4 sm:mt-6 text-sm font-semibold text-orange-600 hover:text-orange-500"
       >Alle Modi vergleichen →</a>
-      <div class="mt-6">
+      <div class="mt-2 sm:mt-4">
         <MultimodalTool unNumber={search.selectedUn} supabase={data.supabase} />
       </div>
     {/if}

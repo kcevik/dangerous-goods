@@ -52,25 +52,25 @@
   ]
 </script>
 
-<section id="features" class="py-20 lg:py-28 bg-white" aria-labelledby="features-heading">
+<section id="features" class="py-16 sm:py-20 lg:py-28 bg-white" aria-labelledby="features-heading">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-16">
+    <div class="text-center mb-10 sm:mb-12 lg:mb-16">
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border" style="color: #f97316; background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2);">
         Funktionen
       </div>
-      <h2 id="features-heading" class="text-3xl sm:text-4xl font-bold mb-4" style="color: #0f2744;">
+      <h2 id="features-heading" class="text-2xl min-[375px]:text-3xl sm:text-4xl font-bold mb-4 break-words hyphens-auto" style="color: #0f2744;">
         Eine Plattform. Alle Werkzeuge.
       </h2>
-      <p class="text-lg text-slate-500 max-w-2xl mx-auto">
+      <p class="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto">
         Spezialisierte Tools für jeden Aspekt der Gefahrgutarbeit – nahtlos integriert in einer Oberfläche.
       </p>
     </div>
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {#each features as feature (feature.title)}
         {#if feature.available}
           <div
-            class={['group rounded-2xl p-8 border border-slate-200 hover:shadow-lg transition-all duration-200 cursor-pointer', `hover:border-[${feature.color}]`]}
+            class={['group rounded-2xl p-6 sm:p-8 border border-slate-200 hover:shadow-lg transition-all duration-200 cursor-pointer', `hover:border-[${feature.color}]`]}
           >
             <div
               class={['w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-200', `group-hover:bg-[${feature.color}]`]}
@@ -91,8 +91,8 @@
             <p class="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
           </div>
         {:else}
-          <div class="rounded-2xl p-8 border border-slate-200 bg-slate-50 select-none" aria-disabled="true">
-            <div class="flex items-start justify-between gap-3 mb-5">
+          <div class="rounded-2xl p-6 sm:p-8 border border-slate-200 bg-slate-50 select-none" aria-disabled="true">
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
               <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-200">
                 <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={feature.icon}/>

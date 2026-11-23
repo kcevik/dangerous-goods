@@ -24,19 +24,21 @@
   <link rel="canonical" href={`${SITE_URL}/un/${data.unNumber}`} />
 </svelte:head>
 
-<div class="min-h-screen bg-[#e8eef5] py-8">
+<div class="min-h-screen bg-[#e8eef5] py-6 sm:py-8">
   <div class="max-w-5xl mx-auto px-4">
-    <a href={resolve('/(app)/dashboard')} class="inline-block mb-4 text-sm text-[#5a7a99] hover:text-orange-500 font-mono">
-      ← zurück
-    </a>
-    {#if data.compareData}
-      <a
-        href={resolve('/(app)/un/[nummer]/vergleich', { nummer: data.unNumber })}
-        class="inline-block mb-4 ml-4 text-sm font-semibold text-orange-600 hover:text-orange-500"
-      >Alle Modi vergleichen →</a>
-    {/if}
+    <nav data-testid="un-page-links" aria-label="Seitennavigation" class="flex flex-wrap items-center gap-x-6 mb-2">
+      <a href={resolve('/(app)/dashboard')} class="inline-flex min-h-11 items-center text-sm text-[#5a7a99] hover:text-orange-500 font-mono">
+        ← zurück
+      </a>
+      {#if data.compareData}
+        <a
+          href={resolve('/(app)/un/[nummer]/vergleich', { nummer: data.unNumber })}
+          class="inline-flex min-h-11 items-center text-sm font-semibold text-orange-600 hover:text-orange-500"
+        >Alle Modi vergleichen →</a>
+      {/if}
+    </nav>
     {#if !data.locked}
-      <div class="mb-4 max-w-md">
+      <div class="mb-4 w-full max-w-md">
         <QuickSearch
           supabase={data.supabase}
           label="Andere UN-Nummer öffnen"

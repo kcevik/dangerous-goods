@@ -60,7 +60,7 @@
   {@html jsonLd}
 </svelte:head>
 
-<div class="min-h-screen bg-white font-sans antialiased">
+<div class="min-h-screen overflow-x-clip bg-white antialiased">
   {#if data?.accountDeleted}
     <div role="status" class="bg-green-50 border-b border-green-200 text-green-900 text-sm">
       <div class="max-w-5xl mx-auto px-4 py-3">{ACCOUNT_DELETED_MESSAGE}</div>

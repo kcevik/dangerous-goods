@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-23 · **Tests:** 971 green (83 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
+**Last updated:** 2026-11-23 · **Tests:** 1011 green (84 files) · `pnpm check` 0 errors (5 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
