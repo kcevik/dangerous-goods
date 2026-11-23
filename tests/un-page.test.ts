@@ -71,6 +71,15 @@ describe('/un/[nummer] page — comparison link', () => {
     expect(container.querySelector('a[href="/un/1090/vergleich"]')).toHaveTextContent('Alle Modi vergleichen')
   })
 
+  it('puts the back and comparison links in one wrapping row with 44px targets', () => {
+    const { container } = renderPage({ unNumber: '1090', locked: false, compareData: EMPTY })
+    const row = container.querySelector('[data-testid="un-page-links"]')!
+    expect(row).toHaveClass('flex', 'flex-wrap')
+    const links = row.querySelectorAll('a')
+    expect(links).toHaveLength(2)
+    for (const link of links) expect(link).toHaveClass('min-h-11')
+  })
+
   it('links the locked demo, but nothing for other locked UN numbers', () => {
     const demo = renderPage({ unNumber: '1203', locked: true, compareData: DEMO_DATA })
     expect(demo.container.querySelector('a[href="/un/1203/vergleich"]')).not.toBeNull()

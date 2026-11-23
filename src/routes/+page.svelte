@@ -59,7 +59,7 @@
   {@html jsonLd}
 </svelte:head>
 
-<div class="min-h-screen bg-white font-sans antialiased">
+<div class="min-h-screen overflow-x-clip bg-white antialiased">
   <Navbar {registrationOpen} />
   <Hero />
   <Stats />

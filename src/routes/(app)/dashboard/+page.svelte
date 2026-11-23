@@ -17,9 +17,9 @@
   <title>Dashboard – gefahrgut.org</title>
 </svelte:head>
 
-<div class="max-w-5xl mx-auto px-4 py-10">
+<div class="max-w-5xl mx-auto px-4 py-8 sm:py-10">
   <h1 class="text-2xl font-bold mb-1" style="color: #0f2744;">Willkommen</h1>
-  <p class="text-sm text-[#5a7a99] mb-8">
+  <p class="text-sm text-[#5a7a99] mb-8 wrap-anywhere">
     {data.user?.email} · Status:
     <span class="font-semibold" style="color: #0f2744;">{data.isActive ? 'Freigeschaltet' : 'Noch nicht freigeschaltet'}</span>
   </p>
@@ -31,7 +31,7 @@
   <div class="grid sm:grid-cols-2 gap-4 mb-10">
     {#each tools as tool (tool.title)}
       {#if tool.href}
-        <a href={tool.href} class="block rounded-2xl bg-white border border-slate-200 p-6 hover:shadow-lg hover:border-orange-300 transition-all">
+        <a href={tool.href} class="block rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 hover:shadow-lg hover:border-orange-300 transition-all">
           <h2 class="font-semibold text-lg mb-1" style="color: #0f2744;">{tool.title}</h2>
           <p class="text-sm text-slate-500">{tool.description}</p>
         </a>

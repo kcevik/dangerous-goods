@@ -222,3 +222,15 @@ describe('MultimodalSvsAccordion — links into the ADR text', () => {
     expect(container.querySelector('.whitespace-pre-wrap')).toBeNull()
   })
 })
+
+describe('MultimodalSvsAccordion — phone layout', () => {
+  it('shows only the arrow of the book link on phones and keeps 44px targets', () => {
+    const { client } = stubSupabase({})
+    render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: '243', mode: 'ADR', supabase: client } })
+    const link = screen.getByRole('link', { name: 'Sondervorschrift 243 im ADR-Text öffnen' })
+    expect(link).toHaveClass('min-w-11')
+    expect(link).toHaveTextContent('↗')
+    expect(screen.getByTestId('book-link-label')).toHaveClass('max-sm:sr-only')
+    expect(screen.getByRole('button', { name: /SV 243/ })).toHaveClass('min-h-11')
+  })
+})
