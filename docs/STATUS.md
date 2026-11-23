@@ -95,7 +95,7 @@ book indexed at startup and checked by `/healthz`.
 - Search ranks within the first 50 rows per table (ordered by UN number); a very broad query can miss a better-ranked name further down.
 - Special-provision texts: a failed fetch renders "Kein Text verfügbar" (`MultimodalSvsAccordion`) — a failure shown as no data (review 2026-11-08, pre-existing).
 - F-10 minor (review 2026-11-08): after unlocking on `/un/1203/vergleich` the demo stays until navigation.
-- ICAO hazard class "2" vs ADR/RID "2.1" flagged as a deviation on UN 1950 (`/un/1950/vergleich`). Owner decision whether to normalise the class notation or keep the flag.
+- Idea: manual ICAO variant pick: list the variants whose division matches the selected ADR classification code first (e.g. ADR 5A → ICAO 2.2).
 - Variant matching rule 2 matches the single same-packing-group candidate even when both sides carry explicitly different specifications (needed for UN 1993); a stricter rule would show "keine eindeutige Entsprechung" more often. Owner decision.
 
 - `slice.ts` `compactTableRepeats` drops an all-empty row even when it is a table's *header* row (radionuclide tables around line 7184 of the real book), so those tables render as raw `|…|` text. One-line fix, but it changes how existing tables render — needs a look.
