@@ -1,17 +1,26 @@
+import { DATA_SOURCE_LABEL, SITE_FACTS } from './siteFacts'
+
 export interface FaqItem { question: string, answer: string }
+
+/**
+ * The one place for the price wording on the landing page. Owner rule: no pricing section and no
+ * amount on the landing page; the amount lives in `LEGAL_FACTS` (AGB, /konto, upsell). This
+ * answer must not contradict it. Owner decision pending — change only here.
+ */
+export const PRICE_FAQ_ANSWER = 'gefahrgut.org gibt es als einen Tarif mit vollem Funktionsumfang – ohne Funktionsstufen. Den aktuellen Preis findest du in den AGB und nach der Anmeldung in deinem Konto. Weitere Tarife, etwa für Teams, sind später möglich.'
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Was ist die 1000-Punkte-Regel im ADR?',
-    answer: 'Die 1000-Punkte-Regel (ADR 1.1.3.6) erlaubt Erleichterungen beim Gefahrguttransport auf der Straße: Jeder Beförderungskategorie ist ein Faktor zugeordnet, mit dem die transportierte Menge multipliziert wird. Bleibt die Summe aller Produkte unter 1.000 Punkten, entfallen unter anderem die Pflicht zur orangefarbenen Kennzeichnung, der ADR-Schein des Fahrers und die schriftlichen Weisungen. gefahrgut.org wird einen 1000-Punkte-Rechner enthalten, der die Berechnung automatisch durchführt.',
+    answer: 'Die 1000-Punkte-Regel (ADR 1.1.3.6) erlaubt Erleichterungen beim Gefahrguttransport auf der Straße: Jeder Beförderungskategorie ist ein Faktor zugeordnet, mit dem die transportierte Menge multipliziert wird. Ergibt die Summe aller Produkte je Beförderungseinheit nicht mehr als 1.000 Punkte, entfallen unter anderem die Pflicht zur orangefarbenen Kennzeichnung, der ADR-Schein des Fahrers und die schriftlichen Weisungen. Ein 1000-Punkte-Rechner für gefahrgut.org ist in Arbeit.',
   },
   {
     question: 'Worin unterscheiden sich ADR, RID, IMDG und ICAO?',
-    answer: 'ADR regelt den Gefahrguttransport auf der Straße, RID auf der Schiene, der IMDG-Code auf See und die ICAO Technical Instructions in der Luft. Dieselbe UN-Nummer kann je nach Verkehrsträger unterschiedliche Verpackungsanweisungen, Mengengrenzen und Sondervorschriften haben. gefahrgut.org stellt alle vier Regelwerke nebeneinander dar, sodass Unterschiede auf einen Blick sichtbar werden – als eine der ersten Plattformen überhaupt.',
+    answer: 'ADR regelt den Gefahrguttransport auf der Straße, RID auf der Schiene, der IMDG-Code auf See und die ICAO Technical Instructions in der Luft. Dieselbe UN-Nummer kann je nach Verkehrsträger unterschiedliche Verpackungsanweisungen, Mengengrenzen und Sondervorschriften haben. gefahrgut.org stellt die vier Regelwerke je UN-Nummer nebeneinander dar und markiert Abweichungen. Das ADN (Binnenschifffahrt) ist nicht enthalten, weil die BAM dafür keine Daten veröffentlicht.',
   },
   {
     question: 'Wann braucht ein Unternehmen einen Gefahrgutbeauftragten?',
-    answer: 'Nach der Gefahrgutbeauftragtenverordnung (GbV) muss jedes Unternehmen, das an der Beförderung gefährlicher Güter beteiligt ist – als Absender, Verpacker, Verlader, Befüller oder Beförderer – grundsätzlich einen geschulten Gefahrgutbeauftragten bestellen. Ausnahmen gelten unter anderem für Unternehmen, die ausschließlich Mengen unterhalb der Freistellungsgrenzen (z. B. der 1000-Punkte-Regel) befördern.',
+    answer: 'Nach der Gefahrgutbeauftragtenverordnung (GbV) muss jedes Unternehmen, das an der Beförderung gefährlicher Güter beteiligt ist – als Absender, Verpacker, Verlader, Befüller oder Beförderer – grundsätzlich einen geschulten Gefahrgutbeauftragten bestellen. Ausnahmen gelten unter anderem für Unternehmen, die ausschließlich innerhalb der Freistellungsgrenzen befördern, z. B. mit nicht mehr als 1.000 Punkten je Beförderungseinheit nach ADR 1.1.3.6.',
   },
   {
     question: 'Was ist eine UN-Nummer?',
@@ -22,11 +31,15 @@ export const FAQ_ITEMS: FaqItem[] = [
     answer: 'Sondervorschriften sind nummerierte Zusatzregeln, die einzelnen UN-Nummern zugeordnet sind und die allgemeinen Vorschriften ergänzen oder ersetzen – etwa SV 640 zu Beförderungsbedingungen bestimmter Stoffgruppen. Sie stehen in Kapitel 3.3 der Regelwerke. gefahrgut.org zeigt die vollständigen Texte der Sondervorschriften direkt beim jeweiligen Stoff an, auf Deutsch, Englisch und Französisch, soweit amtlich verfügbar.',
   },
   {
+    question: 'Hilft gefahrgut.org bei Abfalltransporten?',
+    answer: 'Beim Nachschlagen ja: Gefährliche Abfälle werden denselben UN-Nummern und Einträgen zugeordnet wie andere Gefahrgüter; für Abfälle, deren Zusammensetzung nicht genau bekannt ist, regelt ADR 2.1.3.5.5 die Zuordnung. Die Stoffsuche und der Regelwerksvergleich zeigen dir die Angaben je UN-Nummer. Es gibt aber kein eigenes Abfall-Werkzeug – Besonderheiten wie den Vermerk „ABFALL“ vor der UN-Nummer im Beförderungspapier (ADR 5.4.1.1.3) berücksichtigst du selbst.',
+  },
+  {
     question: 'Welche Datenbasis nutzt gefahrgut.org?',
-    answer: 'gefahrgut.org basiert auf der GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und -prüfung (BAM) mit über 16.730 Einträgen zu ADR 2025, RID 2025, IMDG Amdt. 42-24, ICAO 2025 und den UN-Modellvorschriften. Die Daten stehen unter der Datenlizenz Deutschland (dl-de/by-2-0); Änderungen gegenüber der Quelle werden gekennzeichnet.',
+    answer: `Datenbasis ist die ${DATA_SOURCE_LABEL} der Bundesanstalt für Materialforschung und -prüfung (BAM), eine amtliche Quelle: ${SITE_FACTS.unNumbers} UN-Nummern mit ${SITE_FACTS.entries} Einträgen zu ADR 2025, RID 2025, IMDG Amdt. 42-24, ICAO 2025 und den UN-Modellvorschriften, dazu ${SITE_FACTS.specialProvisions} Sondervorschriften. ADN-Daten veröffentlicht die BAM nicht. Die Daten stehen unter der Datenlizenz Deutschland (dl-de/by-2-0); Änderungen gegenüber der Quelle werden gekennzeichnet.`,
   },
   {
     question: 'Was kostet gefahrgut.org?',
-    answer: 'gefahrgut.org wird als ein Tarif mit vollem Funktionsumfang angeboten – ohne Funktionsstufen. Der Preis steht noch nicht fest und wird zuerst registrierten Nutzern mitgeteilt, zusammen mit einem Startangebot. Weitere Tarife, etwa für Teams, sind später möglich.',
+    answer: PRICE_FAQ_ANSWER,
   },
 ]

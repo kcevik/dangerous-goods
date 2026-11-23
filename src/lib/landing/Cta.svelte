@@ -12,7 +12,7 @@
     </h2>
     <p class="text-base sm:text-lg text-slate-300 mb-8 sm:mb-10">
       {registrationOpen
-        ? 'Die Plattform ist im Aufbau. Registriere dich, sieh dir alles an und erfahre zuerst, wenn es losgeht.'
+        ? 'Die Plattform ist im Aufbau. Registriere dich mit deiner E-Mail-Adresse – bis dein Konto freigeschaltet ist, siehst du Demodaten.'
         : 'Die Plattform ist im Aufbau. Trag dich ein und erfahre zuerst, wenn es losgeht.'}
     </p>
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
