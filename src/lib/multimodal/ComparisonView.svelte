@@ -41,7 +41,7 @@
         <button
           type="button"
           aria-pressed={view.currentLang === lang}
-          class={['min-h-11 min-w-11 px-3 font-mono text-[11px] font-bold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-orange-500', view.currentLang === lang ? 'bg-[#0f2744] text-white' : 'bg-[#dce8f2] text-[#5a7a99] hover:text-[#0f2744]']}
+          class={['min-h-11 min-w-11 px-3 font-mono text-[11px] font-bold transition-colors outline-orange-500 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-orange-500', view.currentLang === lang ? 'bg-[#0f2744] text-white' : 'bg-[#dce8f2] text-[#5a7a99] hover:text-[#0f2744]']}
           onclick={() => view.setLang(lang)}
         >{lang.toUpperCase()}</button>
       {/each}

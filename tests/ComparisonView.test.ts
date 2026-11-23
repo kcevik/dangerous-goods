@@ -161,7 +161,21 @@ describe('ComparisonView', () => {
     for (const b of buttons) {
       expect(b).toHaveClass('min-h-11')
       expect(b).toHaveClass('focus-visible:outline-2')
+      // the colour is set unfocused too, so transition-colors cannot fade the ring in from currentColor
+      expect(b).toHaveClass('outline-orange-500')
     }
+  })
+
+  it('never truncates variant labels: UN 1993 has two variants that share a long prefix (browser check)', () => {
+    render(ComparisonView, { props: { unNumber: '1993', data: UN_1993 as Record<string, Entry[]> } })
+    for (const b of screen.getByRole('group', { name: 'Variante' }).querySelectorAll('button')) {
+      expect([...b.classList].some(c => c.endsWith('truncate'))).toBe(false)
+    }
+  })
+
+  it('keeps short cards at their own height in the two-column tablet grid (browser check)', () => {
+    render(ComparisonView, { props: { unNumber: '1203', data: DEMO_DATA } })
+    expect(screen.getByTestId('comparison-cards').querySelector('ul')).toHaveClass('sm:grid-cols-2', 'items-start')
   })
 
   it('carries the BAM attribution', () => {

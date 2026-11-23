@@ -12,7 +12,7 @@
 -->
 <div data-testid="comparison-cards" class="space-y-3">
   <p class="px-1 text-xs italic text-[#5a7a99]"><span class="font-mono font-bold not-italic">ADN</span> · {view.L('noAdnData')}</p>
-  <ul class="grid gap-3 sm:grid-cols-2">
+  <ul class="grid items-start gap-3 sm:grid-cols-2">
     {#each view.visibleRows as row (row.field)}
       <li data-field={row.field} data-status={row.status} class={['border bg-white', row.status === 'differs' ? 'border-orange-300' : 'border-[#c8d6e5]']}>
         <div class="flex items-baseline justify-between gap-2 border-b border-[#c8d6e5] bg-[#f4f7fa] px-3 py-2">

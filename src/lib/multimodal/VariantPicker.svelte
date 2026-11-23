@@ -20,8 +20,7 @@
     <button
       type="button"
       aria-pressed={selected === i}
-      title={text}
-      class={['min-h-11 max-w-full px-3 py-2 text-left font-mono text-[11px] font-bold border transition-colors wrap-break-word sm:max-w-xs sm:truncate focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500', selected === i
+      class={['min-h-11 max-w-full px-3 py-2 text-left font-mono text-[11px] font-bold border transition-colors wrap-break-word sm:max-w-md outline-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500', selected === i
         ? (tone === 'orange' ? 'bg-orange-500 border-orange-500 text-black' : 'bg-amber-400 border-amber-500 text-black')
         : (tone === 'orange' ? 'bg-[#dce8f2] border-[#b0c4d8] text-[#0f2744] hover:border-orange-400' : 'bg-white border-amber-400 text-[#0f2744] hover:border-orange-500')]}
       onclick={() => onselect(i)}
