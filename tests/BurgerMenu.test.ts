@@ -28,6 +28,16 @@ describe('BurgerMenu', () => {
     expect(panel).not.toBeVisible()
   })
 
+  it('hides itself from md by default, from lg when asked', () => {
+    const { button } = renderMenu()
+    expect(button.parentElement).toHaveClass('md:hidden')
+    const children = createRawSnippet(() => ({ render: () => '<a href="#x">x</a>' }))
+    const lg = render(BurgerMenu, { props: { id: 'lg-menu', breakpoint: 'lg', children } })
+    const lgButton = lg.container.querySelector('button[aria-controls="lg-menu"]')!
+    expect(lgButton.parentElement).toHaveClass('lg:hidden')
+    expect(lgButton.parentElement).not.toHaveClass('md:hidden')
+  })
+
   it('toggles open and closed', async () => {
     const { button, panel } = renderMenu()
     await fireEvent.click(button)

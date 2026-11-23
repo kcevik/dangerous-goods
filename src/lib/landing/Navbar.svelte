@@ -28,8 +28,8 @@
         <span class="font-bold text-lg" style="color: #0f2744;">gefahrgut<span style="color: #f97316;">.org</span></span>
       </div>
 
-      <!-- Desktop Nav -->
-      <nav class="hidden md:flex items-center gap-5 lg:gap-8" aria-label="Hauptnavigation">
+      <!-- Desktop Nav (from lg: logo + links + Anmelden + the long CTA overflow at 768px) -->
+      <nav class="hidden lg:flex items-center gap-8" aria-label="Hauptnavigation">
         {#each NAV_ITEMS as item (item.href)}
           <a href={item.href} class="text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">{item.label}</a>
         {/each}
@@ -37,17 +37,17 @@
 
       <!-- CTA -->
       <div class="flex items-center gap-3">
-        <a href={resolve('/(auth)/login')} class="hidden md:block whitespace-nowrap text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Anmelden</a>
+        <a href={resolve('/(auth)/login')} class="hidden lg:block whitespace-nowrap text-sm font-medium text-slate-600 hover:text-[#0f2744] transition-colors duration-150 cursor-pointer">Anmelden</a>
         <a
           href={resolve('/(auth)/registrieren')}
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap transition-all duration-150 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
+          class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap transition-all duration-150 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
           style="background: #f97316;"
           onmouseenter={(e) => { e.currentTarget.style.background = '#ea580c' }}
           onmouseleave={(e) => { e.currentTarget.style.background = '#f97316' }}
         >
           {signupCtaLabel(registrationOpen)}
         </a>
-        <BurgerMenu id="landing-menu">
+        <BurgerMenu id="landing-menu" breakpoint="lg">
           <nav class="px-4 sm:px-6 py-2 flex flex-col" aria-label="Hauptnavigation mobil">
             {#each NAV_ITEMS as item (item.href)}
               <a href={item.href} class="py-3 text-sm font-medium text-slate-700 hover:text-[#0f2744] border-b border-slate-100">{item.label}</a>

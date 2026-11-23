@@ -6,12 +6,15 @@
   let {
     id,
     tone = 'light',
+    breakpoint = 'md',
     children,
   }: {
     /** id of the panel, referenced by the button's aria-controls */
     id: string
     /** 'dark' for the navy app header, 'light' for the white landing header */
     tone?: 'light' | 'dark'
+    /** from this breakpoint up the burger is hidden and the header shows its inline nav */
+    breakpoint?: 'md' | 'lg'
     /** panel content: links and, in the app, the logout form */
     children: Snippet
   } = $props()
@@ -31,10 +34,11 @@
 <svelte:document onpointerdown={(event) => menu.handleOutsidePress(event.target, root)} />
 
 <!--
-  Only the burger is shown below md; the panel is positioned against the
-  nearest positioned ancestor (the header), so the header must be `relative`.
+  Only the burger is shown below the breakpoint; the panel is positioned against
+  the nearest positioned ancestor (the header), so the header must be `relative`
+  or `fixed`. Both class names are written out in full so Tailwind sees them.
 -->
-<div bind:this={root} class="md:hidden">
+<div bind:this={root} class={breakpoint === 'lg' ? 'lg:hidden' : 'md:hidden'}>
   <button
     bind:this={button}
     type="button"
