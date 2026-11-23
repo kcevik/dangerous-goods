@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { DATA_SOURCE_LABEL, SITE_FACTS } from '$lib/landing/siteFacts'
 
 const llms = readFileSync('static/llms.txt', 'utf8')
 
@@ -11,6 +12,20 @@ describe('static/llms.txt', () => {
   })
 
   it('keeps the site facts shared with the landing page (SEO invariant)', () => {
-    expect(llms).toContain('16.730')
+    expect(llms).toContain(`${SITE_FACTS.entries} Einträge`)
+    expect(llms).toContain(`${SITE_FACTS.unNumbers} UN-Nummern`)
+    expect(llms).toContain(`${SITE_FACTS.specialProvisions} Sondervorschriften`)
+    expect(llms).toContain(DATA_SOURCE_LABEL)
+    expect(llms).toContain('dl-de/by-2-0')
+  })
+
+  it('makes none of the claims the persona tests flagged', () => {
+    expect(llms).not.toMatch(/zertifiz|rechtssicher|noch nicht fest|unter 1\.000/i)
+    expect(llms).toMatch(/ADN[^.]*nicht/)
+  })
+
+  it('separates what is available from what is planned', () => {
+    expect(llms).toMatch(/## Funktionen \(verfügbar\)/)
+    expect(llms).toMatch(/## Geplant/)
   })
 })

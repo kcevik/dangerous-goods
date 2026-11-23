@@ -10,9 +10,9 @@
   import MultimodalDemo from '$lib/landing/MultimodalDemo.svelte'
   import Navbar from '$lib/landing/Navbar.svelte'
   import SeoContent from '$lib/landing/SeoContent.svelte'
-  import Stats from '$lib/landing/Stats.svelte'
   import { ACCOUNT_DELETED_MESSAGE } from '$lib/account/messages'
   import { FAQ_ITEMS } from '$lib/landing/faq'
+  import { DATA_SOURCE_LABEL, SITE_FACTS } from '$lib/landing/siteFacts'
   import { signupCtaLabel } from '$lib/prelaunch/copy'
   import {
     buildFaqPageLd,
@@ -26,7 +26,7 @@
   let { data } = $props()
   // fail-closed: without layout data the page shows the pre-launch wording
   const registrationOpen = $derived(data?.registrationOpen === true)
-  const description = $derived(`ADR, RID, IMDG und ICAO in einer Plattform: 16.730 Einträge der BAM-GEFAHRGUT-Datenbank, multimodaler Regelwerksvergleich, Sondervorschriften im Volltext und Werkzeuge wie der 1000-Punkte-Rechner. ${signupCtaLabel(registrationOpen)}.`)
+  const description = $derived(`ADR, RID, IMDG und ICAO in einer Plattform: ${SITE_FACTS.unNumbers} UN-Nummern, ${SITE_FACTS.entries} Einträge aus der ${DATA_SOURCE_LABEL}, multimodaler Regelwerksvergleich, Sondervorschriften im Volltext und das ADR als Lesetext. ${signupCtaLabel(registrationOpen)}.`)
 
   // JSON-LD is injected with {@html}; escaping "<" guarantees content can never close the script tag
   function ldScript(ld: unknown): string {
@@ -80,8 +80,7 @@
     </div>
   {/if}
   <Navbar {registrationOpen} />
-  <Hero />
-  <Stats />
+  <Hero {registrationOpen} />
   <Features />
   <MultimodalDemo />
   <Comparison />

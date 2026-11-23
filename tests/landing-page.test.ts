@@ -14,7 +14,7 @@ describe('landing page', () => {
   it('renders the main sections in order', () => {
     const { container } = render(LandingPage, { props: PROPS })
     const ids = Array.from(container.querySelectorAll('section[id], header, footer')).map(el => el.id || el.tagName.toLowerCase())
-    expect(ids).toEqual(['header', 'features', 'demo', 'comparison', 'faq', 'footer'])
+    expect(ids).toEqual(['header', 'features', 'demo', 'comparison', 'datenbasis', 'faq', 'footer'])
   })
 
   it('has no waitlist and points every call to action at registration', () => {
@@ -37,20 +37,7 @@ describe('landing page', () => {
   it('describes the single paid plan in the pricing FAQ', () => {
     const { container } = render(LandingPage, { props: PROPS })
     expect(container).toHaveTextContent('ohne Funktionsstufen')
-    expect(container).toHaveTextContent('zuerst registrierten Nutzern')
-  })
-
-  // Only the Stoffsuche is live; everything else must not look available.
-  it('shows only the Stoffsuche as available and grays out the other features', () => {
-    const { container } = render(LandingPage, { props: PROPS })
-    const cards = Array.from(container.querySelectorAll('#features .grid > div'))
-    const live = cards.filter(c => !c.hasAttribute('aria-disabled'))
-    const soon = cards.filter(c => c.getAttribute('aria-disabled') === 'true')
-    expect(live).toHaveLength(1)
-    expect(live[0]).toHaveTextContent('Stoffsuche')
-    expect(live[0]).not.toHaveTextContent('Demnächst verfügbar')
-    expect(soon).toHaveLength(5)
-    for (const card of soon) expect(card).toHaveTextContent('Demnächst verfügbar')
+    expect(container).not.toHaveTextContent('zuerst registrierten Nutzern')
   })
 
   it('links the in-app legal pages from the footer', () => {
