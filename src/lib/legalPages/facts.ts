@@ -77,4 +77,4 @@ export const FACT_LABELS: Record<FactKey, string> = {
 }
 
 /** date shown as "Stand:" on every legal page; change it with every content change */
-export const LEGAL_UPDATED = '08.11.2026'
+export const LEGAL_UPDATED = '23.11.2026'

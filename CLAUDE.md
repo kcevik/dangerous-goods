@@ -45,7 +45,8 @@ Meilisearch, ERP/TMS API. Status per feature: `docs/STATUS.md`.
 
 Public: `/`, `/impressum`, `/datenschutz`, `/agb`, `/widerruf`, `/login`, `/registrieren`, `/passwort-vergessen`, `/passwort-neu`, `/auth/confirm`,
 `/auth/fehler`, `/logout`, `/healthz`. Login required (guard in `hooks.server.ts` →
-`/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/un/:nummer/vergleich`, `/regelwerk/:mode` (only `adr`).
+`/login?next=…`): `/dashboard`, `/suche`, `/un/:nummer`, `/un/:nummer/vergleich`, `/regelwerk/:mode` (only `adr`),
+`/konto` (account: password, billing address, subscription status, deletion — usable while locked).
 Planned (German, like the live ones): tools under `/tools/…`, `/documents`, `/changes`, `/settings`.
 
 ## Commands
@@ -77,7 +78,8 @@ src/
     (legal)/              # impressum, datenschutz, agb, widerruf (public)
     auth/confirm, auth/fehler, logout, healthz (liveness + book readiness)
     (app)/                # login required; app shell + lock banner
-      dashboard, suche, un/[nummer] (+ vergleich/), regelwerk/[mode=bookMode] (+ window/ and search/ endpoints)
+      dashboard, suche, un/[nummer] (+ vergleich/), regelwerk/[mode=bookMode] (+ window/ and search/ endpoints),
+      konto (named actions ?/password, ?/address, ?/delete)
   lib/
     multimodal/           # comparison tool: types.ts (LABELS, DEMO_DATA, pickSvText), mappers.ts
                           # (+ fetchUnReference), variants.ts, multimodalTool.svelte.ts,
@@ -85,6 +87,7 @@ src/
                           # compare.ts (COMPARE_FIELDS, buildComparison), comparisonView.svelte.ts,
                           # ComparisonView/ComparisonTable/ComparisonLegend/VariantPicker.svelte
     auth/                 # safeNext, messages (German), AuthFormState, LockNotice
+    account/              # /konto: address + countries, messages, subscription (Stripe hook), form state, *Card.svelte
     prelaunch/            # consent.ts (CONSENT_VERSION), copy.ts, LaunchNotifyForm.svelte
     landing/              # landing sections; faq.ts
     regulations/          # book viewer, client side: bookTypes (+ BOOK_LABELS), bookHighlighter,
@@ -97,10 +100,10 @@ src/
     server/
       adrBook/            # book viewer, server side: index, indexer, slice, render, api, access
       registrationMode.ts # REGISTRATION_MODE → 'open' | 'waitlist'
-      rateLimit.ts, authValidation.ts
+      rateLimit.ts, authValidation.ts, accountValidation.ts
 tests/                    # vitest (flat); helpers/, fixtures/, stubs/
 supabase/migrations/      # schema, SV languages, (retired waitlist), auth_and_entitlement,
-                          # harden_grants, launch_signups
+                          # harden_grants, launch_signups, account_page
 supabase/templates/       # auth email templates (pasted into the dashboard)
 deploy/                   # compose.yaml, app.env.example, Caddyfile
 scripts/                  # import-regulations.ts, deploy.sh, remote-switch.sh (runs on the server)
@@ -125,13 +128,15 @@ docs/                     # STATUS.md, README.md (index), schema doc, specs + pl
 | `segregation_matrix`, `segregation_codes` | segregation data | |
 | `profiles` | id → auth.users, email, `activated_at` (NULL = locked) | |
 | `launch_signups` | pre-launch list: email, consent_version, consented_at, confirmed_at | |
+| `billing_addresses` | one per user (PK `user_id` → auth.users, cascade): company?, names, street, postal_code, city, country (ISO-2), vat_id? | |
 
 - **RLS:** every regulation table has one policy `activated read` (`to authenticated using (is_activated())`).
   Anonymous and locked users read nothing; anon has no table-level SELECT at all. `profiles`: own row only.
 - **`launch_signups`:** RLS on, **no policies**, all privileges revoked; written only through
   `join_launch_list(email, consent_version)` (security definer, insert-only, `on conflict do nothing`).
   Callable with the publishable key by design, so direct calls can bypass the app's rate limit (junk rows at worst).
-- Security-definer functions: `handle_new_user()` (creates the profile) and `join_launch_list()`; both `search_path = ''`.
+- **`billing_addresses`:** RLS on; own-row policies for select/insert/update only (no delete — it cascades with the account); `anon` has nothing; written by the user's own client on `/konto`.
+- Security-definer functions: `handle_new_user()` (creates the profile), `join_launch_list()` and `delete_own_account()` (deletes only `auth.uid()` from `auth.users`, execute for `authenticated` only); all `search_path = ''`.
 - **Applying migrations:** run the SQL with the Supabase MCP `execute_sql` in one transaction and insert the
   version row into `supabase_migrations.schema_migrations` yourself (`apply_migration` would mint a different
   version). Always with the owner's approval.
@@ -173,7 +178,8 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - **English identifiers**, camelCase fields and label keys. **User-visible copy is German and addresses the user with "du".**
 - **Internal links** use `resolve()` with route IDs including groups (`resolve('/(auth)/login')`, `resolve('/(app)/un/[nummer]', { nummer })`). Query strings are appended to the resolved path; the autofixer's "without resolve()" warning on those, and on external URLs from `lib/legal.ts`, is a known false positive.
 - **Tailwind v4 + `@apply`** needs `@reference "tailwindcss"` at the top of the `<style>` block.
-- **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`.
+- **Locked mode:** every code path checks `isActive` before touching regulation data; RLS is the backstop. Locked users only mount `MultimodalTool` with `demo`. `/konto` touches no regulation data and is fully usable while locked.
+- **Account actions:** password change and deletion re-authenticate with the current password (`signInWithPassword` on the session email) first; their rate limits are keyed by user id. Deletion goes through the `delete_own_account()` RPC — the app still never uses the service-role key.
 
 ## Key Rules
 

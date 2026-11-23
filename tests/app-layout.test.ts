@@ -25,6 +25,7 @@ describe('(app) layout shell', () => {
     expect(container.querySelector('a[href="/dashboard"]')).not.toBeNull()
     expect(container.querySelector('a[href="/suche"]')).not.toBeNull()
     expect(container.querySelector('a[href="/regelwerk/adr"]')).toHaveTextContent('ADR-Text')
+    expect(container.querySelector('a[href="/konto"]')).toHaveTextContent('Konto')
     expect(container).toHaveTextContent('k@example.de')
     const logout = container.querySelector('form[action="/logout"]')!
     expect(logout).toHaveAttribute('method', 'POST')

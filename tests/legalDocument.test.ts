@@ -74,6 +74,13 @@ describe('legal documents', () => {
     }
   })
 
+  it('the Datenschutzerklärung covers the billing address and the self-service account deletion (/konto)', () => {
+    const text = JSON.stringify(DATENSCHUTZ.blocks)
+    for (const needle of ['Rechnungsanschrift', 'Umsatzsteuer-Identifikationsnummer', 'Art. 6 Abs. 1 lit. c DSGVO', 'Konto löschen', 'sofort gelöscht']) {
+      expect(text, needle).toContain(needle)
+    }
+  })
+
   it('the AGB address consumers and businesses, the binding-text disclaimer and the monthly notice after the minimum term', () => {
     const text = JSON.stringify(AGB.blocks)
     for (const needle of ['§ 13 BGB', '§ 14 BGB', 'kein rechtsverbindlicher Text', 'keine Rechtsberatung', 'einem Monat', '§§ 327 ff. BGB', 'Widerrufsbelehrung']) {

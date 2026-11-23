@@ -24,6 +24,7 @@ Each feature is designed in a spec (`superpowers/specs/`) and built from a plan
 | 2026-09-28 | Regulatory comparison (F-10) | ✅ done 2026-11-08 (browser check open) | [spec](superpowers/specs/2026-09-28-regulatory-comparison-design.md) | [plan](superpowers/plans/2026-09-28-regulatory-comparison.md) |
 | 2026-09-29 | Pre-launch mode + test deployment | 🟡 Tasks 1–7 of 11 done | [spec](superpowers/specs/2026-09-29-prelaunch-deployment-design.md) | [plan](superpowers/plans/2026-09-29-prelaunch-deployment.md) |
 | 2026-11-08 | Stoffsuche gaps + regulatory variants (F-01) | ✅ done (browser check by the owner open) | [spec](superpowers/specs/2026-11-08-stoffsuche-variants-design.md) | [plan](superpowers/plans/2026-11-08-stoffsuche-variants.md) |
+| 2026-11-23 | Account page `/konto` (F-04) | 🟡 code complete; migration not yet applied | [spec](superpowers/specs/2026-11-23-account-page-design.md) | [plan](superpowers/plans/2026-11-23-account-page.md) |
 
 ## How we work
 
