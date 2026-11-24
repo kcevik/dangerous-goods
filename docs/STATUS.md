@@ -54,6 +54,8 @@ generated (`pnpm generate:demo`, run 2026-11-23); the demo tool shows no ADN tab
 3. **Owner: browser check** — variant picker: `/un/1993` (5 variants), `/un/1203`, `/suche` → "petrol"; comparison: `/un/1203/vergleich`, `/un/1993/vergleich`, `/un/1950/vergleich` (gases, manual pick), at 375 px width; landing `#comparison`.
 4. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
 
+**Decision 2026-11-24 (owner):** the landing page and the waitlist live at `app.gefahrgut.org`; the apex `gefahrgut.org` will only redirect there. So `SITE_URL`, canonical URLs and `llms.txt` use `app.`; `deploy/Caddyfile` has no basic auth and no `noindex` (the repo version is the target; the live file still has the guard until the owner switches it). Order: deploy → test behind the guard → replace `/etc/caddy/Caddyfile` with the repo version → Caddy metrics + Netdata (SSH tunnel only) → blog to `blog.gefahrgut.org` + redirects for its ~219 URLs → set `BLOG_URL` (`lib/legal.ts`) and the `llms.txt` blog line to the new host → only then point the apex at the VPS (Caddy `redir` block). Never move the apex before the blog is gone from it.
+
 ## Go-live blockers (not needed for the test phase)
 
 1. ~~ADR book source~~ — named 2026-11-08 (BMIMI edition 2026-01, updated 02.01.2026). Official texts are free works under § 7 öUrhG / § 5 UrhG; a lawyer should confirm before launch.

@@ -1,6 +1,6 @@
 import type { FaqItem } from '$lib/landing/faq'
 
-export const SITE_URL = 'https://gefahrgut.org'
+export const SITE_URL = 'https://app.gefahrgut.org'
 
 export function buildOrganizationLd() {
   return {

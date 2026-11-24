@@ -77,12 +77,14 @@ describe('deploy/Caddyfile', () => {
     expect(caddy).not.toContain('neu.gefahrgut.org')
   })
 
-  it('puts the whole test site behind basic auth', () => {
-    expect(caddy).toMatch(/^\tbasic_auth \{$/m)
+  it('is public: the landing page lives here, so no basic auth and no hash in the repo', () => {
+    expect(caddy).not.toContain('basic_auth')
+    expect(caddy).not.toMatch(/\$2[aby]\$/)
   })
 
-  it('never commits a real password hash', () => {
-    expect(caddy).not.toMatch(/\$2[aby]\$/)
+  it('counts requests and status codes with Caddy metrics (no access log, so no IP is stored)', () => {
+    expect(caddy).toMatch(/^\tservers \{\n\t\tmetrics\n\t\}$/m)
+    expect(caddy).not.toMatch(/^\s*log\b/m)
   })
 
   it('proxies to the loopback app', () => {
@@ -93,8 +95,8 @@ describe('deploy/Caddyfile', () => {
     expect(caddy).not.toContain('trusted_proxies')
   })
 
-  it('keeps the test site out of search engines and limits request bodies', () => {
-    expect(caddy).toContain('header X-Robots-Tag "noindex, nofollow"')
+  it('lets search engines index the site and limits request bodies', () => {
+    expect(caddy).not.toContain('X-Robots-Tag')
     expect(caddy).toMatch(/request_body \{\s*max_size 1MB\s*\}/)
   })
 })

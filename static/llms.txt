@@ -33,14 +33,14 @@
 
 ## Preise und Zugang
 
-Ein Tarif mit vollem Funktionsumfang; den Preis nennen die AGB (https://gefahrgut.org/agb).
+Ein Tarif mit vollem Funktionsumfang; den Preis nennen die AGB (https://app.gefahrgut.org/agb).
 Vor dem Start ist keine Registrierung möglich: Unter /registrieren kann man sich per E-Mail zur
 Benachrichtigung zum Start eintragen. Suche und Regelwerksvergleich erfordern ein
 freigeschaltetes Konto.
 
 ## Links
 
-- Startseite: https://gefahrgut.org/
-- Benachrichtigung zum Start: https://gefahrgut.org/registrieren
-- Datenbasis: https://gefahrgut.org/#datenbasis
+- Startseite: https://app.gefahrgut.org/
+- Benachrichtigung zum Start: https://app.gefahrgut.org/registrieren
+- Datenbasis: https://app.gefahrgut.org/#datenbasis
 - Blog (Fachartikel zu Gefahrstofflagerung, TRGS 510, ADR): https://gefahrgut.org/blog/

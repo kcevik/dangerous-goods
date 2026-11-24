@@ -129,8 +129,8 @@ describe('landing page', () => {
     expect(document.title).toBe('gefahrgut.org – Gefahrgut-Datenbank & Tools für Gefahrgutbeauftragte')
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('16.730 Einträge')
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('Jetzt registrieren')
-    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://gefahrgut.org/')
-    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe('https://gefahrgut.org/og-image.png')
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://app.gefahrgut.org/')
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe('https://app.gefahrgut.org/og-image.png')
 
     const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
     expect(scripts).toHaveLength(4)

@@ -1,16 +1,15 @@
 # Copied to /etc/caddy/Caddyfile on the server (docs/deploy/README.md step 7).
 # Caddy fetches and renews the Let's Encrypt certificate for this name on its own
 # and redirects plain HTTP to HTTPS — no certbot, no extra port-80 config.
-app.gefahrgut.org {
-	# Test phase: the whole site is private. Replace HASH on the server with the
-	# output of `caddy hash-password`; never commit a real hash.
-	basic_auth {
-		partner HASH
+{
+	# Request counters and status codes at localhost:2019/metrics (admin API, loopback only).
+	# Counters carry no IP addresses; there is deliberately no `log` block (see the privacy policy).
+	servers {
+		metrics
 	}
+}
 
-	# test site: keep it out of search engines
-	header X-Robots-Tag "noindex, nofollow"
-
+app.gefahrgut.org {
 	# forms only, no uploads
 	request_body {
 		max_size 1MB

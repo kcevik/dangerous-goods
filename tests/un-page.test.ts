@@ -39,7 +39,7 @@ describe('/un/[nummer] page (active)', () => {
     renderPage({ unNumber: '1203', locked: false, compareData: DEMO_DATA })
     expect(document.title).toBe('UN 1203 – BENZIN | gefahrgut.org')
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('Klasse 3, Verpackungsgruppe II')
-    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://gefahrgut.org/un/1203')
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://app.gefahrgut.org/un/1203')
   })
 
   it('falls back to a plain title when no mode has data', () => {

@@ -35,4 +35,10 @@ describe('static/llms.txt', () => {
     expect(planned).not.toContain('1000-Punkte')
     expect(planned).toContain('LQ/EQ')
   })
+
+  it('links the site on the canonical host (the landing page lives at app.), only the blog stays on the apex', () => {
+    const urls = llms.match(/https:\/\/[a-z.]*gefahrgut\.org[^\s)]*/g) ?? []
+    expect(urls.length).toBeGreaterThan(0)
+    for (const url of urls.filter(u => !u.includes('/blog'))) expect(url).toMatch(/^https:\/\/app\.gefahrgut\.org/)
+  })
 })

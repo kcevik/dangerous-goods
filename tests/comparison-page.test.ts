@@ -18,7 +18,7 @@ describe('/un/[nummer]/vergleich page', () => {
     const { container } = renderPage({ unNumber: '1203', locked: false, compareData: DEMO_DATA, reference: [] })
     expect(container.querySelector('table')).not.toBeNull()
     expect(container.querySelector('a[href="/un/1203"]')).toHaveTextContent('UN 1203')
-    expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://gefahrgut.org/un/1203/vergleich')
+    expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://app.gefahrgut.org/un/1203/vergleich')
     expect(document.title).toBe('Regelwerksvergleich UN 1203 | gefahrgut.org')
   })
 
