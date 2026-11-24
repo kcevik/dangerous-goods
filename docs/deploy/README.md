@@ -97,7 +97,7 @@ scp csvbase/ADR2025-konsolidiert.md deploy@<ip>:/tmp/
 # on the server:
 sudo mv /tmp/ADR2025-konsolidiert.md /var/lib/gefahrgut/
 sudo nano /etc/gefahrgut/app.env            # paste deploy/app.env.example
-sudo chmod 600 /etc/gefahrgut/app.env && sudo chown root:root /etc/gefahrgut/app.env
+sudo chmod 640 /etc/gefahrgut/app.env && sudo chown root:deploy /etc/gefahrgut/app.env   # compose runs as deploy and reads it
 ```
 
 Check: `ls -l /var/lib/gefahrgut/` shows the book (> 1 MB).

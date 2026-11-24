@@ -121,7 +121,7 @@ describe('landing page features and footer', () => {
     const title = (c: Element) => c.querySelector('h3')!.textContent!.trim()
     const live = cards.filter(c => !c.hasAttribute('aria-disabled'))
     const soon = cards.filter(c => c.getAttribute('aria-disabled') === 'true')
-    expect(live.map(title)).toEqual(['Stoffsuche', 'Regelwerksvergleich', 'ADR im Volltext', '1000-Punkte-Rechner', 'Konto'])
+    expect(live.map(title)).toEqual(['Stoffsuche', 'Regelwerksvergleich', 'ADR im Volltext', '1000-Punkte-Rechner'])
     for (const card of live) expect(card).not.toHaveTextContent('Demnächst')
     // F-02 shipped 2026-11-23; only LQ/EQ and the document generator are still to come
     expect(soon.map(title)).toEqual(['LQ/EQ-Rechner', 'Dokumentengenerator'])

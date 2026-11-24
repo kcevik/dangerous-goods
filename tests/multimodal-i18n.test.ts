@@ -9,6 +9,7 @@ import {
   MODAL_DESC_I18N,
   MODALS,
   pickSvText,
+  svFallbackLang,
 } from '$lib/multimodal/types'
 
 describe('LABELS', () => {
@@ -145,5 +146,27 @@ describe('translated short badges', () => {
     for (const v of [...pg, ...tc]) expect(v?.trim()).toBeTruthy()
     expect(new Set(pg).size).toBeGreaterThan(1)
     expect(new Set(tc).size).toBeGreaterThan(1)
+  })
+})
+
+describe('svFallbackLang', () => {
+  const onlyEn = { textDe: null, textEn: 'en', textFr: null }
+
+  it('names the language actually shown when it differs from the one asked for', () => {
+    expect(svFallbackLang(onlyEn, 'de')).toBe('en')
+    expect(svFallbackLang(onlyEn, 'fr')).toBe('en')
+    expect(svFallbackLang({ textDe: null, textEn: null, textFr: 'fr' }, 'de')).toBe('fr')
+    expect(svFallbackLang({ textDe: 'de', textEn: null, textFr: null }, 'fr')).toBe('de')
+  })
+
+  it('is null when the asked-for language is there, or nothing is', () => {
+    expect(svFallbackLang({ textDe: 'de', textEn: 'en', textFr: null }, 'de')).toBeNull()
+    expect(svFallbackLang(onlyEn, 'en')).toBeNull()
+    expect(svFallbackLang({ textDe: null, textEn: null, textFr: null }, 'de')).toBeNull()
+  })
+
+  it('treats English as Turkish readers\' own language, since the dataset has no Turkish', () => {
+    expect(svFallbackLang(onlyEn, 'tr')).toBeNull()
+    expect(svFallbackLang({ textDe: 'de', textEn: null, textFr: null }, 'tr')).toBe('de')
   })
 })

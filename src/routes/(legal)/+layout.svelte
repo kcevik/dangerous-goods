@@ -8,7 +8,7 @@
 <div class="min-h-screen flex flex-col bg-white">
   <header class="border-b border-slate-200">
     <div class="max-w-3xl mx-auto px-4 h-14 flex items-center">
-      <a href={resolve('/')} class="font-bold text-base text-[#0f2744]">gefahrgut<span class="text-orange-500">.org</span></a>
+      <a href={resolve('/')} class="inline-flex items-center gap-2 min-h-11 font-bold text-base text-[#0f2744]"><img src="/icon.png" alt="" width="28" height="28" class="w-7 h-7" />gefahrgut<span class="text-orange-500">.org</span></a>
     </div>
   </header>
 

@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-11-23 · **Tests:** 1275 green + 1 skipped (97 files) · `pnpm check` 0 errors (6 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
+**Last updated:** 2026-11-24 · **Tests:** 1275 green + 1 skipped (97 files) · `pnpm check` 0 errors (6 known CSS-linter warnings on `@reference`/`@apply` in `MultimodalTool.svelte`) · `pnpm build` OK
 
 This is the one place for "where do we stand". Stable rules and conventions live in
 `CLAUDE.md`; designs and plans are indexed in `docs/README.md`. Update this file at the end of
@@ -32,7 +32,7 @@ Persona test 2026-11-23 (five simulated officers, desktop + phone): `docs/resear
 | F-09 | ADR, RID, IMDG, ICAO data | ✅ done | 16,730 BAM entries, 1,354 special provisions; no ADN in the BAM feed. Since 2026-11-23 the UN page also shows the Table A detail columns in groups (Verpackung, Tank, Beförderung, Stauung und Trennung, Sicherung 1.10, Weitere Angaben): ADR/RID 9a, 9b MP, 10/11 T/TP, 12/13 tank code + TU/TC/TE/TA/TT/TM, ADR 14 vehicle, 16–19 V/W, VC/AP, CV/CW, S, RID CE, 1.10.3 level + thresholds, N mark, compatibility group; IMDG PP/B, T/TP, H, SGG (`lib/multimodal/details.ts`). No texts for these codes in the feed, so ADR rows link to the defining ADR section (`?section=`). ADN tab hidden (one note instead) |
 | F-01 | Stoffsuche (`/suche`, `/un/:nummer`) | ✅ done | Searches ADR/RID/IMDG/ICAO, one card per UN number, failed searches show an error; the tool has a variant picker (one choice for all tabs) instead of showing row 0 (spec 2026-11-08). Not yet checked in a real browser |
 | F-13 | ADR book viewer (`/regelwerk/adr`) | ✅ code complete | Source named 2026-11-08: BMIMI (Austria), official German-language ADR, edition 2026-01, updated 02.01.2026; shown in the viewer's attribution |
-| — | Pre-launch mode + test deployment | 🟡 Tasks 1–8 of 11 | Switched to Caddy + `app.gefahrgut.org` (2026-10-12); runbook `docs/deploy/README.md`; next: owner sets up the Strato VPS |
+| — | Pre-launch mode + test deployment | 🟢 live (2026-11-24) | `app.gefahrgut.org` on the Strato VPS (Ubuntu 26.04, 1.8 GB), Caddy + basic auth (user `partner`), image `20261124-1035-ad9186c`, `/healthz` ok, book indexed. Runbook `docs/deploy/README.md` steps 1–9 done. **Open:** Supabase dashboard (step 10) and acceptance (step 11) — not yet checked in a browser |
 | F-10 | Regulatory comparison (`/un/:nummer/vergleich`) | ✅ done | ADR/RID/IMDG/ICAO side by side + grey UN reference column (ADN column replaced by one note, 2026-11-23); two non-critical rows added 2026-11-23: portable tank instructions (ADR↔RID compared, IMDG shown, UN reference) and tank code (ADR↔RID); one variant choice, manual pick where no unambiguous match; labels, packing instructions and SVs compared ADR↔RID only. Own quick search (`QuickSearch`) to switch the UN number, also on `/un/:nummer`; the comparison tool no longer carries its inert search field (2026-11-08). Below `lg` one card per field (`ComparisonCards`); browser-checked 2026-11-23 at 320–1280 px on UN 1203, 1993, 1950 |
 | — | Legal pages (`/impressum`, `/datenschutz`, `/agb`, `/widerruf`) | 🟡 drafts live | Texts in `src/lib/legalPages/`; draft banner + `noindex` until `LEGAL_FACTS` is complete and a lawyer has checked them (go-live blocker 4) |
 | F-05 | Dashboard | ⚪ shell | Two live tiles (Stoffsuche, Regelwerksvergleich → UN 1203) |
@@ -43,14 +43,14 @@ Persona test 2026-11-23 (five simulated officers, desktop + phone): `docs/resear
 
 Landing page: the comparison section is live and computed from `DEMO_DATA` (no PDF/assistant claims,
 ADN no longer advertised as compared, hero "Neu: Regelwerksvergleich"). Feature cards: Stoffsuche,
-Regelwerksvergleich, ADR im Volltext, 1000-Punkte-Rechner and Konto are live; only LQ/EQ-Rechner and
+Regelwerksvergleich, ADR im Volltext, and 1000-Punkte-Rechner are live (the Konto card was removed 2026-11-24); only LQ/EQ-Rechner and
 Dokumentengenerator carry "Demnächst verfügbar". Un-gray a card when its tool ships. `DEMO_DATA` is
 generated (`pnpm generate:demo`, run 2026-11-23); the demo tool shows no ADN tab.
 
 ## Next steps (recommended order)
 
-1. **Test deployment** — owner follows `docs/deploy/README.md` on the Strato VPS (Caddy, basic auth for the whole site). Task 8 is done for Caddy; the plan's nginx text and `concepts.md` page are superseded / not written.
-2. **Commit before the first deploy** — the image tag carries the HEAD hash.
+1. **Finish the test deployment** — deployed 2026-11-24. Owner: Supabase dashboard (add `https://app.gefahrgut.org/**` to redirect URLs, disable sign-ups, add Auto-Confirm test users, set `profiles.activated_at`), then the acceptance check (runbook step 11).
+2. **Commit before every deploy** — the image ships the working tree; the tag only carries the HEAD hash. Commit the 2026-11-24 doc fix (`app.env` is `root:deploy 640`).
 3. **Owner: browser check** — variant picker: `/un/1993` (5 variants), `/un/1203`, `/suche` → "petrol"; comparison: `/un/1203/vergleich`, `/un/1993/vergleich`, `/un/1950/vergleich` (gases, manual pick), at 375 px width; landing `#comparison`.
 4. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
 

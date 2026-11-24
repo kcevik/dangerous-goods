@@ -10,7 +10,8 @@ export const DATENSCHUTZ: LegalDocument = {
   blocks: [
     { kind: 'h2', text: '1. Verantwortlicher' },
     { kind: 'p', text: 'Verantwortlich für die Verarbeitung personenbezogener Daten auf dieser Website im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:' },
-    { kind: 'p', text: '{companyName}\n{street}\n{postalCode} {city}\nDeutschland\nE-Mail: {email}\nTelefon: {phone}' },
+    { kind: 'p', text: '{companyName}\n{street}\n{postalCode} {city}\nDeutschland\nE-Mail: {email}' },
+    { kind: 'p', text: 'Telefon: {phone}', requires: 'phone' },
     { kind: 'p', text: 'Einen Datenschutzbeauftragten haben wir nicht benannt, weil wir dazu gesetzlich nicht verpflichtet sind. Bei Fragen zum Datenschutz erreichst du uns unter der oben genannten E-Mail-Adresse.' },
 
     { kind: 'h2', text: '2. Überblick' },
@@ -19,15 +20,8 @@ export const DATENSCHUTZ: LegalDocument = {
 
     { kind: 'h2', text: '3. Hosting und Server-Logdateien' },
     { kind: 'p', text: 'Die Anwendung läuft auf einem Server der STRATO AG, Otto-Ostrowski-Straße 7, 10249 Berlin, in Deutschland. Mit STRATO besteht ein Vertrag über die Auftragsverarbeitung nach Art. 28 DSGVO.' },
-    { kind: 'p', text: 'Bei jedem Aufruf speichert der Webserver automatisch folgende Daten in Logdateien:' },
-    { kind: 'ul', items: [
-      'IP-Adresse des anfragenden Geräts',
-      'Datum und Uhrzeit des Zugriffs',
-      'aufgerufene Adresse (URL) und HTTP-Statuscode',
-      'übertragene Datenmenge',
-      'Browser und Betriebssystem (User-Agent)',
-    ] },
-    { kind: 'p', text: 'Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO. Unser berechtigtes Interesse besteht darin, die Website sicher und stabil zu betreiben sowie Angriffe und Missbrauch (zum Beispiel durch Begrenzung von Anmeldeversuchen) zu erkennen und abzuwehren. Die Logdateien werden nach {logRetention} gelöscht, sofern sie nicht im Einzelfall zur Aufklärung eines Sicherheitsvorfalls länger benötigt werden.' },
+    { kind: 'p', text: 'Bei jedem Aufruf verarbeitet der Webserver technisch bedingt die IP-Adresse deines Geräts, damit die Seite ausgeliefert werden kann. Dauerhafte Zugriffsprotokolle führen wir nicht. Betriebs- und Fehlermeldungen des Webservers und der Anwendung können vorübergehend Angaben wie IP-Adresse, Zeitpunkt, aufgerufene Adresse (URL) und Browser enthalten.' },
+    { kind: 'p', text: 'Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO. Unser berechtigtes Interesse besteht darin, die Website sicher und stabil zu betreiben sowie Angriffe und Missbrauch (zum Beispiel durch Begrenzung von Anmeldeversuchen) zu erkennen und abzuwehren. Diese Meldungen werden nach {logRetention} gelöscht oder früher überschrieben, sofern sie nicht im Einzelfall zur Aufklärung eines Sicherheitsvorfalls länger benötigt werden.' },
 
     { kind: 'h2', text: '4. Datenbank und Anmeldung (Supabase)' },
     { kind: 'p', text: 'Nutzerkonten, die Anmeldung und die Regelwerksdaten verwalten wir mit Supabase, einem Dienst der Supabase, Inc. (USA). Die Datenbank liegt in einem Rechenzentrum in Frankfurt am Main (Region eu-central-1). Mit Supabase besteht ein Vertrag über die Auftragsverarbeitung nach Art. 28 DSGVO.' },
@@ -35,7 +29,7 @@ export const DATENSCHUTZ: LegalDocument = {
 
     { kind: 'h2', text: '5. Nutzerkonto' },
     { kind: 'p', text: 'Wenn du ein Konto anlegst, verarbeiten wir deine E-Mail-Adresse, dein Passwort (nur als verschlüsselter Hashwert), den Zeitpunkt der Registrierung und der Bestätigung, den Zeitpunkt der Freischaltung deines Kontos sowie die Zeitpunkte deiner Anmeldungen. Der Anmeldedienst protokolliert Anmeldevorgänge zusätzlich mit der IP-Adresse, um Missbrauch zu erkennen (Art. 6 Abs. 1 lit. f DSGVO). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, denn ohne diese Daten können wir dir kein Konto bereitstellen.' },
-    { kind: 'p', text: 'Deine Suchanfragen werden nicht dauerhaft gespeichert und nicht deinem Konto zugeordnet; sie werden nur für die Dauer der Anfrage verarbeitet.' },
+    { kind: 'p', text: 'Deine Suchanfragen werden von uns nicht gespeichert und nicht deinem Konto zugeordnet. Technisch bedingt können Suchbegriffe in den Protokollen des Datenbankdienstes (Supabase) erscheinen, weil deine Anfrage dorthin gesendet wird; dort werden sie nur befristet vorgehalten.' },
     { kind: 'p', text: 'Auf der Seite „Konto“ kannst du freiwillig eine Rechnungsanschrift hinterlegen: Firma (optional), Vor- und Nachname, Straße und Hausnummer, Postleitzahl, Ort, Land und – nur bei Unternehmen – die Umsatzsteuer-Identifikationsnummer. Wir verwenden diese Angaben, um dir dein Abo in Rechnung zu stellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertragsdurchführung) und, sobald wir Rechnungen ausstellen, Art. 6 Abs. 1 lit. c DSGVO (steuer- und handelsrechtliche Pflichten). Die Anschrift ist nur für dich und für uns sichtbar und wird zusammen mit deinem Konto gespeichert.' },
     { kind: 'p', text: 'Wir speichern deine Kontodaten und deine Rechnungsanschrift, solange dein Konto besteht. Du kannst dein Konto jederzeit selbst auf der Seite „Konto“ löschen (Konto löschen); dafür fragen wir zur Sicherheit dein aktuelles Passwort ab. Dein Konto, deine Anmeldedaten und deine Rechnungsanschrift werden dann sofort gelöscht. Alternativ genügt eine E-Mail an uns. Daten, für die gesetzliche Aufbewahrungspflichten bestehen (etwa ausgestellte Rechnungen nach § 147 AO und § 257 HGB), bewahren wir bis zum Ablauf dieser Fristen getrennt auf und löschen sie danach.' },
 

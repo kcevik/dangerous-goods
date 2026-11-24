@@ -95,3 +95,12 @@ describe('legal documents', () => {
     expect(text).toContain('angemessenen Betrag')
   })
 })
+
+describe('Impressum liability notice', () => {
+  it('states that no warranty is given for completeness, correctness or currency', async () => {
+    const { IMPRESSUM } = await import('$lib/legalPages/impressum')
+    const text = JSON.stringify(IMPRESSUM)
+    expect(text).toContain('keine Gewähr für die Vollständigkeit, Richtigkeit und Aktualität')
+    expect(text).toContain('Fehler in den Quelldaten')
+  })
+})

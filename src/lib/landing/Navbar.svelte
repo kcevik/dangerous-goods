@@ -18,13 +18,7 @@
     <div class="flex items-center justify-between gap-3 h-16">
       <!-- Logo -->
       <div class="flex items-center gap-2 shrink-0">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: #0f2744;">
-          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
+        <img src="/icon.png" alt="" width="32" height="32" class="w-8 h-8" />
         <span class="font-bold text-lg" style="color: #0f2744;">gefahrgut<span style="color: #f97316;">.org</span></span>
       </div>
 

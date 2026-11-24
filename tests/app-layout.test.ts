@@ -32,6 +32,17 @@ describe('(app) layout load', () => {
 })
 
 describe('(app) layout shell', () => {
+  it('shows the no-warranty / not-legally-binding notice on every app page, for locked and active accounts', () => {
+    for (const isActive of [true, false]) {
+      const { container, unmount } = renderShell(isActive)
+      const text = container.querySelector('footer')?.textContent ?? ''
+      expect(text).toContain('ohne Gewähr auf Vollständigkeit und Richtigkeit')
+      expect(text).toContain('kein rechtsverbindlicher Text')
+      expect(text).toContain('Maßgeblich sind die amtlichen Fassungen')
+      unmount()
+    }
+  })
+
   it('renders navigation, the user email, a POST logout form and the page', () => {
     const { container } = renderShell(true)
     expect(container.querySelector('a[href="/dashboard"]')).not.toBeNull()

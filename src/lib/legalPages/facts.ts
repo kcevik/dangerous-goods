@@ -41,19 +41,20 @@ export interface LegalFacts {
 export type FactKey = keyof LegalFacts
 
 export const LEGAL_FACTS: LegalFacts = {
-  companyName: null,
-  representative: null,
-  street: null,
-  postalCode: null,
-  city: null,
-  email: null,
-  phone: null,
-  registerCourt: null,
-  registerNumber: null,
-  vatId: null,
-  contentResponsible: null,
-  mailProvider: null,
-  logRetention: null,
+  // sole proprietor / private person until a company exists (owner, 2026-11-24)
+  companyName: 'Can Cevik',
+  representative: false,
+  street: 'Ackerstrasse 25C',
+  postalCode: '33330',
+  city: 'Gütersloh',
+  email: 'info@gefahrgut.org',
+  phone: false,
+  registerCourt: false,
+  registerNumber: false,
+  vatId: false, // none while nothing is sold (owner, 2026-11-24)
+  contentResponsible: 'Can Cevik, Ackerstrasse 25C, 33330 Gütersloh',
+  mailProvider: 'die STRATO AG, Otto-Ostrowski-Straße 7, 10249 Berlin', // verify the entity in Strato's own privacy policy
+  logRetention: '14 Tagen', // journald MaxRetentionSec=14day on the server
   // owner decision 2026-11-23: 125 € gross per month
   price: '125 € pro Monat inkl. MwSt.',
   billingPeriod: 'monatlich im Voraus',
@@ -81,7 +82,7 @@ export const FACT_LABELS: Record<FactKey, string> = {
 }
 
 /** date shown as "Stand:" on every legal page; change it with every content change */
-export const LEGAL_UPDATED = '23.11.2026'
+export const LEGAL_UPDATED = '24.11.2026'
 
 /** the plan price for display, or null while it is not set */
 export function planPrice(facts: LegalFacts = LEGAL_FACTS): string | null {

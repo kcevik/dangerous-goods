@@ -38,13 +38,7 @@
       <!-- Brand -->
       <div class="col-span-2 md:col-span-1">
         <div class="flex items-center gap-2 mb-4">
-          <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: #0f2744;">
-            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
-          </div>
+          <img src="/icon.png" alt="" width="28" height="28" class="w-7 h-7" />
           <span class="font-bold text-base" style="color: #0f2744;">gefahrgut<span style="color: #f97316;">.org</span></span>
         </div>
         <p class="text-sm text-slate-400 leading-relaxed">Die Plattform für Gefahrgutbeauftragte in Deutschland und Europa.</p>

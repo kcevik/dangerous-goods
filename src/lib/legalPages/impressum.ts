@@ -10,7 +10,8 @@ export const IMPRESSUM: LegalDocument = {
     { kind: 'p', text: 'Vertreten durch: {representative}', requires: 'representative' },
 
     { kind: 'h2', text: 'Kontakt' },
-    { kind: 'p', text: 'E-Mail: {email}\nTelefon: {phone}' },
+    { kind: 'p', text: 'E-Mail: {email}' },
+    { kind: 'p', text: 'Telefon: {phone}', requires: 'phone' },
 
     { kind: 'h2', text: 'Registereintrag', requires: 'registerCourt' },
     { kind: 'p', text: 'Registergericht: {registerCourt}\nRegisternummer: {registerNumber}', requires: 'registerCourt' },
@@ -29,7 +30,9 @@ export const IMPRESSUM: LegalDocument = {
     { kind: 'p', text: 'Der ADR-Text beruht auf der amtlichen deutschsprachigen Fassung des Bundesministeriums für Innovation, Mobilität und Infrastruktur der Republik Österreich (BMIMI), Ausgabe 2026-01, aktualisiert am 02.01.2026. Er wurde maschinell umgewandelt und ist kein rechtsverbindlicher Text; maßgeblich ist allein die amtlich veröffentlichte Fassung.' },
 
     { kind: 'h2', text: 'Haftung für Inhalte' },
-    { kind: 'p', text: 'Wir erstellen die Inhalte dieser Website mit größtmöglicher Sorgfalt. Sie dienen der Information und ersetzen weder die amtlichen Vorschriftentexte noch eine rechtliche Beratung. Für Entscheidungen bei der Beförderung gefährlicher Güter sind stets die geltenden amtlichen Fassungen der Regelwerke maßgeblich.' },
+    { kind: 'p', text: 'Wir erstellen die Inhalte dieser Website mit größtmöglicher Sorgfalt. Wir übernehmen jedoch keine Gewähr für die Vollständigkeit, Richtigkeit und Aktualität der Inhalte. Die Daten stammen aus amtlichen Quellen und werden von uns maschinell umgewandelt, zusammengeführt und verglichen; dabei sowie durch Fehler in den Quelldaten können Fehler entstehen.' },
+    { kind: 'p', text: 'Die Inhalte dienen der Information. Sie sind keine rechtsverbindlichen Aussagen und ersetzen weder die amtlichen Vorschriftentexte noch eine rechtliche Beratung. Für Entscheidungen bei der Beförderung gefährlicher Güter sind stets die geltenden amtlichen Fassungen der Regelwerke maßgeblich; sie sind vor jeder Entscheidung zu prüfen.' },
+    { kind: 'p', text: 'Unberührt bleibt unsere Haftung für Vorsatz und grobe Fahrlässigkeit, für Schäden an Leben, Körper und Gesundheit sowie nach zwingenden gesetzlichen Vorschriften.' },
     { kind: 'p', text: 'Als Diensteanbieter sind wir für eigene Inhalte nach den allgemeinen Gesetzen verantwortlich. Für übermittelte oder gespeicherte fremde Informationen sind wir nicht verpflichtet, diese zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Werden uns Rechtsverletzungen bekannt, entfernen wir die betroffenen Inhalte umgehend.' },
 
     { kind: 'h2', text: 'Haftung für Links' },

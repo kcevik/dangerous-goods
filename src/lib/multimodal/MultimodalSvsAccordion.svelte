@@ -3,7 +3,7 @@
   import { resolve } from '$app/paths'
   import { formatBookLabel, getBookLabel } from '$lib/regulations/bookTypes'
   import { getSpecialProvision, loadSpecialProvision } from './specialProvisions.svelte'
-  import { DEMO_SVS, type Lang, type Modal, pickSvText, type SvText } from './types'
+  import { DEMO_SVS, LABELS, type Lang, type Modal, pickSvText, svFallbackLang, type SvText } from './types'
 
   interface Props {
     svs: string
@@ -27,12 +27,23 @@
 
   const nrs = $derived(svs.split(',').map(s => s.trim()).filter(Boolean))
 
+  // DEMO_SVS is keyed by mode too: the same code carries different official text per mode
+  function svFor(nr: string): SvText | null | undefined {
+    return demo ? (DEMO_SVS[`${mode}:${nr}`] ?? null) : getSpecialProvision(mode, nr)
+  }
+
   function text(nr: string): string {
-    // DEMO_SVS is keyed by mode too: the same code carries different official text per mode
-    const sv: SvText | null | undefined = demo ? (DEMO_SVS[`${mode}:${nr}`] ?? null) : getSpecialProvision(mode, nr)
+    const sv = svFor(nr)
     if (sv === undefined) return '…'
     if (sv === null) return noText
     return pickSvText(sv, lang) ?? noText
+  }
+
+  /** "Nur auf Englisch verfügbar" when the text is not in the reader's language (e.g. ICAO and UN are English only) */
+  function languageNote(nr: string): string | null {
+    const sv = svFor(nr)
+    const shown = sv ? svFallbackLang(sv, lang) : null
+    return shown === 'de' ? LABELS[lang].svOnlyDe : shown === 'en' ? LABELS[lang].svOnlyEn : shown === 'fr' ? LABELS[lang].svOnlyFr : null
   }
 
   function preview(nr: string): string {
@@ -89,7 +100,12 @@
           {/if}
           </div>
           {#if open[nr]}
-            <div class="px-3.5 py-3 border-t border-[#c8d6e5] text-[13px] leading-relaxed text-[#2d5070] whitespace-pre-wrap break-words hyphens-auto">{text(nr)}</div>
+            <div class="px-3.5 py-3 border-t border-[#c8d6e5] text-[13px] leading-relaxed text-[#2d5070] whitespace-pre-wrap break-words hyphens-auto">
+              {#if languageNote(nr)}
+                <p class="mb-1.5 font-mono text-[10px] font-bold tracking-[1.5px] uppercase text-[#5a7a99]">{languageNote(nr)}</p>
+              {/if}
+              {text(nr)}
+            </div>
           {/if}
         </div>
       {/each}

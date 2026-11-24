@@ -112,7 +112,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     piPassenger: 'PI Passagier', piCargo: 'PI Fracht',
     cones: 'Kegel/Lichter', equipment: 'Ausrüstung', remark: 'Bemerkung',
     specialProvisions: 'Sondervorschriften', availability: 'Verfügbarkeit in allen Modi',
-    noText: 'Kein Text verfügbar', notFound: 'nicht vorhanden',
+    noText: 'Kein Text verfügbar', svOnlyDe: 'Nur auf Deutsch verfügbar', svOnlyEn: 'Nur auf Englisch verfügbar', svOnlyFr: 'Nur auf Französisch verfügbar', notFound: 'nicht vorhanden',
     loadError: 'Die Daten konnten nicht geladen werden. Bitte versuche es erneut.', retry: 'Erneut versuchen',
     variant: 'Variante', noVariantMatch: 'Für diese Variante gibt es in {mode} keine eindeutige Entsprechung. Bitte wähle:',
     manualVariant: 'Für {mode} manuell gewählt:',
@@ -135,7 +135,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     piPassenger: 'PI Passenger', piCargo: 'PI Cargo',
     cones: 'Cones/lights', equipment: 'Equipment', remark: 'Remark',
     specialProvisions: 'Special provisions', availability: 'Availability in all modes',
-    noText: 'No text available', notFound: 'not available',
+    noText: 'No text available', svOnlyDe: 'Only available in German', svOnlyEn: 'Only available in English', svOnlyFr: 'Only available in French', notFound: 'not available',
     loadError: 'The data could not be loaded. Please try again.', retry: 'Try again',
     variant: 'Variant', noVariantMatch: 'There is no unambiguous match for this variant in {mode}. Please choose:',
     manualVariant: 'Chosen manually for {mode}:',
@@ -158,7 +158,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     piPassenger: 'PI Passagers', piCargo: 'PI Cargo',
     cones: 'Cônes/feux', equipment: 'Équipement', remark: 'Remarque',
     specialProvisions: 'Dispositions spéciales', availability: 'Disponibilité dans tous les modes',
-    noText: 'Texte non disponible', notFound: 'non disponible',
+    noText: 'Texte non disponible', svOnlyDe: 'Disponible uniquement en allemand', svOnlyEn: 'Disponible uniquement en anglais', svOnlyFr: 'Disponible uniquement en français', notFound: 'non disponible',
     loadError: 'Les données n’ont pas pu être chargées. Veuillez réessayer.', retry: 'Réessayer',
     variant: 'Variante', noVariantMatch: 'Aucune correspondance univoque pour cette variante en {mode}. Veuillez choisir :',
     manualVariant: 'Choisi manuellement pour {mode} :',
@@ -181,7 +181,7 @@ export const LABELS: Record<Lang, Record<string, string>> = {
     piPassenger: 'Yolcu talimatı', piCargo: 'Kargo talimatı',
     cones: 'Koni/ışıklar', equipment: 'Ekipman', remark: 'Not',
     specialProvisions: 'Özel hükümler', availability: 'Tüm taşıma modlarındaki durum',
-    noText: 'Metin mevcut değil', notFound: 'mevcut değil',
+    noText: 'Metin mevcut değil', svOnlyDe: 'Yalnızca Almanca olarak mevcut', svOnlyEn: 'Yalnızca İngilizce olarak mevcut', svOnlyFr: 'Yalnızca Fransızca olarak mevcut', notFound: 'mevcut değil',
     loadError: 'Veriler yüklenemedi. Lütfen tekrar deneyin.', retry: 'Tekrar dene',
     variant: 'Varyant', noVariantMatch: 'Bu varyant için {mode} içinde net bir karşılık yok. Lütfen seçin:',
     manualVariant: '{mode} için elle seçildi:',
@@ -209,15 +209,33 @@ export interface SvText {
   textFr: string | null
 }
 
+type SvLang = 'de' | 'en' | 'fr'
+const SV_FIELD = { de: 'textDe', en: 'textEn', fr: 'textFr' } as const
+/** reading order per UI language: its own text first, then the fallbacks */
+const SV_ORDER: Record<Lang, SvLang[]> = {
+  de: ['de', 'en', 'fr'],
+  en: ['en', 'de', 'fr'],
+  tr: ['en', 'de', 'fr'],
+  fr: ['fr', 'en', 'de'],
+}
+
 /**
  * Picks the best available text for `lang`.
  * Turkish has no official BAM text, so it reads English first, like `getName()`.
  * Returns `null` when the provision has no text in any language.
  */
 export function pickSvText(sv: SvText, lang: Lang): string | null {
-  if (lang === 'en' || lang === 'tr') return sv.textEn ?? sv.textDe ?? sv.textFr ?? null
-  if (lang === 'fr') return sv.textFr ?? sv.textEn ?? sv.textDe ?? null
-  return sv.textDe ?? sv.textEn ?? sv.textFr ?? null
+  const shown = SV_ORDER[lang].find(l => sv[SV_FIELD[l]] != null)
+  return shown ? sv[SV_FIELD[shown]] : null
+}
+
+/**
+ * The language `pickSvText` actually shows when it is not the reader's own, else null.
+ * Turkish readers count English as their own: the dataset has no Turkish, and `pickSvText` reads English first.
+ */
+export function svFallbackLang(sv: SvText, lang: Lang): SvLang | null {
+  const shown = SV_ORDER[lang].find(l => sv[SV_FIELD[l]] != null)
+  return shown && shown !== SV_ORDER[lang][0] ? shown : null
 }
 
 // ── Demo data (UN 1203 · BENZIN / MOTOR SPIRIT) ─────────────

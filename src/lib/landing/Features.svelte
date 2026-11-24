@@ -37,14 +37,6 @@
       bgColor: 'rgba(249,115,22,0.1)',
     },
     {
-      title: 'Konto',
-      available: true,
-      description: 'Passwort ändern, Rechnungsadresse hinterlegen, Abo-Status einsehen und das Konto selbst löschen.',
-      icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-      color: '#15779b',
-      bgColor: 'rgba(21,119,155,0.1)',
-    },
-    {
       title: 'LQ/EQ-Rechner',
       available: false,
       description: 'Prüfung begrenzter und freigestellter Mengen (LQ/EQ) je Verpackung und Versandstück.',

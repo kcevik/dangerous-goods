@@ -17,7 +17,7 @@
 <div class="min-h-screen flex flex-col bg-[#e8eef5] print:bg-white print:min-h-0">
   <header class="relative bg-[#0f2744] text-white print:hidden">
     <div class="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
-      <a href={resolve('/(app)/dashboard')} class="inline-flex items-center min-h-11 font-bold text-base shrink-0">gefahrgut<span style="color: #f97316;">.org</span></a>
+      <a href={resolve('/(app)/dashboard')} class="inline-flex items-center gap-2 min-h-11 font-bold text-base shrink-0"><img src="/icon.png" alt="" width="28" height="28" class="w-7 h-7 rounded-md bg-white p-0.5" />gefahrgut<span style="color: #f97316;">.org</span></a>
       <nav class="hidden md:flex items-center gap-4 text-sm" aria-label="Hauptnavigation">
         {#each APP_NAV_ITEMS as item (item.href)}
           <a href={item.href} class="inline-flex items-center justify-center min-h-11 min-w-11 text-slate-300 hover:text-white transition-colors whitespace-nowrap">{item.label}</a>
@@ -61,6 +61,9 @@
   </div>
 
   <footer class="border-t border-[#c8d6e5] py-2 px-4 print:hidden">
+    <p class="max-w-5xl mx-auto pb-1 text-xs text-slate-500 text-center">
+      Alle Angaben ohne Gewähr auf Vollständigkeit und Richtigkeit – kein rechtsverbindlicher Text, keine Rechtsberatung. Maßgeblich sind die amtlichen Fassungen von ADR, RID, IMDG-Code und ICAO-TI.
+    </p>
     <LegalLinks />
   </footer>
 </div>

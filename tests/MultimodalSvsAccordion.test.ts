@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { fireEvent, render, screen } from '@testing-library/svelte'
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MultimodalSvsAccordion from '$lib/multimodal/MultimodalSvsAccordion.svelte'
 import { clearSpecialProvisionsCache } from '$lib/multimodal/specialProvisions.svelte'
@@ -233,4 +233,44 @@ describe('MultimodalSvsAccordion — phone layout', () => {
     expect(screen.getByTestId('book-link-label')).toHaveClass('max-sm:sr-only')
     expect(screen.getByRole('button', { name: /SV 243/ })).toHaveClass('min-h-11')
   })
+
+  describe('fallback language note', () => {
+    async function openRow(row: Record<string, unknown>, lang: 'de' | 'en' | 'fr' | 'tr', mode: 'ADR' | 'ICAO' = 'ICAO') {
+      const { client } = stubSupabase({ [`${mode}:A1`]: row })
+      const view = render(MultimodalSvsAccordion, { props: { ...BASE_PROPS, svs: 'A1', mode, lang, supabase: client } })
+      await fireEvent.click(screen.getByRole('button'))
+      await flush()
+      return view.container
+    }
+
+    it('tells a German reader that an English-only text is only available in English', async () => {
+      const container = await openRow({ text_de: null, text_en: 'English original' }, 'de')
+      expect(container).toHaveTextContent('English original')
+      expect(container).toHaveTextContent('Nur auf Englisch verfügbar')
+    })
+
+    it('names French when French is the only text', async () => {
+      const container = await openRow({ text_de: null, text_en: null, text_fr: 'Texte français' }, 'de')
+      expect(container).toHaveTextContent('Nur auf Französisch verfügbar')
+    })
+
+    it('says nothing when the text is in the language asked for', async () => {
+      const container = await openRow({ text_de: 'Deutscher Text', text_en: 'English' }, 'de', 'ADR')
+      expect(container).not.toHaveTextContent('verfügbar')
+    })
+
+    it('says nothing to an English or Turkish reader of an English text', async () => {
+      for (const lang of ['en', 'tr'] as const) {
+        const container = await openRow({ text_de: null, text_en: 'English original' }, lang)
+        expect(container.textContent).not.toMatch(/only available|Yalnızca|Nur auf/)
+        cleanup()
+      }
+    })
+
+    it('writes the note in the reader\'s language', async () => {
+      const container = await openRow({ text_de: null, text_en: 'English original' }, 'fr')
+      expect(container).toHaveTextContent('Disponible uniquement en anglais')
+    })
+  })
 })
+
