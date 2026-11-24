@@ -16,7 +16,7 @@ export const DATENSCHUTZ: LegalDocument = {
 
     { kind: 'h2', text: '2. Überblick' },
     { kind: 'p', text: 'Wir verarbeiten personenbezogene Daten nur, soweit es für den Betrieb dieser Website und unserer Leistungen erforderlich ist, du eingewilligt hast oder eine andere gesetzliche Grundlage besteht. Wir verkaufen keine Daten und nutzen sie nicht für Werbung durch Dritte.' },
-    { kind: 'p', text: 'Diese Erklärung gilt für gefahrgut.org und app.gefahrgut.org. Für den Blog unter blog.gefahrgut.org gilt die dort veröffentlichte Datenschutzerklärung.' },
+    { kind: 'p', text: 'Diese Erklärung gilt für gefahrgut.org und app.gefahrgut.org. Für den Blog unter gefahrgut.org/blog und die dortigen Artikel gilt die dort veröffentlichte Datenschutzerklärung.' },
 
     { kind: 'h2', text: '3. Hosting und Server-Logdateien' },
     { kind: 'p', text: 'Die Anwendung läuft auf einem Server der STRATO AG, Otto-Ostrowski-Straße 7, 10249 Berlin, in Deutschland. Mit STRATO besteht ein Vertrag über die Auftragsverarbeitung nach Art. 28 DSGVO.' },

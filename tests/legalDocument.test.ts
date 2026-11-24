@@ -104,3 +104,12 @@ describe('Impressum liability notice', () => {
     expect(text).toContain('Fehler in den Quelldaten')
   })
 })
+
+describe('Datenschutz blog scope', () => {
+  it('points at the blog where it really lives (gefahrgut.org/blog), not at a subdomain that does not exist', async () => {
+    const { DATENSCHUTZ } = await import('$lib/legalPages/datenschutz')
+    const text = JSON.stringify(DATENSCHUTZ)
+    expect(text).toContain('gefahrgut.org/blog')
+    expect(text).not.toContain('blog.gefahrgut.org')
+  })
+})

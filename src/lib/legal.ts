@@ -2,7 +2,7 @@ import { resolve } from '$app/paths'
 
 /**
  * Legal pages live in the app (`src/routes/(legal)/`, texts in `lib/legalPages/`); the blog
- * stays on WordPress until it moves to blog.gefahrgut.org (rollout Phase B, spec 2026-09-29 §6).
+ * stays on WordPress at gefahrgut.org/blog (owner decision 2026-11-24: only the front page redirects to the app).
  * This file is the only place for these links.
  */
 export const IMPRINT_URL = resolve('/(legal)/impressum')
