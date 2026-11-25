@@ -22,6 +22,13 @@
 
   const printedAt = new Date().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
 
+  // iOS gives no sign when print() is ignored: say where printing lives there
+  let iosHint = $state(false)
+  function print() {
+    iosHint = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    window.print()
+  }
+
   function addRow() {
     const row = calc.addRow()
     // move focus to the new row's UN field, so the next number can be typed at once
@@ -55,10 +62,15 @@
     >+ Position hinzufügen</button>
     <button
       type="button"
-      onclick={() => window.print()}
+      onclick={print}
       class="inline-flex items-center justify-center min-h-11 px-4 rounded-lg bg-[#0f2744] text-sm font-semibold text-white hover:bg-[#1a3a5f] cursor-pointer"
     >Drucken / als PDF speichern</button>
   </div>
+  {#if iosHint}
+    <p role="status" class="mt-2 text-sm text-[#0f2744]" data-testid="ios-print-hint">
+      Öffnet sich nichts? Tippe in Safari auf das Teilen-Symbol und wähle „Drucken“ bzw. „Als PDF sichern“.
+    </p>
+  {/if}
 </div>
 
 <PointsResult summary={calc.summary} {linkable} />

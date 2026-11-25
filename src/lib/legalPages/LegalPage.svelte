@@ -27,7 +27,7 @@
     </div>
   {/if}
 
-  <h1 class="text-3xl font-bold mb-2 text-[#0f2744]">{filled.title}</h1>
+  <h1 class="text-2xl sm:text-3xl font-bold break-words mb-2 text-[#0f2744]">{filled.title}</h1>
   <p class="text-sm text-[#5a7a99] mb-8">Stand: {LEGAL_UPDATED}</p>
 
   <div class="space-y-4 text-[15px] leading-relaxed text-slate-700">

@@ -49,10 +49,10 @@ generated (`pnpm generate:demo`, run 2026-11-23); the demo tool shows no ADN tab
 
 ## Next steps (recommended order)
 
-1. **Finish the test deployment** — deployed 2026-11-24. Owner: Supabase dashboard (add `https://app.gefahrgut.org/**` to redirect URLs, disable sign-ups, add Auto-Confirm test users, set `profiles.activated_at`), then the acceptance check (runbook step 11).
-2. **Commit before every deploy** — the image ships the working tree; the tag only carries the HEAD hash. Commit the 2026-11-24 doc fix (`app.env` is `root:deploy 640`).
-3. **Owner: browser check** — variant picker: `/un/1993` (5 variants), `/un/1203`, `/suche` → "petrol"; comparison: `/un/1203/vergleich`, `/un/1993/vergleich`, `/un/1950/vergleich` (gases, manual pick), at 375 px width; landing `#comparison`.
-4. **Yearly import: replace instead of upsert** (code review 2026-09-29) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
+1. ~~Finish the test deployment~~ — done (owner, 2026-11-25: test users created, sign-ups disabled in Supabase).
+2. **URGENT: sizing/zoom bugs** (owner, 2026-11-25) — several pages have inconsistent sizing/zoom; worst is the ADR book viewer ("PDF viewer"), which shows different zoom levels in places. **Fixed 2026-11-25:** the white strip/zoom in the book viewer (hit navigation) came from a footnote URL in 1.9.5 (~695 px, no break points) that widened the page; `overflow-wrap: anywhere` on `.book-window`, pinned by `tests/book-viewer-wrap.test.ts`, verified at 375 px over 40 hits — not yet deployed. **Also fixed 2026-11-25:** iPhone zoom on focusing the login email field (stayed zoomed after landing on the dashboard) — fields were `text-sm` (14 px), iOS zooms below 16 px; global rule in `app.css` for < 768 px, pinned by `tests/ios-input-zoom.test.ts`; not verified on a real iPhone, not deployed. **Sweep 2026-11-25:** 18 pages at 320/375/768 px (activated account, Chromium) — the only horizontal overflow was the h1 of `/datenschutz` and `/agb` at 320 px, fixed (`LegalPage.svelte`, `tests/legal-title-wrap.test.ts`). Tests 1380 green. WebKit not checked. Remaining: any sizing bugs only visible in Safari. Earlier note: reproduce at 320–1280 px and on iPhone Safari (viewport meta in `src/app.html`, input font-size < 16 px triggers iOS auto-zoom), then fix test-first.
+3. **Bug: 1000-Punkte print button does nothing on iPhone Safari** (owner, 2026-11-25) — `PointsCalculator.svelte` calls `window.print()`; owner: tapping gives no reaction at all. 2026-11-25 stop-gap (not a root-cause fix, no iPhone here): on iOS the tap also shows a hint "Teilen → Drucken / Als PDF sichern" (`tests/points-print-hint.test.ts`). Still open: why `print()` is ignored; a real fix may be a separate print page or share sheet.
+4. **Yearly import: replace instead of upsert** (code review 2026-09-29; only matters from 2027) — `scripts/import-regulations.ts` only upserts on `(un_number, sequence_number)`, so entries BAM withdraws stay in the tables and a half-failed run mixes two editions. Import into staging tables and swap, or delete rows missing from the new file in one transaction. Needed before the first yearly update (2027 editions).
 
 **Decision 2026-11-24 (owner):** the landing page and the waitlist live at `app.gefahrgut.org`; `gefahrgut.org` only redirects there. `SITE_URL`, canonical URLs and `llms.txt` use `app.`. **Decided 2026-11-24, not yet done on the WordPress side:** leave the apex on Strato's WordPress and redirect only the exact front page `/` (302 first, 301 later; `.htaccess` `RewriteRule ^$ https://app.gefahrgut.org/ [R=302,L]` above the WordPress block, or the Redirection plugin). The 196 blog posts live at root slugs (not under `/blog/`), so nothing moves and no DNS/Caddy apex change is needed; `BLOG_URL` stays. Then: the blog's own Datenschutz/Impressum (our Datenschutz §2 still says `blog.gefahrgut.org`), and what to do with the ~15 old WordPress tool pages (`/un-suche/`, `/bk-rechner/`, `/multimodal/` …) and old legal pages (`/haftungsausschluss/` …).
 
@@ -60,7 +60,36 @@ generated (`pnpm generate:demo`, run 2026-11-23); the demo tool shows no ADN tab
 
 **Open before/after the public waitlist:** a legal-text service or lawyer for Datenschutz + consent (AGB/Widerruf only before selling); the launch-time double-opt-in mail has no confirm endpoint yet (`confirmed_at` exists, nothing sets it); `gefahrgut.org/blog` privacy policy; the upsell throttle stores `gefahrgut.upsell.lastShown` in localStorage — needs consent under § 25 TDDDG (Datenschutz §6 says only necessary cookies), fix before real users log in; external uptime check on `/healthz` (not set up); app 5xx errors only in `docker compose logs` (check `handleError`); icon file is off-centre and the old `static/favicon.ico` is unused; backups (free plan).
 
+## Tasks from the persona test 2026-11-24
+
+Source: `docs/research/2026-11-24-persona-tests/` (README = summary, `p1`–`p5` = details). Scores averaged 5.4 benefit / 2.4 purchase probability; nobody would pay 125 € incl. VAT per account today.
+**Owner decision 2026-11-24: the app never goes live without a working purchase path (Kaufweg).** Tasks are listed in the order to do them; each one follows the normal process (spec → test first → autofixer → `pnpm check` → build + smoke test).
+
+**Go-live blocker (owner decides the model first, then build)**
+- [ ] **T1 Kaufweg.** Today: "Jetzt freischalten" → `/konto#abo` → disabled button. Needed: price model (single seat vs. team/firm seats, net price + invoice, yearly option, early-access price — personas expect ~30–50 € net single seat, 90–250 € net firm with tools), Stripe checkout or an interim "Freischaltung anfragen" path, AGB acceptance + withdrawal waiver in checkout, cancellation button (§ 312k BGB), AGB § 7 "one person" and `[[Mindestlaufzeit]]` placeholder resolved, AVV/TOMs/subprocessor list for firm customers, Impressum phone + VAT ID.
+
+**Product bugs (high, found by ≥2 personas or embarrassing)**
+- [ ] **T2 Variant pre-selection + labels.** Analysed 2026-11-24, not built. **T2a:** UN 3481 (and likely 3091/3171) has two rows per mode with identical PG and specification, only the name differs ("contained in" / "packed with"), so `matchVariant` (`variants.ts:108`) sees two candidates → "?". Fix: tiebreak by normalised English name, only when exactly one candidate fits. **T2b:** UN 1950 is genuinely ambiguous (ADR/RID 12, ICAO 17 with a different scheme, IMDG 1) → keep "?" but explain it, shorten label starts, wrap on mobile (`VariantPicker.svelte`, `font-mono text-[11px]`), note "source English only" for ICAO. Open owner decision: preselect nothing for 1263 (today `selectedVariantIndex = 0` → PG I). UN 3481/3091/3171/1950/1263: RID/IMDG/ICAO show "? Keine eindeutige Variante", picker is English, no default, labels start with the same long text and are cut off at 375 px; PG I preselected for 1263 (also in the 1000-Punkte dropdown). Files: `lib/multimodal/variants.ts`, `VariantPicker.svelte`.
+- [ ] **T3 Search.** "Lack" → black powder (substring in "BLACK POWDER"); "Xylol", "Toluol", "Epoxidharz", "Wasserlack" → no results. Word boundaries; synonyms need the owner's review (`docs/research/synonyms-review.md`). Book full-text search is substring-only ("…beauftragter" 2 hits vs "…beauftragte" 16, quoted phrases and "P 001"/"P001" differ).
+- [ ] **T4 1000-Punkte-Rechner units (verify first).** UN 1965: unit "L" selectable although the hint says net mass in kg; 20 L gave 60 points without a warning (`UNITS`, `suggestUnit`, `unitHint` in `lib/points/points.ts`). Block or warn for liquefied gases; explain the variant choice for ambiguous BK (UN 1950, 1789).
+- [ ] **T5 ADR viewer.** `?section=5.4.1.1.1` silently jumps to 5.4.1.1.2 and the window starts with raw Markdown (Kemler table); TOC gaps (1.2.1, "Kapitel 1.11" without title, 1.9 without subsections); no cite/permalink/print of a section.
+
+**Medium**
+- [ ] **T6 Plain text for codes.** V14, CV9, MP9, PP87, P903/P908, ICAO "See 965" shown as codes only; link to the defining ADR section (`?section=`); "Umweltgefährdend" mostly "Keine Angabe (BAM)" (check the mapper first).
+- [ ] **T7 Mobile touch targets** < 44 px: checkboxes, inline links, "Weiterlesen"; verify the 20 px checkbox in the calculator.
+- [ ] **T8 Languages.** Language not in the URL, EN/FR/TR half translated, Turkish SV text English (flag it).
+- [ ] **T9 Locked accounts** see nothing of the calculator and the ADR viewer: a small preview instead of a wall (owner decision).
+
+**Features the personas asked for (order by mentions)**
+- [ ] **T10** Multi-UN co-loading check (7.5.2, MP codes) with a load summary (tunnel code, equipment, transport document) — P2, P5.
+- [ ] **T11** Transport document generator (F-03) — P1, P5. **T12** LQ/EQ calculator (F-12) — P1. **T13** Plain-language checklist per UN number for goods receipt — P2. **T14** Lithium assistant (PI 965–970, P903, SV 188/376/377 with texts) — P4. **T15** Team/consultant licence — P1, P3, P4, P5 (part of T1).
+
+**Marketing (after T1–T3)**
+- [ ] **T16** Public 1000-Punkte-Rechner (no login, nothing stored) + 301 from the old WordPress `/bk-rechner/`. **T17** Public UN core pages as SEO entry points (details stay behind login). **T18** Blog posts link to the matching UN/rule pages. **T19** Launch-list double-opt-in mail works (confirm endpoint missing). **T20** 5–10 pilot customers (trainers, small hauliers, one lithium maker) against feedback and a quote. See the marketing section of the persona README.
+
 ## Go-live blockers (not needed for the test phase)
+
+0. **Kaufweg (T1 above)** — owner rule 2026-11-24: no go-live without it.
 
 1. ~~ADR book source~~ — named 2026-11-08 (BMIMI edition 2026-01, updated 02.01.2026). Official texts are free works under § 7 öUrhG / § 5 UrhG; a lawyer should confirm before launch.
 2. **SMTP + double opt-in** — a real sender (SPF/DKIM at Strato); the DOI mail goes to every address in `launch_signups`; only confirmed ones get the launch mail.

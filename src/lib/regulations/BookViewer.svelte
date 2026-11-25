@@ -242,6 +242,7 @@
      book-* / element selectors — never with Tailwind utilities (spec §2.4). */
   .book-content :global(.book-window) {
     max-width: 78ch;
+    overflow-wrap: anywhere; /* long URLs (footnote 1.9.5) must not widen the page */
     color: #0f2744;
     font-size: 15px;
     line-height: 1.65;

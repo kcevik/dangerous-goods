@@ -18,7 +18,8 @@ IMDG, ICAO, plus the UN model regulations as a reference; ADN has no BAM data) a
 - **Business model:** no free tier; exactly one paid plan: **125 € pro Monat inkl. MwSt.** (owner, 2026-11-23),
   set once in `LEGAL_FACTS.price` and read via `planPrice()`. No price and no pricing section on the
   landing page (a test pins it). Accounts start **locked** (demo data only) until the owner sets
-  `profiles.activated_at`; Stripe will later set the same column.
+  `profiles.activated_at`; Stripe will later set the same column. **The app never goes live without a working
+  purchase path (owner, 2026-11-24)**; the price model (seats, net price, yearly) is still open (STATUS.md, T1).
 - **Pre-launch:** `REGISTRATION_MODE` (fail-closed; only `open` opens sign-up). In `waitlist` mode
   `/registrieren` collects launch notifications into `launch_signups`; "Anmelden" always works.
 
@@ -244,3 +245,5 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
 - The owner commits everything — never stage, commit, or inspect git history.
 - Process: brainstorming → spec → plan → test-first implementation → autofixer → `pnpm check` → `pnpm build` + smoke test → update `docs/STATUS.md`.
 - Anything that touches the live Supabase project or a server needs the owner's explicit approval first.
+- **Persona tests** (`docs/research/<date>-persona-tests/`): build, run `node --env-file=.env build` on port 3100 with `ORIGIN=http://localhost:3100`, save storage states once for the active and the locked `E2E_*` account, then hand them to the persona agents (read-only, no logout, no form submits). Reports are simulated hypotheses, not customer data. Tasks from them live in `docs/STATUS.md`.
+- Variant matching (`matchVariant`) never guesses: two equally good candidates → "?". UN 3481 shows that identical PG and specification across modes still needs the name as tiebreaker (T2a); UN 1950 is truly ambiguous (ADR/RID 12, ICAO 17, IMDG 1 variants).

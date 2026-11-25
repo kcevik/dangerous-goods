@@ -6,3 +6,8 @@ body { font-family: 'Plus Jakarta Sans Variable', system-ui, sans-serif; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* iOS Safari zooms into any field below 16px on focus and stays zoomed after navigation */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px; }
+}
