@@ -1,7 +1,8 @@
 {
   "enabledPlugins": {
     "svelte@svelte": true,
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "claude-seo@agricidaniel-claude-seo": true
   },
   "extraKnownMarketplaces": {
     "svelte": {

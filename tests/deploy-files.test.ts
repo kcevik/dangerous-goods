@@ -87,6 +87,12 @@ describe('deploy/Caddyfile', () => {
     expect(caddy).not.toMatch(/^\s*log\b/m)
   })
 
+  it('compresses responses and sets the basic security headers', () => {
+    expect(caddy).toMatch(/^\tencode zstd gzip$/m)
+    for (const h of ['Strict-Transport-Security', 'X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', 'Permissions-Policy'])
+      expect(caddy).toContain(h)
+  })
+
   it('proxies to the loopback app', () => {
     expect(caddy).toMatch(/^\treverse_proxy 127\.0\.0\.1:3000$/m)
   })

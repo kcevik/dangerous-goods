@@ -7,8 +7,8 @@
 
 ## Datenbasis
 
-- Quelle: BAM-Datenbank GEFAHRGUT der Bundesanstalt für Materialforschung und -prüfung (BAM),
-  eine amtliche Quelle
+- Quelle: BAM-Datenbank GEFAHRGUT der Bundesanstalt für Materialforschung und -prüfung (BAM);
+  die BAM bestätigt die Inhalte dieser Plattform nicht, maßgeblich sind die amtlichen Regelwerke
 - Umfang: 2.347 UN-Nummern, 16.730 Einträge — ADR 2025 (3.374), RID 2025 (3.350),
   IMDG Amdt. 42-24 (3.246), ICAO 2025 (3.528), UN-Modellvorschriften als Referenz (3.232);
   dazu 1.354 Sondervorschriften im Volltext (DE/EN/FR, soweit amtlich verfügbar)
