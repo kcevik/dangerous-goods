@@ -6,22 +6,16 @@ import { UPSELL_BANNER_PITCH, UPSELL_BANNER_PITCH_SHORT, UPSELL_BENEFITS, UPSELL
 import UpsellBanner from '$lib/upsell/UpsellBanner.svelte'
 import UpsellModal from '$lib/upsell/UpsellModal.svelte'
 import { polyfillDialog } from './helpers/dialog'
-import { UPSELL_INTERVAL_MS, UPSELL_STORAGE_KEY, type UpsellStorage } from '$lib/upsell/upsellThrottle.svelte'
+import { UPSELL_INTERVAL_MS } from '$lib/upsell/upsellThrottle.svelte'
 
 beforeAll(polyfillDialog)
 
-function memoryStorage(initial: Record<string, string> = {}): UpsellStorage {
-  const data = { ...initial }
-  return { getItem: k => data[k] ?? null, setItem: (k, v) => { data[k] = v } }
-}
-
-function renderModal(props: { isActive?: boolean, pathname?: string, now?: () => number, storage?: UpsellStorage } = {}) {
-  const storage = props.storage ?? memoryStorage()
+function renderModal(props: { isActive?: boolean, pathname?: string, now?: () => number } = {}) {
   return render(UpsellModal, {
     props: {
       isActive: props.isActive ?? false,
       pathname: props.pathname ?? '/dashboard',
-      throttleOptions: { now: props.now ?? (() => 1_000_000), storage: () => storage },
+      throttleOptions: { now: props.now ?? (() => 1_000_000) },
     },
   })
 }
@@ -60,7 +54,7 @@ describe('UpsellModal', () => {
 
   it('shows the price from LEGAL_FACTS', () => {
     const { getByTestId } = renderModal()
-    expect(planPrice()).toBe('125 € pro Monat inkl. MwSt.')
+    expect(planPrice()).toBe('59 € pro Monat inkl. MwSt.')
     expect(getByTestId('upsell-price')).toHaveTextContent(planPrice()!)
   })
 
@@ -91,9 +85,11 @@ describe('UpsellModal', () => {
 
   it('stays closed when navigating within 10 minutes, then reopens', async () => {
     let now = 1_000_000
-    const storage = memoryStorage({ [UPSELL_STORAGE_KEY]: String(now - 60_000) })
-    const { container, rerender } = renderModal({ now: () => now, storage })
-    expect(dialogOf(container).open).toBe(false)
+    const { container, rerender } = renderModal({ now: () => now })
+    expect(dialogOf(container).open).toBe(true)
+    dialogOf(container).close()
+    await tick()
+    now += 60_000
     await rerender({ pathname: '/suche' })
     expect(dialogOf(container).open).toBe(false)
     now += UPSELL_INTERVAL_MS

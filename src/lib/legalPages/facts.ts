@@ -55,8 +55,8 @@ export const LEGAL_FACTS: LegalFacts = {
   contentResponsible: 'Can Cevik, Ackerstrasse 25C, 33330 Gütersloh',
   mailProvider: 'die STRATO AG, Otto-Ostrowski-Straße 7, 10249 Berlin', // verify the entity in Strato's own privacy policy
   logRetention: '14 Tagen', // journald MaxRetentionSec=14day on the server
-  // owner decision 2026-11-23: 125 € gross per month
-  price: '125 € pro Monat inkl. MwSt.',
+  // owner decision 2026-11-25: 59 € gross per month (was 125 € on 2026-11-23)
+  price: '59 € pro Monat inkl. MwSt.',
   billingPeriod: 'monatlich im Voraus',
   minimumTerm: null,
 }

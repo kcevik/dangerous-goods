@@ -23,10 +23,10 @@
         <h3 class="font-semibold mb-2" style="color: #0f2744;">Datenbasis: {DATA_SOURCE_LABEL}</h3>
         <p>
           Grundlage ist die GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und
-          -prüfung (BAM), eine amtliche Quelle: {SITE_FACTS.unNumbers} UN-Nummern mit
+          -prüfung (BAM): {SITE_FACTS.unNumbers} UN-Nummern mit
           {SITE_FACTS.entries} Einträgen aus ADR, RID, IMDG, ICAO und den UN-Modellvorschriften,
           dazu die Texte von {SITE_FACTS.specialProvisions} Sondervorschriften. Nach jeder jährlichen
-          Regelwerksänderung wird der Datenbestand aus der amtlichen Quelle neu eingespielt.
+          Regelwerksänderung wird der Datenbestand aus der Quelle neu eingespielt.
         </p>
       </div>
       <div>

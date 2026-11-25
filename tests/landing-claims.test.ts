@@ -2,6 +2,7 @@ import { render } from '@testing-library/svelte'
 import { afterEach, describe, expect, it } from 'vitest'
 import LandingPage from '../src/routes/+page.svelte'
 import { FAQ_ITEMS, PRICE_FAQ_ANSWER } from '$lib/landing/faq'
+import { planPrice } from '$lib/legalPages/facts'
 import { DATA_SOURCE_LABEL, SITE_FACTS, SITE_STATS } from '$lib/landing/siteFacts'
 
 // Persona tests 2026-11-23 §2: claims on the landing page that undermined trust.
@@ -75,6 +76,13 @@ describe('landing page claims', () => {
     expect(price.answer).toBe(PRICE_FAQ_ANSWER)
     expect(PRICE_FAQ_ANSWER).not.toMatch(/noch nicht fest|zuerst registrierten|Startangebot/)
     expect(PRICE_FAQ_ANSWER).toContain('ohne Funktionsstufen')
+    expect(PRICE_FAQ_ANSWER).toContain(planPrice()!)
+    expect(PRICE_FAQ_ANSWER).toContain('14 Tage gratis')
+  })
+
+  it('does not call the BAM an official source and does not announce the live calculator as in progress', () => {
+    const all = FAQ_ITEMS.map(i => i.answer).join(' ')
+    expect(all).not.toMatch(/amtliche Quelle|in Arbeit/)
   })
 
   it('answers the waste question without inventing a waste tool', () => {

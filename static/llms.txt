@@ -33,7 +33,7 @@
 
 ## Preise und Zugang
 
-Ein Tarif mit vollem Funktionsumfang; den Preis nennen die AGB (https://app.gefahrgut.org/agb).
+Ein Tarif mit vollem Funktionsumfang: 59 € pro Monat inkl. MwSt. (https://app.gefahrgut.org/agb). Wer sich vor dem Start zur Benachrichtigung einträgt, bekommt nach dem Start 14 Tage gratis.
 Vor dem Start ist keine Registrierung möglich: Unter /registrieren kann man sich per E-Mail zur
 Benachrichtigung zum Start eintragen. Suche und Regelwerksvergleich erfordern ein
 freigeschaltetes Konto.

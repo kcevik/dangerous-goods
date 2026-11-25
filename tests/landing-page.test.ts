@@ -28,10 +28,11 @@ describe('landing page', () => {
     expect(container).not.toHaveTextContent(/kostenlos/i)
   })
 
-  it('shows no price (owner rule: no pricing section on the landing page)', () => {
+  it('names the price from LEGAL_FACTS in the FAQ and the 14 free days for the launch list, without a pricing section', () => {
     const { container } = render(LandingPage, { props: PROPS })
-    expect(container).not.toHaveTextContent(planPrice()!)
-    expect(container).not.toHaveTextContent(/\d\s*€/)
+    expect(container).toHaveTextContent(planPrice()!)
+    expect(container).toHaveTextContent('14 Tage gratis')
+    expect(container.querySelector('#preise, #pricing')).toBeNull()
   })
 
   it('describes the single paid plan in the pricing FAQ', () => {

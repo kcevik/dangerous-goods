@@ -18,7 +18,7 @@
         </div>
         <h3 class="text-xl sm:text-2xl font-bold mb-3" style="color: #0f2744;">Datenbasis: {DATA_SOURCE_LABEL}</h3>
         <p class="text-slate-500 leading-relaxed">
-          Die Daten stammen aus der GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und -prüfung (BAM), einer amtlichen Quelle, und stehen unter der Lizenz dl-de/by-2-0. Änderungen gegenüber der Quelle werden gekennzeichnet. Dazu kommen die UN-Modellvorschriften als Referenz; ADN-Daten (Binnenschifffahrt) veröffentlicht die BAM nicht.
+          Die Daten stammen aus der GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und -prüfung (BAM) und stehen unter der Lizenz dl-de/by-2-0. Änderungen gegenüber der Quelle werden gekennzeichnet. Dazu kommen die UN-Modellvorschriften als Referenz; ADN-Daten (Binnenschifffahrt) veröffentlicht die BAM nicht.
         </p>
       </div>
       <div class="w-full lg:w-auto shrink-0 grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">

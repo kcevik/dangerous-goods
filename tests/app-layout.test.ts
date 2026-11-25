@@ -2,7 +2,6 @@ import { fireEvent, render } from '@testing-library/svelte'
 import { createRawSnippet } from 'svelte'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { planPrice } from '$lib/legalPages/facts'
-import { UPSELL_STORAGE_KEY } from '$lib/upsell/upsellThrottle.svelte'
 import { polyfillDialog } from './helpers/dialog'
 import { APP_NAV_ITEMS } from '$lib/nav/appNav'
 import { load } from '../src/routes/(app)/+layout.server'
@@ -71,10 +70,10 @@ describe('(app) layout shell', () => {
     expect(active.container.querySelector('dialog')).toBeNull()
   })
 
-  it('opens the sales modal on the first view of a locked user and stamps the time', () => {
+  it('opens the sales modal on the first view of a locked user and stores nothing on the device', () => {
     const { container } = renderShell(false)
     expect(container.querySelector('dialog')).toHaveAttribute('open')
-    expect(localStorage.getItem(UPSELL_STORAGE_KEY)).not.toBeNull()
+    expect(localStorage.length).toBe(0)
   })
 
   it('does not open the sales modal on /konto, but keeps the banner', () => {

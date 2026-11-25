@@ -1,18 +1,19 @@
+import { planPrice } from '$lib/legalPages/facts'
 import { DATA_SOURCE_LABEL, SITE_FACTS } from './siteFacts'
 
 export interface FaqItem { question: string, answer: string }
 
 /**
- * The one place for the price wording on the landing page. Owner rule: no pricing section and no
- * amount on the landing page; the amount lives in `LEGAL_FACTS` (AGB, /konto, upsell). This
- * answer must not contradict it. Owner decision pending — change only here.
+ * The one place for the price wording on the landing page. The amount comes from `LEGAL_FACTS`
+ * via `planPrice()` (AGB, /konto, upsell, landing) — never retype it. Owner 2026-11-25: the
+ * price is public and waitlist members get 14 days free after the launch.
  */
-export const PRICE_FAQ_ANSWER = 'gefahrgut.org gibt es als einen Tarif mit vollem Funktionsumfang – ohne Funktionsstufen. Den aktuellen Preis findest du in den AGB und nach der Anmeldung in deinem Konto. Weitere Tarife, etwa für Teams, sind später möglich.'
+export const PRICE_FAQ_ANSWER = `gefahrgut.org gibt es als einen Tarif mit vollem Funktionsumfang – ohne Funktionsstufen: ${planPrice() ?? 'Der Preis steht in den AGB'}. Wer sich vor dem Start auf die Benachrichtigungsliste einträgt, bekommt nach dem Start 14 Tage gratis. Weitere Tarife, etwa für Teams, sind später möglich.`
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Was ist die 1000-Punkte-Regel im ADR?',
-    answer: 'Die 1000-Punkte-Regel (ADR 1.1.3.6) erlaubt Erleichterungen beim Gefahrguttransport auf der Straße: Jeder Beförderungskategorie ist ein Faktor zugeordnet, mit dem die transportierte Menge multipliziert wird. Ergibt die Summe aller Produkte je Beförderungseinheit nicht mehr als 1.000 Punkte, entfallen unter anderem die Pflicht zur orangefarbenen Kennzeichnung, der ADR-Schein des Fahrers und die schriftlichen Weisungen. Ein 1000-Punkte-Rechner für gefahrgut.org ist in Arbeit.',
+    answer: 'Die 1000-Punkte-Regel (ADR 1.1.3.6) erlaubt Erleichterungen beim Gefahrguttransport auf der Straße: Jeder Beförderungskategorie ist ein Faktor zugeordnet, mit dem die transportierte Menge multipliziert wird. Ergibt die Summe aller Produkte je Beförderungseinheit nicht mehr als 1.000 Punkte, entfallen unter anderem die Pflicht zur orangefarbenen Kennzeichnung, der ADR-Schein des Fahrers und die schriftlichen Weisungen. Den Rechner gibt es auf gefahrgut.org als Werkzeug für freigeschaltete Konten.',
   },
   {
     question: 'Worin unterscheiden sich ADR, RID, IMDG und ICAO?',
@@ -36,7 +37,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     question: 'Welche Datenbasis nutzt gefahrgut.org?',
-    answer: `Datenbasis ist die ${DATA_SOURCE_LABEL} der Bundesanstalt für Materialforschung und -prüfung (BAM), eine amtliche Quelle: ${SITE_FACTS.unNumbers} UN-Nummern mit ${SITE_FACTS.entries} Einträgen zu ADR 2025, RID 2025, IMDG Amdt. 42-24, ICAO 2025 und den UN-Modellvorschriften, dazu ${SITE_FACTS.specialProvisions} Sondervorschriften. ADN-Daten veröffentlicht die BAM nicht. Die Daten stehen unter der Datenlizenz Deutschland (dl-de/by-2-0); Änderungen gegenüber der Quelle werden gekennzeichnet.`,
+    answer: `Datenbasis ist die ${DATA_SOURCE_LABEL} der Bundesanstalt für Materialforschung und -prüfung (BAM): ${SITE_FACTS.unNumbers} UN-Nummern mit ${SITE_FACTS.entries} Einträgen zu ADR 2025, RID 2025, IMDG Amdt. 42-24, ICAO 2025 und den UN-Modellvorschriften, dazu ${SITE_FACTS.specialProvisions} Sondervorschriften. ADN-Daten veröffentlicht die BAM nicht. Die Daten stehen unter der Datenlizenz Deutschland (dl-de/by-2-0); Änderungen gegenüber der Quelle werden gekennzeichnet.`,
   },
   {
     question: 'Was kostet gefahrgut.org?',

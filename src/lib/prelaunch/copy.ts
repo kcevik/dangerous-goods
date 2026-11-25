@@ -4,5 +4,5 @@ export function signupCtaLabel(open: boolean): string {
 }
 
 export const LAUNCH_HEADING = 'Benachrichtigung zum Start'
-export const LAUNCH_INTRO = 'gefahrgut.org ist noch im Aufbau. Trag deine E-Mail-Adresse ein – wir sagen dir Bescheid, sobald es losgeht.'
+export const LAUNCH_INTRO = 'gefahrgut.org ist noch im Aufbau. Trag deine E-Mail-Adresse ein – wir sagen dir Bescheid, sobald es losgeht. Wer sich vorher einträgt, bekommt nach dem Start 14 Tage gratis.'
 export const LAUNCH_THANKS = 'Danke! Wir benachrichtigen dich, sobald gefahrgut.org startet.'
