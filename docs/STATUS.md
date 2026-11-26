@@ -142,6 +142,15 @@ book indexed at startup and checked by `/healthz`.
 
 ## Known issues and debt
 
+- **PDF → book converter (prototype, 2026-11-26):** `scripts/convert-book.py <pdf> <out.md>` (Python + PyMuPDF, AGPL, local only; no OCR/LLM)
+  turns a Word-exported PDF into the viewer's Markdown + `.pages.json` (line → PDF page) + `images/`. First run on the ADR 2026-01 PDF
+  is in `csvbase/adr-pdf/` (gitignored, **not yet live**): Table A 2,987 rows / 2,347 UN exactly like the PDF, SV codes 376 of 377
+  (SV 668's lead-in sits in a table), 0.7 % of words differ (superscripts, hyphenation, repeated headers), TOC 9 parts / 63 chapters /
+  322 sections, every numbered paragraph (1.1.3.6.2 …) is a heading so section jumps hit it (3,852 headings vs 1,506 in the old file —
+  owner to judge how that reads in the viewer). Checked only through `indexBook`/`findSection`/`toc`, **not yet in the browser**. Not yet done: swap into
+  `ADR_BOOK_PATH` + run the book tests against it, serve `images/` behind the `isActive` gate (the renderer still shows image
+  placeholders), "Originalseite" link via `pages.json`, no tests for the script itself, vector drawings not extracted, other
+  books (IMDG/ICAO/RID) need their own indexer rules and a licence check. The PDF is ADR **2026-01**, the data says ADR 2025.
 - **`*_entries.prohibited` is misleading:** it is filled from BAM `N_VERBOT`, where "1" means *permitted*
   ("0" forbidden, "2" not subject to the regulations), and the import maps only "1" to `true`. So
   `true` = permitted, `false` = forbidden *or* not subject. Nothing in the app reads it (ICAO prohibitions
