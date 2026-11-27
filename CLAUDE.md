@@ -65,6 +65,7 @@ pnpm import:regulations  # import BAM CSVs + SV texts into Supabase (needs the s
 pnpm generate:demo       # regenerate DEMO_DATA/DEMO_SVS from the live tables (service-role key, read-only)
 pnpm deploy:test         # build image → ship over SSH → switch → /healthz → auto-rollback
 pnpm deploy:rollback     # back to the previous image
+python3 scripts/convert-book.py <pdf> <out.md>   # book PDF → viewer Markdown (needs `pip install pymupdf`; local only, see Key Rules)
 ```
 
 ## Project Structure
@@ -118,7 +119,7 @@ supabase/migrations/      # schema, SV languages, (retired waitlist), auth_and_e
                           # harden_grants, launch_signups, account_page
 supabase/templates/       # auth email templates (pasted into the dashboard)
 deploy/                   # compose.yaml, app.env.example, Caddyfile
-scripts/                  # import-regulations.ts, generate-demo-data.ts, deploy.sh, remote-switch.sh (runs on the server)
+scripts/                  # import-regulations.ts, generate-demo-data.ts, convert-book.py (PDF → book Markdown), deploy.sh, remote-switch.sh (runs on the server)
 csvbase/                  # BAM TSV sources + the ADR book markdown — gitignored
 docs/                     # STATUS.md, README.md (index), schema doc, specs + plans, research/ (persona tests, synonym review)
 ```
@@ -237,6 +238,11 @@ Templates: `.env.example`, `deploy/app.env.example`, `.deploy.env.example`.
   personal data (analytics needs a consent banner first). The Widerrufsbelehrung keeps the statutory "Sie" wording.
   All texts are drafts until a lawyer has checked them.
 - **The ADR source is OCR-corrupted** (e.g. eleven spellings of Table A's header in 300 lines). Treat its text as untrusted, keep the "kein rechtsverbindlicher Text" disclaimer prominent, and never judge the database against it.
+  The original BMIMI PDF (`csvbase/`, ADR 2026-01, 1,250 pp.) is a Word export **with a text layer**, so no OCR or LLM is needed: `scripts/convert-book.py`
+  (PyMuPDF, AGPL → local script only, never a runtime dependency) rebuilds the book Markdown from it in ~2 min (pipe tables, numbered paragraphs as headings,
+  `images/`, `<out>.pages.json` line → PDF page). Run `find_tables` results through the script's `real_table` filter: boxed paragraphs (SV 230, 365, 668) are
+  false "tables" and lose text. After every conversion compare `indexBook` against the PDF (Table A rows/UN numbers, SV count, TOC) and word coverage; a new book
+  must first be checked for a text layer, then needs its own indexer rules (the indexer is ADR-specific) and a licence check (IMDG/ICAO are not free). Status: STATUS.md.
 - **Known no-op kept for parity:** `Features.svelte` builds `hover:border-[${color}]` at runtime; Tailwind can't see it.
 
 ## Working Agreements
