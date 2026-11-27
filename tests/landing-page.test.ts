@@ -90,10 +90,10 @@ describe('landing page', () => {
     for (const h of headings) expect(h).toHaveClass('break-words', 'hyphens-auto', 'text-2xl', 'min-[375px]:text-3xl', 'sm:text-4xl')
   })
 
-  it('breaks the hero headline only at its soft hyphen ("Gefahrgut-vorschriften", never "…vorschrif-ten")', () => {
+  it('breaks the hero headline only at its soft hyphen ("Gefahrgut-beauftragte", never "…beauftrag-te")', () => {
     const { container } = render(LandingPage, { props: PROPS })
     const h1 = container.querySelector('h1')!
-    expect(h1.textContent).toContain('Gefahrgut­vorschriften')
+    expect(h1.textContent).toContain('Software für Gefahrgut­beauftragte')
     expect(h1).not.toHaveClass('hyphens-auto')
     expect(h1).toHaveClass('break-words')
   })
@@ -127,7 +127,7 @@ describe('landing page', () => {
 
   it('emits title, description, canonical and four JSON-LD graphs into <head>', () => {
     render(LandingPage, { props: PROPS })
-    expect(document.title).toBe('gefahrgut.org – Gefahrgut-Datenbank & Tools für Gefahrgutbeauftragte')
+    expect(document.title).toBe('Software für Gefahrgutbeauftragte | gefahrgut.org')
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('16.730 Einträge')
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('Jetzt registrieren')
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://app.gefahrgut.org/')

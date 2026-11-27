@@ -25,8 +25,8 @@
   
         <!-- Headline -->
         <h1 class="text-3xl min-[400px]:text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6 break-words">
-          Alle Gefahrgut&shy;vorschriften.<br />
-          <span style="color: #f97316;">Ein Werkzeug.</span>
+          Software für Gefahrgut&shy;beauftragte:<br />
+          <span style="color: #f97316;">Alle Vorschriften. Ein Werkzeug.</span>
         </h1>
   
         <!-- Subtext -->

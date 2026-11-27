@@ -24,6 +24,10 @@ export const FAQ_ITEMS: FaqItem[] = [
     answer: 'Nach der Gefahrgutbeauftragtenverordnung (GbV) muss jedes Unternehmen, das an der Beförderung gefährlicher Güter beteiligt ist – als Absender, Verpacker, Verlader, Befüller oder Beförderer – grundsätzlich einen geschulten Gefahrgutbeauftragten bestellen. Ausnahmen gelten unter anderem für Unternehmen, die ausschließlich innerhalb der Freistellungsgrenzen befördern, z. B. mit nicht mehr als 1.000 Punkten je Beförderungseinheit nach ADR 1.1.3.6.',
   },
   {
+    question: 'Was kann Software für Gefahrgutbeauftragte, was ein ADR-Buch nicht kann?',
+    answer: 'Ein Buch zeigt dir ein Regelwerk. Als Gefahrgutbeauftragter prüfst du aber oft dieselbe UN-Nummer in mehreren Verkehrsträgern. gefahrgut.org stellt ADR, RID, IMDG und ICAO je UN-Nummer nebeneinander und markiert Abweichungen, sucht über Stoffnamen und Handelsnamen, rechnet die 1000-Punkte-Regel nach ADR 1.1.3.6 und zeigt die Sondervorschriften im Volltext direkt beim Stoff. Das ADR gibt es zusätzlich als durchsuchbaren Lesetext (kein rechtsverbindlicher Text). Einstufung, Beförderungspapiere und Verantwortung bleiben bei dir.',
+  },
+  {
     question: 'Was ist eine UN-Nummer?',
     answer: 'Eine UN-Nummer ist eine vierstellige, von den Vereinten Nationen vergebene Kennnummer für gefährliche Stoffe und Gegenstände, zum Beispiel UN 1203 für Benzin. Sie identifiziert einen Stoff verkehrsträgerübergreifend eindeutig und ist der Schlüssel zu allen Vorschriften: Gefahrklasse, Verpackungsgruppe, Sondervorschriften und Mengengrenzen sind je UN-Nummer in den Regelwerken hinterlegt.',
   },

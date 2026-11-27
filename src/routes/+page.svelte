@@ -22,11 +22,12 @@
     SITE_URL,
   } from '$lib/seo/structuredData'
 
-  const title = 'gefahrgut.org – Gefahrgut-Datenbank & Tools für Gefahrgutbeauftragte'
+  // keyword first, under ~60 characters so Google does not cut it off
+  const title = 'Software für Gefahrgutbeauftragte | gefahrgut.org'
   let { data } = $props()
   // fail-closed: without layout data the page shows the pre-launch wording
   const registrationOpen = $derived(data?.registrationOpen === true)
-  const description = $derived(`ADR, RID, IMDG und ICAO in einer Plattform: ${SITE_FACTS.unNumbers} UN-Nummern, ${SITE_FACTS.entries} Einträge aus der ${DATA_SOURCE_LABEL}, multimodaler Regelwerksvergleich, Sondervorschriften im Volltext und das ADR als Lesetext. ${signupCtaLabel(registrationOpen)}.`)
+  const description = $derived(`Für Gefahrgutbeauftragte: ADR, RID, IMDG und ICAO in einer Plattform: ${SITE_FACTS.unNumbers} UN-Nummern, ${SITE_FACTS.entries} Einträge aus der ${DATA_SOURCE_LABEL}, multimodaler Regelwerksvergleich, Sondervorschriften im Volltext und das ADR als Lesetext. ${signupCtaLabel(registrationOpen)}.`)
 
   // JSON-LD is injected with {@html}; escaping "<" guarantees content can never close the script tag
   function ldScript(ld: unknown): string {

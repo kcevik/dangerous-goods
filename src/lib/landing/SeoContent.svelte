@@ -20,6 +20,16 @@
         </p>
       </div>
       <div>
+        <h3 class="font-semibold mb-2" style="color: #0f2744;">Was Gefahrgutbeauftragte täglich nachschlagen</h3>
+        <p>
+          Gefahrgutbeauftragte beraten und überwachen: Sie prüfen Gefahrklasse und Verpackungsgruppe
+          eines Stoffs, Mengengrenzen und Freistellungen, Verpackungsanweisungen und Sondervorschriften,
+          oft für mehrere Verkehrsträger zugleich. Genau diese Angaben liegen bei gefahrgut.org je
+          UN-Nummer an einer Stelle, statt verteilt auf vier Regelwerke. Die Pflichten aus der
+          Gefahrgutbeauftragtenverordnung (GbV) bleiben deine; die Plattform spart dir das Suchen.
+        </p>
+      </div>
+      <div>
         <h3 class="font-semibold mb-2" style="color: #0f2744;">Datenbasis: {DATA_SOURCE_LABEL}</h3>
         <p>
           Grundlage ist die GEFAHRGUT-Datenbank der Bundesanstalt für Materialforschung und
